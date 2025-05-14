@@ -1,2 +1,3 @@
 # nr-seedtransfer-map
-CBST Seedlot Selection Tool  Chief Forester’s Standards for Seed Use Seedlot Data 
+
+The Seedlot Selection Tool (SST) is a GIS mapping program designed to help forest managers match seedlots with planting sites based on climatic information 
