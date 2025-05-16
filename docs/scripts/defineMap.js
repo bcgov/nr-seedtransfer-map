@@ -490,7 +490,8 @@ define([
         // see this link for more info: http://davidwalsh.name/fakepath
         name = name[0].replace("c:\\fakepath\\", "");
 
-        document.getElementById('upload-status').innerHTML = '<b>Loading </b>' + name;
+        const uploadStatus = document.getElementById('upload-status');
+        uploadStatus.textContent = 'Loading ' + name;
 
         // define the input params for generate see the rest doc for details
         // https://developers.arcgis.com/rest/users-groups-and-items/generate.htm
