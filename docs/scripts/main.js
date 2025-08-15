@@ -7,12 +7,13 @@ define(function () {
     var jsontxt, jsonseedlot, jsontxt2019;
     // var defineMap = require('defineMap.js');
 
-    var speciesStore = [
+
+    var speciesStore1 = [
         { name: "AT", minsuit: 97.5 },
         { name: "BA", minsuit: 97.5 },
-        { name: "BG", minsuit: 98.5 },
+        { name: "BG", minsuit: 97.5 },
         { name: "BL", minsuit: 97.0 },
-        { name: "CW", minsuit: 98.0 },
+        { name: "CW", minsuit: 99.0 },
         { name: "DR", minsuit: 97.5 },
         { name: "EP", minsuit: 97.5 },
         { name: "FDC", minsuit: 97.5 },
@@ -21,7 +22,7 @@ define(function () {
         { name: "HW", minsuit: 97.5 },
         { name: "LT", minsuit: 97.5 },
         { name: "LW", minsuit: 97.5 },
-        { name: "PA", minsuit: 96.5 },
+        { name: "PA", minsuit: 97.5 },
         { name: "PJ", minsuit: 97.5 },
         { name: "PLC", minsuit: 97.5 },
         { name: "PLI", minsuit: 97.5 },
@@ -273,42 +274,54 @@ define(function () {
 
     // adds all the options to the Species and BEC Variant dropdowns
     function fillSelects() {
-        // for (const i in becStore) {
-        //     const temp = document.createElement("Option");
-        //     temp.label = becStore[i].name;
-        //     temp.value = becStore[i].id;
-        //     const temp3 = document.createElement("Option");
-        //     temp3.label = becStore[i].name;
-        //     temp3.value = becStore[i].id;
-        //     document.getElementById("becInputCutblock").options.add(temp);
-        //     document.getElementById("becInputSeedlot").options.add(temp3);
-        // }
-        for (const i in becStore) {
-            const temp = document.createElement("option");
-            temp.label = becStore[i].name;
-            temp.value = becStore[i].id;
-            temp.innerHTML = temp.label;
-            const temp3 = document.createElement("option");
-            temp3.label = becStore[i].name;
-            temp3.value = becStore[i].id;
-            temp3.innerHTML = temp3.label;
-            document.getElementById("becInputCutblock").options.add(temp);
-            document.getElementById("becInputSeedlot").options.add(temp3);
-        }
-        for (const j in speciesStore) {
-            const temp2 = document.createElement("Option");
-            temp2.value = speciesStore[j].name;
-            temp2.label = speciesStore[j].name;
-            temp2.innerHTML = temp2.label;
-            const temp4 = document.createElement("Option");
-            temp4.value = speciesStore[j].name;
-            temp4.label = speciesStore[j].name;
-            temp4.innerHTML = temp4.label;
-            document.getElementById("speciesInputCutblock").options.add(temp2);
-            document.getElementById("speciesInputSeedlot").options.add(temp4);
-        }
-        $('select').selectpicker();
+
+        let data = new Promise((resolve, reject) => {
+            var test_data;
+            var speciesStore_json = "scripts/min_gen_suit_11.json";
+    
+            $.getJSON(speciesStore_json, function (data) {
+                speciesStore = data;
+                // change all the "name" to upper case
+                for (var i = 0; i < speciesStore.length; i++) {
+                    speciesStore[i].name = speciesStore[i].name.toUpperCase();
+                    speciesStore[i].minsuit = speciesStore[i].minsuit * 100;
+                }
+                
+                console.log(speciesStore);
+                
+
+                for (const i in becStore) {
+                    const temp = document.createElement("option");
+                    temp.label = becStore[i].name;
+                    temp.value = becStore[i].id;
+                    temp.innerHTML = temp.label;
+                    const temp3 = document.createElement("option");
+                    temp3.label = becStore[i].name;
+                    temp3.value = becStore[i].id;
+                    temp3.innerHTML = temp3.label;
+                    document.getElementById("becInputCutblock").options.add(temp);
+                    document.getElementById("becInputSeedlot").options.add(temp3);
+                }
+                for (const j in speciesStore) {
+                    const temp2 = document.createElement("Option");
+                    temp2.value = speciesStore[j].name;
+                    temp2.label = speciesStore[j].name;
+                    temp2.innerHTML = temp2.label;
+                    const temp4 = document.createElement("Option");
+                    temp4.value = speciesStore[j].name;
+                    temp4.label = speciesStore[j].name;
+                    temp4.innerHTML = temp4.label;
+                    document.getElementById("speciesInputCutblock").options.add(temp2);
+                    document.getElementById("speciesInputSeedlot").options.add(temp4);
+                }
+                $('select').selectpicker();  
+                $('.selectpicker').selectpicker('refresh');
+            });
+
+            resolve(test_data);
+        });
     }
+
 
     // create the paths and locations for the selected cutblock and species
     function addSuitabilityLayerCutblock(sp, bec) {
@@ -316,8 +329,10 @@ define(function () {
         // console.log("Cutblock Go button. Species: " + sp + " BEC: " + bec); // debug
         jsontxt = "Version_7_0/" + sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase() + "_migrated_height_list_5.json";
         jsonseedlot = "Version_7_0/" + sp.charAt(0).toUpperCase() + sp.slice(1) + "_Seedlots.json";
+        console.log(sp)
         let suit = speciesStore.find(x => x.name === sp).minsuit;
         
+        console.log(suit);
         
         suit = suit / 100;
         console.log(suit);
@@ -395,14 +410,20 @@ define(function () {
                             resolve(results, output_suit, output_non_suit);
                         }).then(function (data) {
                             console.log(data);
-                            getIntersection(data).then(function (intersection) {
-                                if (intersection.length == 0) { alert("No results available for those parameters"); }
-                                console.log(intersection);
-                                updateData(intersection).then(function (data2) {
-                                    console.log(data2);
-                                    populateCutblockTable(data2);
+                            getUniqueUnion(data).then(function (data) {
+                                updateData(data).then(function (data3) {
+                                    populateCutblockTable(data3);
                                 });
                             });
+
+                            // getIntersection(data).then(function (intersection) {
+                            //     if (intersection.length == 0) { alert("No results available for those parameters"); }
+                            //     console.log(intersection);
+                            //     updateData(intersection).then(function (data2) {
+                            //         console.log(data2);
+                            //         populateCutblockTable(data2);
+                            //     });
+                            // });
                         });
 
 
@@ -457,7 +478,37 @@ define(function () {
     }
 
 
+    function getUniqueUnion(array)
+    { 
+        console.log("Inside getUniqueUnion");
+        var union = [];
+
+        let gettingUnion = new Promise((resolve, reject) => {
+            if (array.length == 1) {
+                union = array[0];
+            } else if (array.length == 2) {
+                // find all the unique elements in the first array based off of BECvar_seed and BECvar_site and add them to the union array and do the same with the second array
+                for (var i = 0; i < array[0].length; i++) {
+                    if (union.find(x => x.BECvar_seed == array[0][i].BECvar_seed && x.BECvar_site == array[0][i].BECvar_site) == undefined) {
+                        union.push(array[0][i]);
+                    }
+                }
+                for (var i = 0; i < array[1].length; i++) {
+                    if (union.find(x => x.BECvar_seed == array[1][i].BECvar_seed && x.BECvar_site == array[1][i].BECvar_site) == undefined) {
+                        union.push(array[1][i]);
+                    }
+                }
+            }
+            resolve(union);
+        })
+        console.log(union)
+        return gettingUnion;
+    }
+
+
+
     function getIntersection(array) {
+        console.log(array)
         var intersection = [];
         let gettingIntersection = new Promise(function (resolve, reject) {
             if (array.length == 1) {
@@ -479,33 +530,6 @@ define(function () {
                     });
                 });
             }
-
-
-
-            //     arr1 = array[0];
-            //     arr2 = array[1];
-            //     for (var i = 0; i < arr1.length; i++) {
-            //         for (var j = 0; j < arr2.length; j++) {
-            //             if (arr1[i]["BECvar_seed"] == arr2[j]["BECvar_seed"]) {
-            //                 intersection.push(arr1[i]);
-            //             }
-            //         }
-            //     }
-
-            // } else if (array.length == 3) {
-            //     arr1 = array[0];
-            //     arr2 = array[1];
-            //     arr3 = array[2];
-            //     for (var i = 0; i < arr1.length; i++) {
-            //         for (var j = 0; j < arr2.length; j++) {
-            //             for (var k = 0; k < arr3.length; k++) {
-            //                 if (arr1[i]["BECvar_seed"] == arr2[j]["BECvar_seed"] && arr1[i]["BECvar_seed"] == arr3[k]["BECvar_seed"]) {
-            //                     intersection.push(arr1[i]);
-            //                 }
-            //             }
-            //         }
-            //     }
-            // }
 
             resolve(intersection);
         
@@ -568,14 +592,20 @@ define(function () {
             }
 
 
- 
 
-            // console.log(finalarray);
-            
-            var $table = $('#seedlot_table');
-            $table.bootstrapTable('destroy');
-            $(function () {
-                $table.bootstrapTable({ data: finalarray });
+
+            $('#seedlot_table').DataTable({
+                scrollY: '200px',
+                paging: false,
+                destroy: true,
+                data: finalarray,
+                columns: [
+                    { data: "Seedlot" },
+                    { data: "Orchard" },
+                    { data: "GW" },
+                    { data: "GeneticClass" },
+                    { data: "BECvar_seed" }
+                ]
             });
         })
     };
@@ -584,11 +614,43 @@ define(function () {
     function populateSeedlotTable(results) {
           
         // adding all the data to the bootstrap table
-        var $table = $('#seed');
-        $table.bootstrapTable('destroy');
-        $(function () {
-            $table.bootstrapTable({ data: results });
+
+
+        
+        // table = $('#seed').DataTable( {
+        //     scrollY: '300px',
+        //     paging: false,
+        //     data: results,
+        //     columns: [
+        //         { data: "BECvar_site" },
+        //         { data: "BECvar_seed" },
+        //         { data: "HTp_pred" },
+        //         { data: "Limit" }
+        //     ]
+        // });
+        
+
+        console.log(results);
+        // var table = $('#seed').DataTable();
+ 
+        // table.clear().draw();
+
+        table = $('#seed').DataTable({
+            scrollY: '300px',
+            paging: false,
+            destroy: true,
+            data: results,
+            columns: [
+                { data: "BECvar_site" },
+                { data: "BECvar_seed" },
+                { data: "HTp_pred" },
+                { data: "Limit" }
+            ]
         });
+
+
+
+
     };
 
 
@@ -612,11 +674,20 @@ define(function () {
     function populateCutblockTable(results) {
 
         // adding all the data to the bootstrap table
-        var $table = $('#cutblock_table');
-        $table.bootstrapTable('destroy');
-        $(function () {
-            $table.bootstrapTable({ data: results });
+
+        $('#cutblock_table').DataTable({
+            scrollY: '200px',
+            paging: false,
+            destroy: true,
+            data: results,
+            columns: [
+                { data: "BECvar_site" },
+                { data: "BECvar_seed" },
+                { data: "HTp_pred" },
+                { data: "Limit" }
+            ]
         });
+
    
     }
 
@@ -718,10 +789,6 @@ define(function () {
 
 
 
-    // function loadseedlotgrid(bec, min, spmin, json) {
-
-    // };
-
     function populateSeedlot(orch) {
         console.log("Seedlot top button. Value entered " + orch);
         jsonorch = "Version_7_0/" + "Orchard_list.json";
@@ -739,12 +806,16 @@ define(function () {
                         results = seed_data.filter(function (x) { return x["Orchard"] == orch});
                         resolve(results);
                     }).then(() => {
+                        // Clears the species and bec variant dropdown lists
+                        $('select').selectpicker('val', "mustard");
+
                         window.res = results;
                         console.log(results[0].BECvar);
                         let becVar = becStore.find(x => x.name == results[0].BECvar).id
                         console.log(becVar);
                         document.getElementById("becInputSeedlot").value = results[0].BECvar;
-                        $('.becInputSeedlot').val(becVar).trigger('change');
+                        // document.getElementById("becInputSeedlot").title = results[0].BECvar;
+                        // $('.becInputSeedlot').val(becVar).trigger('change');
                         // $('.becInputSeedlot').val(becVar).trigger('change');
 
                         document.getElementById("becInputSeedlot").selectedIndex = becVar-1;
@@ -756,7 +827,9 @@ define(function () {
                         document.getElementById("speciesInputSeedlot").value = results[0].Species;
                         console.log(results[0].Species);
 
+                        // rerenders the bec variant dropdown list
                         $('select').selectpicker('refresh');
+
 
                     })
                 })
@@ -768,25 +841,83 @@ define(function () {
         });
     }
 
+
+
+    function populateSeedlot2(orch) {
+        console.log("Seedlot top button. Value entered " + orch);
+        jsonorch = "Version_7_0/" + "Orchard_list.json";
+        jsonseed = "Version_7_0/" + "Seedlot_list.json";
+        results = '';
+
+        $.getJSON(jsonorch, function(orch_data) {
+
+            var seedlot = orch_data.filter(function (x) { return x["Orchard"] == orch});
+            if (seedlot.length > 0 ) {
+                document.getElementById("seedlotNumber").value = parseInt(seedlot[0].Seedlot);
+
+                $.getJSON(jsonseed, function(seed_data) {
+                    let seedlot_data = new Promise((resolve, reject) => {
+                        results = seed_data.filter(function (x) { return x["Orchard"] == orch});
+                        resolve(results);
+                    }).then(() => {
+
+                        let becVar = becStore.find(x => x.name == results[0].BECvar).id
+                        document.getElementById("becInputSeedlot").value = results[0].BECvar;
+                        $('.becInputSeedlot').val(becVar).trigger('change');
+                        document.getElementById("becInputSeedlot").selectedIndex = becVar-1;
+                        $('#becInputSeedlot').on('show.bs.dropdown', function () {
+                            window.location.reload();
+                        });
+                        document.getElementById("speciesInputSeedlot").value = results[0].Species;
+                        $('select').selectpicker('refresh');
+                    })
+                })
+
+            } else {
+                alert("Not a valid option");
+            }
+
+        });
+    }
+
+
+
+
+
     function populateSpeciesBEC(lot) {
         console.log("Seedlot middle button. Value entered " + lot);
         jsonseed = "Version_7_0/" + "Seedlot_list.json";
 
         $.getJSON(jsonseed, function (seed_data) {
-            var results = seed_data.filter(function (x) { return x["Seedlot"] == lot });
-            console.log(results);
-            let becVar = becStore.find(x => x.name === results[0].BECvar).id
-            document.getElementById("orchardNumber").value = results[0].Orchard;
-            document.getElementById("becInputSeedlot").value = becVar;
-            document.getElementById("speciesInputSeedlot").value = results[0].Species;
-        }).then(() => {
-            $('select').selectpicker('refresh');
+            let seedlot_data = new Promise((resolve, reject) => {
+                results = seed_data.filter(function (x) { return x["Seedlot"] == lot });
+                resolve(results);
+            }).then(() => {
+                $('select').selectpicker('val', "mustard");
 
+                let becVar = becStore.find(x => x.name === results[0].BECvar).id
+                
+                document.getElementById("becInputSeedlot").selectedIndex = becVar - 1;
+
+                $('#becInputSeedlot').on('show.bs.dropdown', function () {
+                    window.location.reload();
+                });
+
+                document.getElementById("orchardNumber").value = results[0].Orchard;
+                document.getElementById("becInputSeedlot").value = becVar;
+                document.getElementById("speciesInputSeedlot").value = results[0].Species;
+                $('select').selectpicker('refresh');
+            })
         })
         
 
 
     }
+
+
+    // create a function to load the seedlot data
+    
+
 
 
 
