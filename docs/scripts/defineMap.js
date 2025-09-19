@@ -407,7 +407,16 @@ define([
     function addLegend() {
         document
                 .getElementById("legendButton")
-                .addEventListener("click", function () {
+             const legendToggle = document.getElementById("legendToggle");
+
+                if (legendToggle) {
+                  legendToggle.addEventListener("click", function () {
+    // your legend toggle logic
+                  });
+                } else {
+                  console.warn("Element with ID 'legendToggle' not found. Legend toggle will not be initialized.");
+}
+
                     setActiveWidget(null);
                     if (!this.classList.contains("active")) {
                         setActiveWidget("legend");
