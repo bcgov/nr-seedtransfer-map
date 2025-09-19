@@ -424,7 +424,7 @@ define([
                         setActiveButton(null);
                     }
                 };
-    }
+    })
 
 
     function addTracking() {
