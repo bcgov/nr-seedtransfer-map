@@ -423,7 +423,7 @@ define([
                     } else {
                         setActiveButton(null);
                     }
-                });
+                };
     }
 
 
