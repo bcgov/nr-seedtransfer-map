@@ -4,6 +4,23 @@
 
 This document provides a comprehensive plan for refactoring and modernizing the CBST Seedlot Selection Tool based on the current application analysis and research findings.
 
+## Important Note: Plan Adaptability
+
+**This plan is based on technical analysis and assumptions about user pain points. It will be refined after user research meetings.**
+
+The priorities and phases outlined below are informed by:
+- Code analysis and technical debt identification
+- Best practices and industry standards
+- Assumptions about user experience issues
+
+**After Phase 0 (Discovery & User Research)**, this plan will be updated to reflect:
+- Actual user-identified pain points
+- Validated performance issues
+- User priorities vs. technical priorities
+- Any previously unknown requirements
+
+Please see [user-research.md](./user-research.md) for research status and findings.
+
 ## Current State Assessment
 
 ### Strengths
@@ -304,6 +321,56 @@ Continue with the existing phased approach in this document, starting with Phase
 5. Establish best practices
 
 ## Phased Approach
+
+### Phase 0: Discovery & User Research (Current Phase)
+
+**Goal**: Understand actual user pain points, validate assumptions, and prioritize improvements based on real user needs.
+
+#### Objectives
+1. Identify actual user pain points (not just technical assumptions)
+2. Understand user workflows and how the tool fits into their daily work
+3. Gather performance feedback and measurable issues
+4. Validate that our identified technical issues align with user experience
+5. Discover any hidden issues we haven't identified
+
+#### Activities
+1. **User Interviews/Meetings**
+   - Interview forest managers and frequent users
+   - Observe workflows if possible
+   - Document specific pain points with examples
+   - Measure performance issues (load times, specific operations)
+
+2. **Quantitative Data Gathering**
+   - Browser performance metrics (if available)
+   - Usage analytics (if available)
+   - Error logs or support tickets
+   - Common user workflows
+
+3. **Assumption Validation**
+   - Validate our performance concerns match user experience
+   - Check if error handling issues have caused user problems
+   - Understand if loading indicators are actually needed
+   - Discover any unexpected issues
+
+#### Deliverables
+- User pain point document (see [user-research.md](./user-research.md))
+- Prioritized improvement list based on user feedback
+- Updated plan with validated priorities
+- Any new requirements discovered
+
+#### Timeline
+- Week 1: User meetings and interviews
+- Week 2: Analysis and plan adjustment
+
+#### Success Criteria
+- Clear understanding of top 3-5 user pain points
+- Measurable performance issues (if any)
+- Validation or invalidation of our technical assumptions
+- User-approved priority list
+
+**Note**: After this phase, all subsequent phases may need to be re-prioritized based on actual user needs. The priorities in this document are technical assumptions that will be validated or adjusted.
+
+---
 
 ### Phase 1: Foundation (Weeks 1-2)
 
