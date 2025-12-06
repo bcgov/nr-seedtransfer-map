@@ -478,3 +478,32 @@ Three-tab interface using Bootstrap tabs:
 - Data caching strategies
 - Progressive data loading
 
+## Known Issues & Improvement Opportunities
+
+For detailed improvement plans, priorities, and effort estimates, see [plan.md](./plan.md#improvement-opportunities).
+
+### Summary of Key Areas
+
+**Critical Priority**:
+- **Performance**: Large data files (>80,000 records) loaded entirely into memory with no caching
+- **Error Handling**: Minimal error handling for async operations, silent failures possible
+- **User Feedback**: No loading indicators during async operations
+
+**Important Priority**:
+- **Code Quality**: Global variables (`window.dat`, `window.json_obj`) and outdated patterns
+- **Testing**: No automated test infrastructure, manual testing only
+- **Dependencies**: Outdated versions (ArcGIS 4.19, Bootstrap 4.5.2) may have security patches
+
+**Enhancement Priority**:
+- **Modern JavaScript**: ES5 only, callback-based patterns, no modern features
+- **Build Tooling**: No build process, direct file serving only
+- **Accessibility**: Limited ARIA attributes, keyboard navigation gaps
+
+**Quick Wins Available**:
+- Loading spinners (1-2 hours)
+- Basic error handling (4-6 hours)
+- Global variable refactoring (2-4 hours)
+- ESLint configuration (1 hour)
+
+See [plan.md](./plan.md) for detailed improvement opportunities with specific solutions, effort estimates, and implementation strategies.
+

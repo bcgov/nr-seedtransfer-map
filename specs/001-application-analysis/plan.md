@@ -32,6 +32,261 @@ This document provides a comprehensive plan for refactoring and modernizing the 
 - No loading indicators
 - Memory not managed for large datasets
 
+## Improvement Opportunities
+
+This section identifies specific areas for improvement with priority rankings and effort estimates to help guide future development work.
+
+### Critical Improvements (High Priority)
+
+#### 1. Performance - Large Data File Loading
+**Priority**: Critical  
+**Effort**: Medium (3-5 days)  
+**Impact**: High - Significantly improves user experience
+
+**Current Issues**:
+- JSON files >80,000 records loaded entirely into memory
+- No caching - data re-downloaded on every query
+- Memory not released between queries
+- Synchronous processing blocks UI
+
+**Recommended Solutions**:
+- Implement IndexedDB caching for JSON files
+- Add progressive loading with streaming
+- Implement request cancellation for rapid user interactions
+- Use Web Workers for heavy data processing
+
+**Quick Win**: Basic IndexedDB caching (1-2 days)
+
+#### 2. Error Handling
+**Priority**: Critical  
+**Effort**: Low-Medium (2-3 days)  
+**Impact**: High - Improves reliability and debugging
+
+**Current Issues**:
+- No try-catch blocks around JSON loading
+- ArcGIS service failures not handled
+- Network errors fail silently
+- Limited user feedback on errors
+
+**Recommended Solutions**:
+- Wrap all async operations in try-catch
+- Add `.fail()` handlers to jQuery promises
+- Implement user-friendly error messages
+- Add error logging/reporting
+
+**Quick Win**: Add error handlers to existing promises (4-6 hours)
+
+#### 3. User Experience - Loading Feedback
+**Priority**: High  
+**Effort**: Low (4-8 hours)  
+**Impact**: Medium-High - Better user experience
+
+**Current Issues**:
+- No loading indicators during async operations
+- Users unsure if app is processing
+- Buttons can be clicked multiple times
+- No progress feedback
+
+**Recommended Solutions**:
+- Add loading spinners during data fetches
+- Disable buttons during processing
+- Show progress bars for large operations
+- Add toast notifications
+
+**Quick Win**: Simple loading spinners (1-2 hours)
+
+### Important Improvements (Medium Priority)
+
+#### 4. Code Quality - Global Variables
+**Priority**: Medium  
+**Effort**: Low (2-4 hours)  
+**Impact**: Medium - Improves maintainability
+
+**Current Issues**:
+- Global variables: `window.dat`, `window.json_obj`, `window.res`
+- Makes code harder to test
+- Potential naming conflicts
+
+**Recommended Solutions**:
+- Move globals to module scope
+- Pass data as function parameters
+- Create data management module
+- Eliminate window namespace pollution
+
+**Quick Win**: Refactor window globals (2-4 hours)
+
+#### 5. Testing Infrastructure
+**Priority**: Medium  
+**Effort**: Medium (3-5 days initial setup)  
+**Impact**: High - Enables safe refactoring
+
+**Current Issues**:
+- No automated testing
+- Manual testing only
+- High risk of regressions
+- No CI/CD pipeline
+
+**Recommended Solutions**:
+- Set up Jest or Vitest
+- Add unit tests for business logic (`main.js`)
+- Add integration tests for workflows
+- Set up GitHub Actions for CI
+
+**Initial Investment**: Framework setup + 10-15 tests
+
+#### 6. Dependency Updates
+**Priority**: Medium  
+**Effort**: Medium-High (1-2 weeks)  
+**Impact**: Medium - Security and features
+
+**Current Issues**:
+- ArcGIS JS API 4.19 (current: 4.31+)
+- Bootstrap 4.5.2 (current: 5.3+)
+- Font Awesome 5.14.0 (current: 6.x)
+- Potential security vulnerabilities
+
+**Recommended Solutions**:
+- Test ArcGIS JS API 4.31+ compatibility
+- Evaluate Bootstrap 5 migration
+- Update to latest compatible versions
+- Regular dependency audits
+
+**Risk**: Medium - Requires thorough testing
+
+### Enhancement Opportunities (Low-Medium Priority)
+
+#### 7. Modern JavaScript Migration
+**Priority**: Low-Medium  
+**Effort**: High (4-6 weeks incremental)  
+**Impact**: Medium - Long-term maintainability
+
+**Current Issues**:
+- ES5 JavaScript only
+- Callback-based async patterns
+- No modern features (arrow functions, destructuring, etc.)
+- Inconsistent coding patterns
+
+**Recommended Solutions**:
+- Incremental migration to ES6+
+- Replace jQuery AJAX with Fetch API
+- Use async/await patterns
+- Implement arrow functions and template literals
+
+**Approach**: Gradual, module by module
+
+#### 8. Build Tooling
+**Priority**: Low-Medium  
+**Effort**: Medium (1 week)  
+**Impact**: Medium - Enables other improvements
+
+**Current Issues**:
+- No build process
+- Direct file serving only
+- No code optimization
+- No module bundling
+
+**Recommended Solutions**:
+- Add Vite or Webpack
+- Configure development server
+- Set up production builds
+- Implement code splitting
+
+**Benefit**: Enables ES6 modules, testing, and optimization
+
+#### 9. Accessibility Improvements
+**Priority**: Low  
+**Effort**: Medium (1 week)  
+**Impact**: Low-Medium - Compliance and usability
+
+**Current Issues**:
+- Limited ARIA attributes
+- Keyboard navigation gaps
+- Screen reader optimization needed
+- Not WCAG compliant
+
+**Recommended Solutions**:
+- Add comprehensive ARIA labels
+- Improve keyboard navigation
+- Screen reader testing
+- WCAG 2.1 AA compliance audit
+
+#### 10. Data Management
+**Priority**: Low  
+**Effort**: Medium (1-2 weeks)  
+**Impact**: Medium - Better data governance
+
+**Current Issues**:
+- Manual JSON file updates
+- No data versioning
+- Hard to track changes
+- No validation on load
+
+**Recommended Solutions**:
+- Implement data versioning system
+- Add JSON schema validation
+- Create update procedures
+- Version control for data files
+
+### Quick Wins (Low Effort, Good Impact)
+
+These improvements can be done quickly and provide immediate value:
+
+1. **Add loading spinners** (1-2 hours)
+   - Simple CSS spinner during async operations
+   - High user experience impact
+
+2. **Add ESLint configuration** (1 hour)
+   - Catches common errors
+   - Enforces code quality
+
+3. **Remove commented code** (30 minutes)
+   - Clean up 2019 model references
+   - Reduce confusion
+
+4. **Add JSDoc comments** (Incremental)
+   - Document functions as you work
+   - Improves maintainability
+
+5. **Add basic error messages** (2-4 hours)
+   - User-friendly error dialogs
+   - Better debugging info in console
+
+## Improvement Priority Matrix
+
+| Improvement | Priority | Effort | Impact | Quick Win? |
+|------------|----------|--------|--------|------------|
+| Loading Indicators | High | Low | High | ✅ Yes |
+| Error Handling | Critical | Low-Med | High | ✅ Yes |
+| Global Variables | Medium | Low | Medium | ✅ Yes |
+| Data Caching | Critical | Medium | High | ⚠️ Partial |
+| Testing Setup | Medium | Medium | High | ❌ No |
+| Dependency Updates | Medium | Med-High | Medium | ❌ No |
+| Modern JS Migration | Low-Med | High | Medium | ❌ No |
+| Build Tooling | Low-Med | Medium | Medium | ❌ No |
+| Accessibility | Low | Medium | Low-Med | ❌ No |
+| Data Management | Low | Medium | Medium | ❌ No |
+
+## Recommended Approach
+
+### Phase 0: Quick Wins (Before Major Work)
+1. Add loading indicators (1-2 hours)
+2. Add basic error handling (4-6 hours)
+3. Refactor global variables (2-4 hours)
+4. Add ESLint (1 hour)
+
+**Total**: ~1-2 days for significant UX improvements
+
+### Then Follow Phased Plan
+Continue with the existing phased approach in this document, starting with Phase 1: Foundation.
+
+## Notes for Future Developers
+
+- Focus on **quick wins** first to build momentum
+- **Error handling** should be added before major refactoring
+- **Testing** enables safer changes, invest early
+- **Performance** improvements have high user impact
+- Keep **incremental approach** - don't try to fix everything at once
+
 ## Refactoring Goals
 
 ### Primary Goals
