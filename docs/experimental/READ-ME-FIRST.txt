@@ -7,7 +7,7 @@ at https://bcgov.github.io/nr-seedtransfer-map/
 
 LIVE URL FOR THIS VERSION
 -------------------------
-https://bcgov.github.io/nr-seedtransfer-map/experimental/
+https://bcgov.github.io/nr-seedtransfer-map/experimental/index.html
 
 WHAT'S IN THIS FOLDER
 ---------------------
