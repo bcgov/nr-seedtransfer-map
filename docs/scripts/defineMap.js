@@ -405,16 +405,19 @@ define([
     }
 
     function addLegend() {
-        document
-                .getElementById("legendButton")
-                .addEventListener("click", function () {
-                    setActiveWidget(null);
-                    if (!this.classList.contains("active")) {
-                        setActiveWidget("legend");
-                    } else {
-                        setActiveButton(null);
-                    }
-                });
+        const legendButton = document.getElementById("legendButton");
+        if (legendButton) {
+            legendButton.addEventListener("click", function () {
+                setActiveWidget(null);
+                if (!this.classList.contains("active")) {
+                    setActiveWidget("legend");
+                } else {
+                    setActiveButton(null);
+                }
+            });
+        } else {
+            console.warn("Element with ID 'legendButton' not found. Legend widget will not be initialized.");
+        }
     }
 
 
