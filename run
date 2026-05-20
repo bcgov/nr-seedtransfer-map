@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+
+# Exit immediately if a command exits with a non-zero status
+set -euo pipefail
+
+# Print help message
+show_help() {
+    echo "========================================================="
+    echo "  🌲 CBST Seedlot Selection Tool Control Script"
+    echo "========================================================="
+    echo "Usage: ./run [command]"
+    echo ""
+    echo "Commands:"
+    echo "  dev       Start a local development server (Python or Node)"
+    echo "  lint      Verify syntax of all JavaScript files"
+    echo "  help      Show this help message"
+    echo "========================================================="
+}
+
+# Run the local server
+run_dev() {
+    echo "🚀 Launching local testing server..."
+    if command -v npx &>/dev/null; then
+        echo "🌐 Serving at http://localhost:8000 (using Node/http-server)"
+        npx http-server docs -p 8000
+    elif command -v python3 &>/dev/null; then
+        echo "🌐 Serving at http://localhost:8000 (using Python3)"
+        python3 -m http.server 8000 --directory docs
+    else
+        echo "❌ Error: Neither Node/npm (npx) nor python3 is installed!" >&2
+        exit 1
+    fi
+}
+
+# Lint the JavaScript files for syntax errors
+run_lint() {
+    echo "🔍 Verifying JavaScript file syntax..."
+    local errors=0
+    
+    # Find all JS files in docs/scripts and run node -c on them
+    while IFS= read -r file; do
+        if ! node -c "$file" 2>/dev/null; then
+            echo "❌ Syntax error detected in: $file"
+            node -c "$file" # Run again without silencing to print error trace
+            errors=$((errors + 1))
+        fi
+    done < <(find docs/scripts -name "*.js")
+
+    if [ "$errors" -eq 0 ]; then
+        echo "✅ All JavaScript files compiled cleanly!"
+    else
+        echo "❌ Lint verification failed: $errors syntax error(s) found."
+        exit 1
+    fi
+}
+
+# Parse command line arguments
+if [ $# -eq 0 ]; then
+    show_help
+    exit 0
+fi
+
+case "$1" in
+    dev)
+        run_dev
+        ;;
+    lint)
+        run_lint
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        echo "❌ Unknown command: $1" >&2
+        show_help
+        exit 1
+        ;;
+esac
