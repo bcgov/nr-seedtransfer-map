@@ -75,9 +75,7 @@ Prettier configuration:
 ```
 nr-seedtransfer-map/
 ├── .github/workflows/      # Automated CI/CD pipelines
-│   ├── lint.yml            # Automated syntax & style checking
-│   ├── pr-validate.yml     # Automated PR metadata validation
-│   └── scheduled.yml       # Routine stale branch checking
+│   └── lint.yml            # Automated syntax & style checking
 ├── docs/                   # Main application payload (GitHub Pages)
 │   ├── css/                # Application stylesheets
 │   ├── scripts/            # Core JavaScript files (Leaflet/ArcGIS logic)
