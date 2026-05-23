@@ -12,7 +12,8 @@ show_help() {
     echo ""
     echo "Commands:"
     echo "  dev       Start a local development server (Python or Node)"
-    echo "  lint      Verify syntax of all JavaScript files"
+    echo "  lint      Verify syntax and formatting of all source files"
+    echo "  format    Enforce consistent formatting with Prettier"
     echo "  help      Show this help message"
     echo "========================================================="
 }
@@ -32,7 +33,7 @@ run_dev() {
     fi
 }
 
-# Lint the JavaScript files for syntax errors
+# Lint JavaScript files for syntax errors and Prettier formatting consistency
 run_lint() {
     echo "🔍 Verifying JavaScript file syntax..."
     local errors=0
@@ -46,12 +47,24 @@ run_lint() {
         fi
     done < <(find docs/scripts -name "*.js")
 
-    if [ "$errors" -eq 0 ]; then
-        echo "✅ All JavaScript files compiled cleanly!"
-    else
+    if [ "$errors" -ne 0 ]; then
         echo "❌ Lint verification failed: $errors syntax error(s) found."
         exit 1
     fi
+    echo "✅ All JavaScript files compiled cleanly!"
+
+    echo "🔍 Checking Prettier formatting consistency..."
+    if ! npm run format:check; then
+        echo "❌ Formatting check failed! Run './run format' to format code."
+        exit 1
+    fi
+    echo "✅ Codebase formatting is perfectly consistent!"
+}
+
+# Enforce consistent formatting using Prettier
+run_format() {
+    echo "🧹 Formatting HTML, CSS, and JS source files with Prettier..."
+    npm run format
 }
 
 # Parse command line arguments
@@ -66,6 +79,9 @@ case "$1" in
         ;;
     lint)
         run_lint
+        ;;
+    format)
+        run_format
         ;;
     help|--help|-h)
         show_help

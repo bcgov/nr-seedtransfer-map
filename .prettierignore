@@ -1,0 +1,5 @@
+# Ignore external data dumps
+docs/Version_7_0/
+node_modules/
+package-lock.json
+package.json

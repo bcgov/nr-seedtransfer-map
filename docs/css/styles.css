@@ -1,17 +1,17 @@
-
 /* 
 CBST revamp
 */
 .esri-widget {
-    font-family: Calibri;
+  font-family: Calibri;
 }
 
-html, body {
-    padding-top: 18px;
-    margin: 0;
-    height: 100%;
-    width: 100%;
-    font-family: Calibri;
+html,
+body {
+  padding-top: 18px;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  font-family: Calibri;
 }
 
 .container-fluid {
@@ -20,14 +20,12 @@ html, body {
   height: 100%;
   width: 100%;
   font-family: Calibri;
-
 }
 
 .uploadExpand {
-  background-color: white; 
-  padding:4px;
+  background-color: white;
+  padding: 4px;
   text-align: center;
-
 }
 
 .field {
@@ -43,37 +41,34 @@ html, body {
   text-align: center;
 }
 
-
-.titleTextsmall { 
+.titleTextsmall {
   margin-left: 11%;
   padding-bottom: 16px;
-
 }
 
 .my-custom-scrollbar {
-    font-size: 12px;
-    position: relative;
-    height: 250px;
-    overflow: auto;
-    margin: 0 auto;
-    white-space: nowrap;
+  font-size: 12px;
+  position: relative;
+  height: 250px;
+  overflow: auto;
+  margin: 0 auto;
+  white-space: nowrap;
 }
 
-
 #formDiv {
-    width: 100%;
-  }
+  width: 100%;
+}
 
 .esri-item-list__scroller {
-    overflow-y: visible;
+  overflow-y: visible;
 }
 
 .editArea-container {
-    background: #fff;
-    line-height: 1.5em;
-    overflow: auto;
-    padding: 10px;
-    width: 300px;
+  background: #fff;
+  line-height: 1.5em;
+  overflow: auto;
+  padding: 10px;
+  width: 300px;
 }
 
 .expandInputCoords {
@@ -81,57 +76,57 @@ html, body {
   margin-bottom: 10px;
 }
 
-  .list-heading {
-    text-align: center;
-    font-weight: normal;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    color: #323232;
-  }
-
-  .or-wrap {
-    background-color: #e0e0e0;
-    height: 1px;
-    margin: 2em 0;
-    overflow: visible;
-  }
-
-  .or-text {
-    background: #fff;
-    line-height: 0;
-    padding: 0 1em;
-    position: relative;
-    bottom: 0.75em;
-  }
-
-  /* override default styles */
-  .esri-feature-form {
-    background: #fff;
-  }
-
-  .esri-feature-templates {
-    width: 256px;
-  }
-
-  .esri-feature-templates__section-header {
-    display: none;
-  }
-
-  .esri-feature-templates__section {
-    box-shadow: none;
-  }
-
-  .esri-feature-templates__scroller {
-    max-height: 200px;
-  }
-  
-.table-wrapper-scroll-y {
-    display: block;
+.list-heading {
+  text-align: center;
+  font-weight: normal;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  color: #323232;
 }
 
-#mainRow{
-    padding-top:68px;
-    height:100%;
+.or-wrap {
+  background-color: #e0e0e0;
+  height: 1px;
+  margin: 2em 0;
+  overflow: visible;
+}
+
+.or-text {
+  background: #fff;
+  line-height: 0;
+  padding: 0 1em;
+  position: relative;
+  bottom: 0.75em;
+}
+
+/* override default styles */
+.esri-feature-form {
+  background: #fff;
+}
+
+.esri-feature-templates {
+  width: 256px;
+}
+
+.esri-feature-templates__section-header {
+  display: none;
+}
+
+.esri-feature-templates__section {
+  box-shadow: none;
+}
+
+.esri-feature-templates__scroller {
+  max-height: 200px;
+}
+
+.table-wrapper-scroll-y {
+  display: block;
+}
+
+#mainRow {
+  padding-top: 68px;
+  height: 100%;
 }
 
 .no-gutters {
@@ -139,39 +134,35 @@ html, body {
   margin-left: 0;
 
   > .col,
-  > [class*="col-"] {
+  > [class*='col-'] {
     padding-right: 0;
     padding-left: 0;
   }
 }
 
-#titleRow{
-    height: 100px;
+#titleRow {
+  height: 100px;
 }
 
-#mapDiv{
-    padding:0;
-    margin:0;
+#mapDiv {
+  padding: 0;
+  margin: 0;
 }
 
-
-#titleText{
-    width: 100%;
-    font-size:1.5em;
-    font-weight:500;
+#titleText {
+  width: 100%;
+  font-size: 1.5em;
+  font-weight: 500;
 }
 
 #titleTextsmall {
-    font-size:1em;
-    font-weight:500;
-
+  font-size: 1em;
+  font-weight: 500;
 }
 
-
-
-#panelContent{
-    overflow:auto;
-    max-height: 100%;
+#panelContent {
+  overflow: auto;
+  max-height: 100%;
 }
 /* 
 #coords {
@@ -183,15 +174,15 @@ html, body {
     z-index:50;
 } */
 
-#topbar{ 
-    float:right;
-    top:20px;
-    right:20px;
-    z-Index:999;
+#topbar {
+  float: right;
+  top: 20px;
+  right: 20px;
+  z-index: 999;
 }
 
 #scaleText {
-    font: bold 12px arial
+  font: bold 12px arial;
 }
 
 /*#grid {
@@ -207,9 +198,6 @@ html, body {
     height: 15%
 }*/
 
-
-.card-text{
-    font-size:14px;
+.card-text {
+  font-size: 14px;
 }
-
-
