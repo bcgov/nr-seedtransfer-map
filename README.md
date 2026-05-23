@@ -87,7 +87,9 @@ nr-seedtransfer-map/
 │   ├── deploy-production.yml # Production branch deployment
 │   ├── lint.yml            # Automated syntax & style checking
 │   ├── pr-preview-cleanup.yml # PR preview environment cleanup
-│   └── pr-preview.yml      # PR preview sandbox deployment
+│   ├── pr-preview.yml      # PR preview sandbox deployment
+│   ├── pr-validate.yml     # Automated PR metadata validation
+│   └── scheduled.yml       # Routine stale branch checking
 ├── docs/                   # Main application payload (GitHub Pages)
 │   ├── css/                # Application stylesheets
 │   ├── scripts/            # Core JavaScript files (Leaflet/ArcGIS logic)
