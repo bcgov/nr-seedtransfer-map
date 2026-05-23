@@ -54,6 +54,10 @@ run_lint() {
     echo "✅ All JavaScript files compiled cleanly!"
 
     echo "🔍 Checking Prettier formatting consistency..."
+    if [ ! -d "node_modules" ]; then
+        echo "❌ Error: 'node_modules' not found! Please run 'npm install' or 'npm ci' to install dependencies first."
+        exit 1
+    fi
     if ! npm run format:check; then
         echo "❌ Formatting check failed! Run './run format' to format code."
         exit 1

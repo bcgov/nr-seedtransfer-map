@@ -13,7 +13,7 @@ trailingComma: 'all'
 # Print semicolons at the ends of statements
 semi: false
 
-# Wrap prose-like comments as-is
+# Always wrap prose-like comments to the configured print width
 proseWrap: 'always'
 
 # Format files with Unix-style line endings

@@ -63,11 +63,12 @@ define([
   var layerButton
   var scaleBar, layerList
   var activeWidget
-  var currentLayer, nonsuitLayer, current2019Layer, nonsuit2019Layer, spuLayer, muLayer
+  var currentLayer, nonsuitLayer, current2019Layer, nonsuit2019Layer, spuLayer, mguLayer
   var suitRenderer, nonSuitRenderer
   var portalUrl = 'https://www.arcgis.com'
+  var expand, trackWidget, editExpand
 
-  template = {
+  var template = {
     title: 'Selected {MAP_Label}',
   }
 

@@ -21,7 +21,16 @@ browser. Instead, you must serve the application from a local web server.
 To make local development and quality control as seamless as possible, we provide a unified `./run`
 control script.
 
-### 1. Start the Local Server
+### 1. One-Time Setup
+
+Before running tests or formatting code, make sure you install the project's development
+dependencies:
+
+```bash
+npm install
+```
+
+### 2. Start the Local Server
 
 Spin up a local development server serving the `/docs` folder:
 
@@ -35,7 +44,7 @@ Spin up a local development server serving the `/docs` folder:
 - **Accessing the App:** Once started, open your browser and navigate to:
   **`http://localhost:8000`**
 
-### 2. Linting & Code Verification
+### 3. Linting & Code Verification
 
 Verify both JavaScript syntax correctness and Prettier formatting consistency across all source
 files:
@@ -52,7 +61,7 @@ files:
 - **CI Integration:** Every push and pull request to the `main` branch automatically executes
   `./run lint` in our automated GitHub Actions workflow to enforce clean code styles.
 
-### 3. Auto-Formatting Code
+### 4. Auto-Formatting Code
 
 Automatically format all HTML, CSS, JS source files, and this `README.md` using our standardized
 Prettier configuration:
