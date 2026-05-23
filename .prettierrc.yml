@@ -1,0 +1,26 @@
+# Use single quotes instead of double quotes
+singleQuote: true
+
+# Use 2 spaces for indentation
+tabWidth: 2
+
+# Use spaces instead of tabs
+useTabs: false
+
+# Add a trailing comma to the last item in an object or array
+trailingComma: 'all'
+
+# Print semicolons at the ends of statements
+semi: false
+
+# Always wrap prose-like comments to the configured print width
+proseWrap: 'always'
+
+# Format files with Unix-style line endings
+endOfLine: 'lf'
+
+# Print width for formatting
+printWidth: 100
+
+# Arrow function parentheses
+arrowParens: 'always'
