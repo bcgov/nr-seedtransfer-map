@@ -3,16 +3,19 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
+    "dev": "http-server docs -p 8000",
     "format": "prettier --write \"docs/**/*.{js,css,html}\" README.md",
     "format:check": "prettier --check \"docs/**/*.{js,css,html}\" README.md",
     "lint": "eslint docs/scripts",
-    "lint:fix": "eslint docs/scripts --fix"
+    "lint:fix": "eslint docs/scripts --fix",
+    "validate": "npm run lint && npm run format:check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.6.0",
+    "http-server": "^14.1.1",
     "prettier": "^3.5.3"
   },
   "engines": {
