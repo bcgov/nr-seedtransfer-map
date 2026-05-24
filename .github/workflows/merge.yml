@@ -3,16 +3,19 @@ name: Merge Deployment
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'docs/**'
 
 concurrency:
   group: deploy-production
   cancel-in-progress: true
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   deploy:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
