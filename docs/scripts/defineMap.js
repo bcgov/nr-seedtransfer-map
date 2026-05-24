@@ -331,7 +331,7 @@ define([
   function _updateKey(list) {
     var listLength = list.length
     var newlist = new Array()
-    for (var i = 0; i < listLength; i++) {
+    for (let i = 0; i < listLength; i++) {
       newlist.push(list[i][1].replace(/ /g, '_'))
     }
     return newlist
@@ -667,7 +667,7 @@ define([
 
   function setActiveButton(selectedButton) {
     var elements = document.getElementsByClassName('action-button')
-    for (var i = 0; i < elements.length; i++) {
+    for (let i = 0; i < elements.length; i++) {
       elements[i].classList.remove('active')
     }
     if (selectedButton) {

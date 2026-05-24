@@ -14,6 +14,7 @@ export default [
     files: ["docs/scripts/**/*.js"],
     languageOptions: {
       sourceType: "script",
+      ecmaVersion: "latest",
       globals: {
         ...globals.browser,
         ...globals.jquery,
