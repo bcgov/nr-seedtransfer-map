@@ -38,9 +38,8 @@ Spin up a local development server serving the `/docs` folder:
 ./run dev
 ```
 
-- **How it works:** This command automatically detects your system environment. It will prioritize
-  running a lightweight Node-based server using `npx http-server`, and falls back to a built-in
-  Python web server if Node is not available.
+- **How it works:** This command starts a lightweight Node-based server serving the `/docs` folder
+  using `npx http-server`.
 - **Accessing the App:** Once started, open your browser and navigate to:
   **`http://localhost:8000`**
 

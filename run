@@ -11,7 +11,7 @@ show_help() {
     echo "Usage: ./run [command]"
     echo ""
     echo "Commands:"
-    echo "  dev       Start a local development server (Python or Node)"
+    echo "  dev       Start a local development server (Node/http-server)"
     echo "  lint      Verify syntax and formatting of all source files"
     echo "  format    Enforce consistent formatting with Prettier"
     echo "  help      Show this help message"
@@ -24,11 +24,8 @@ run_dev() {
     if command -v npx &>/dev/null; then
         echo "🌐 Serving at http://localhost:8000 (using Node/http-server)"
         npx http-server docs -p 8000
-    elif command -v python3 &>/dev/null; then
-        echo "🌐 Serving at http://localhost:8000 (using Python3)"
-        python3 -m http.server 8000 --directory docs
     else
-        echo "❌ Error: Neither Node/npm (npx) nor python3 is installed!" >&2
+        echo "❌ Error: Node/npm (npx) is not installed!" >&2
         exit 1
     fi
 }
