@@ -317,7 +317,6 @@ define(function () {
     var outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019
     var output_suit, output_non_suit
     var bec_name
-    var i
 
     jsontxt =
       'Version_7_0/' +
@@ -379,7 +378,7 @@ define(function () {
 
             // ========= SUITABLE OUTPUT ======================
             if (output_suit.length > 0) {
-              for (i = 0; i < output_suit.length; i++) {
+              for (let i = 0; i < output_suit.length; i++) {
                 // outlist.push(output_suit[i].BECvar_seed);
                 outlist_suit += "'" + output_suit[i].BECvar_seed + "'" + ', '
               }
@@ -388,7 +387,7 @@ define(function () {
 
             // ========= NON SUITABLE OUTPUT ==========
             if (output_non_suit.length > 0) {
-              for (i = 0; i < output_non_suit.length; i++) {
+              for (let i = 0; i < output_non_suit.length; i++) {
                 // outlist.push(output_suit[i].BECvar_seed);
                 outlist_non_suit += "'" + output_non_suit[i].BECvar_seed + "'" + ', '
               }
@@ -399,7 +398,7 @@ define(function () {
           } else {
             new Promise((resolve) => {
               console.log('all_outputs')
-              for (i = 0; i < bec.length; i++) {
+              for (let i = 0; i < bec.length; i++) {
                 bec_name = becStore.find((x) => x.id == bec[i]).name
                 results.push(
                   data.filter(function (x) {
@@ -449,7 +448,7 @@ define(function () {
             getIntersection(output_suit).then(function (output) {
               // ========= SUITABLE OUTPUT ======================
               if (output.length > 0) {
-                for (var i = 0; i < output.length; i++) {
+                for (let i = 0; i < output.length; i++) {
                   // outlist.push(output_suit[i].BECvar_seed);
                   outlist_suit += "'" + output[i].BECvar_seed + "'" + ', '
                 }
@@ -460,7 +459,7 @@ define(function () {
             getIntersection(output_non_suit).then(function (output) {
               // ========= NON SUITABLE OUTPUT ==========
               if (output.length > 0) {
-                for (var i = 0; i < output.length; i++) {
+                for (let i = 0; i < output.length; i++) {
                   // outlist.push(output_suit[i].BECvar_seed);
                   outlist_non_suit += "'" + output[i].BECvar_seed + "'" + ', '
                 }
@@ -547,7 +546,6 @@ define(function () {
       var bec_name = ''
       var results = []
       var finalarray = []
-      var i
 
       console.log('IN GETSEEDLOT')
 
@@ -558,7 +556,7 @@ define(function () {
           return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
         })
         finalarray = results
-        for (i = 0; i < finalarray.length; i++) {
+        for (let i = 0; i < finalarray.length; i++) {
           if (finalarray[i].Seedlot == '') {
             finalarray[i].Seedlot = 0
           }
@@ -569,7 +567,7 @@ define(function () {
       } else {
         console.log('this should trigger')
         console.log(bec.length)
-        for (i = 0; i < bec.length; i++) {
+        for (let i = 0; i < bec.length; i++) {
           bec_name = becStore.find((x) => x.id == bec[i]).name
           results.push(
             data.filter(function (x) {
@@ -583,7 +581,7 @@ define(function () {
           finalarray = intersection
           console.log(finalarray)
 
-          for (i = 0; i < finalarray.length; i++) {
+          for (let i = 0; i < finalarray.length; i++) {
             if (finalarray[i].Seedlot == '') {
               finalarray[i].Seedlot = 0
             }
@@ -615,7 +613,7 @@ define(function () {
 
   function updateData(data) {
     let new_res = new Promise(function (resolve) {
-      for (var i = 0; i < data.length; i++) {
+      for (let i = 0; i < data.length; i++) {
         if (data[i].Sp_suit_seed == '1') {
           data[i].Sp_suit_seed = 'Suitable'
         } else {
@@ -642,7 +640,6 @@ define(function () {
     var spmin
     var outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019
     var output_suit, output_non_suit
-    var i
 
     jsontxt =
       'Version_7_0/' +
@@ -701,7 +698,7 @@ define(function () {
 
         // ========= SUITABLE OUTPUT ==========
         if (output_suit.length > 0) {
-          for (i = 0; i < output_suit.length; i++) {
+          for (let i = 0; i < output_suit.length; i++) {
             // outlist.push(output_suit[i].BECvar_seed);
             outlist_suit += "'" + output_suit[i].BECvar_site + "'" + ', '
           }
@@ -710,7 +707,7 @@ define(function () {
 
         // ========= NON SUITABLE OUTPUT ==========
         if (output_non_suit.length > 0) {
-          for (i = 0; i < output_non_suit.length; i++) {
+          for (let i = 0; i < output_non_suit.length; i++) {
             // outlist.push(output_suit[i].BECvar_seed);
             outlist_non_suit += "'" + output_non_suit[i].BECvar_site + "'" + ', '
           }
