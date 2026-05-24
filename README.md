@@ -18,13 +18,13 @@ standard standards.
 Due to browser security restrictions (CORS), you cannot open the `index.html` file directly in a web
 browser. Instead, you must serve the application from a local web server.
 
-To make local development and quality control as seamless as possible, we provide a unified `./run`
-control script.
+To make local development and quality control as seamless as possible, we leverage standard NPM
+scripts.
 
 ### 1. One-Time Setup
 
-Before running tests or formatting code, make sure you install the project's development
-dependencies:
+Before running tests, formatting code, or serving the application locally, make sure you install the
+project's development dependencies:
 
 ```bash
 npm install
@@ -35,30 +35,31 @@ npm install
 Spin up a local development server serving the `/docs` folder:
 
 ```bash
-./run dev
+npm run dev
 ```
 
-- **How it works:** This command starts a lightweight Node-based server serving the `/docs` folder
-  using `npx http-server`.
+- **How it works:** This command starts a lightweight, pre-configured Node-based server serving the
+  `/docs` folder using `http-server`.
 - **Accessing the App:** Once started, open your browser and navigate to:
   **`http://localhost:8000`**
 
 ### 3. Linting & Code Verification
 
-Verify both JavaScript syntax correctness and Prettier formatting consistency across all source
+Verify both JavaScript logic/correctness and Prettier formatting consistency across all source
 files:
 
 ```bash
-./run lint
+npm run validate
 ```
 
-- **How it works:** This command runs two distinct checks:
-  1. Crawls the `docs/scripts/` directory and compiles each JS script using `node -c` to validate
-     syntax.
-  2. Runs Prettier validation across HTML, CSS, and JS source files (excluding external datasets),
-     as well as the `README.md` to check formatting consistency.
+- **How it works:** This command runs two distinct checks sequentially:
+  1. Executes **ESLint 10+** flat config across the `docs/scripts/` directory to detect logic
+     errors, accidental global leakage, and scope issues.
+  2. Runs **Prettier** validation across HTML, CSS, and JS source files (excluding external
+     datasets), as well as this `README.md` to check formatting consistency.
 - **CI Integration:** Every push and pull request to the `main` branch automatically executes
-  `./run lint` in our automated GitHub Actions workflow to enforce clean code styles.
+  `npm run validate` in our automated GitHub Actions workflow to enforce clean code styles before
+  deployment.
 
 ### 4. Auto-Formatting Code
 
@@ -66,7 +67,7 @@ Automatically format all HTML, CSS, JS source files, and this `README.md` using 
 Prettier configuration:
 
 ```bash
-./run format
+npm run format
 ```
 
 - **Formatting Style:** This repository strictly matches the styling standard of our larger frontend
@@ -83,7 +84,6 @@ Prettier configuration:
 ```
 nr-seedtransfer-map/
 ├── .github/workflows/      # Automated CI/CD pipelines
-│   ├── analyse.yml         # Automated syntax checking
 │   ├── merge.yml           # Production branch deployment
 │   ├── pr-close.yml        # PR preview environment cleanup
 │   ├── pr-open.yml         # PR preview sandbox deployment
@@ -96,7 +96,7 @@ nr-seedtransfer-map/
 │   │   └── requireMain.js  # RequireJS entry point
 │   ├── Version_7_0/        # Local JSON seedlot & migration datasets
 │   └── index.html          # Main HTML application entry point
-├── run                     # Unified control script (executable bash)
+├── eslint.config.mjs       # ESLint 10+ flat config rules
 └── README.md               # You are here!
 ```
 

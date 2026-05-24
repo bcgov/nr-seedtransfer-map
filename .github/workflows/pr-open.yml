@@ -26,7 +26,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - name: Verify syntax and formatting
-        run: ./run lint
+        run: npm run validate
       - name: Deploy to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
