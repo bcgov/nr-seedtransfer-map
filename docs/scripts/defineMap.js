@@ -737,5 +737,6 @@ define([
         }
         break
     }
+    const testLintError = "error"
   }
 })
