@@ -8,12 +8,12 @@ optimal planting sites based on ecological characteristics and Biogeoclimatic Ec
 Classification (BEC) variant compatibility, fully adhering to the Climate-Based Seed Transfer (CBST)
 standard standards.
 
-🔗 **Live Deployment:**
+**Live Deployment:**
 [CBST Seedlot Selection Tool](https://bcgov.github.io/nr-seedtransfer-map/index.html)
 
 ---
 
-## 🚀 Local Development & Testing
+## Local Development & Testing
 
 Due to browser security restrictions (CORS), you cannot open the `index.html` file directly in a web
 browser. Instead, you must serve the application from a local web server.
@@ -79,7 +79,7 @@ Prettier configuration:
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 nr-seedtransfer-map/
@@ -103,7 +103,7 @@ nr-seedtransfer-map/
 
 ---
 
-## ⚖️ License & Contributions
+## License & Contributions
 
 This application is built for the **Province of British Columbia** and is open to contributions.
 Code is distributed under the Apache License 2.0.
