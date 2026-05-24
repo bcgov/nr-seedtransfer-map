@@ -30,31 +30,21 @@ run_dev() {
     fi
 }
 
-# Lint JavaScript files for syntax errors and Prettier formatting consistency
+# Lint JavaScript files for logical errors and Prettier formatting consistency
 run_lint() {
-    echo "🔍 Verifying JavaScript file syntax..."
-    local errors=0
-    
-    # Find all JS files in docs/scripts and run node -c on them
-    while IFS= read -r file; do
-        if ! node -c "$file" 2>/dev/null; then
-            echo "❌ Syntax error detected in: $file"
-            node -c "$file" # Run again without silencing to print error trace
-            errors=$((errors + 1))
-        fi
-    done < <(find docs/scripts -name "*.js")
-
-    if [ "$errors" -ne 0 ]; then
-        echo "❌ Lint verification failed: $errors syntax error(s) found."
-        exit 1
-    fi
-    echo "✅ All JavaScript files compiled cleanly!"
-
-    echo "🔍 Checking Prettier formatting consistency..."
     if [ ! -d "node_modules" ]; then
         echo "📦 'node_modules' not found! Installing dev dependencies transparently..."
         npm ci
     fi
+
+    echo "🔍 Verifying JavaScript codebase with ESLint..."
+    if ! npm run lint; then
+        echo "❌ ESLint verification failed! Fix the logical/syntax issues above."
+        exit 1
+    fi
+    echo "✅ All JavaScript files are structurally and logically sound!"
+
+    echo "🔍 Checking Prettier formatting consistency..."
     if ! npm run format:check; then
         echo "❌ Formatting check failed! Run './run format' to format code."
         exit 1
