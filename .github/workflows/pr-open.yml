@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Verify syntax and formatting
+        run: ./run lint
       - name: Deploy preview content to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
