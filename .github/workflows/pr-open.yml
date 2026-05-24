@@ -1,4 +1,4 @@
-name: PR Preview Deploy
+name: PR Deployment
 
 on:
   pull_request:
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Deploy preview content to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@v4

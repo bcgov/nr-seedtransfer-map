@@ -1,4 +1,4 @@
-name: Production Deploy
+name: Merge Deployment
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Deploy static content to gh-pages branch
         uses: JamesIves/github-pages-deploy-action@v4
