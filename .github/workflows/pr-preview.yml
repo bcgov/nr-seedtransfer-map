@@ -20,12 +20,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy preview content to previews/pr-${{ github.event.number }}
+      - name: Deploy preview content to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: docs
           branch: gh-pages
-          target-folder: previews/pr-${{ github.event.number }}
+          target-folder: deployments/pr-${{ github.event.number }}
           clean: false # Do not delete other previews!
 
       - name: Comment PR with Preview URL
@@ -40,7 +40,7 @@ jobs:
             gh pr comment "$PR_NUMBER" --repo "$REPO" --body "### 🧪 Sandbox Preview Environment Ready!
             
             A temporary sandbox preview of your changes is live at:
-            👉 **[View Preview](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/previews/pr-${PR_NUMBER}/index.html)**
+            👉 **[View Preview](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/pr-${PR_NUMBER}/index.html)**
             
             _This preview environment will be automatically destroyed when this Pull Request is closed or merged._"
           fi

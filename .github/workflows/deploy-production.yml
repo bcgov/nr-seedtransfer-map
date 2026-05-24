@@ -26,4 +26,4 @@ jobs:
           branch: gh-pages
           clean: true
           clean-exclude: |
-            previews
+            deployments
