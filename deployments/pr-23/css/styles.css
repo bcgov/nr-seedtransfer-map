@@ -132,29 +132,21 @@ body {
 .no-gutters {
   margin-right: 0;
   margin-left: 0;
-}
 
-.no-gutters > .col,
-.no-gutters > [class*='col-'] {
-  padding-right: 0;
-  padding-left: 0;
+  > .col,
+  > [class*='col-'] {
+    padding-right: 0;
+    padding-left: 0;
+  }
 }
 
 #titleRow {
   height: 100px;
 }
 
-#mapContainer {
-  padding: 0;
-  margin: 0;
-  height: 100%;
-}
-
 #mapDiv {
   padding: 0;
   margin: 0;
-  height: 100%;
-  width: 100%;
 }
 
 #titleText {
