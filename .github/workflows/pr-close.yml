@@ -1,19 +1,19 @@
-name: PR Preview Cleanup
+name: PR Cleanup
 
 on:
   pull_request:
     types: [closed]
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   cleanup:
     if: github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    runs-on: ubuntu-slim
     steps:
-      - name: Checkout gh-pages branch
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: gh-pages
 

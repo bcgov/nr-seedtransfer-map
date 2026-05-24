@@ -1,29 +1,28 @@
-name: Production Deploy
+name: Merge Deployment
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+    paths:
+      - 'docs/**'
 
 concurrency:
   group: deploy-production
   cancel-in-progress: true
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    runs-on: ubuntu-slim
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v6
       - name: Deploy static content to gh-pages branch
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: docs
           branch: gh-pages
-          clean: true
-          clean-exclude: |
-            deployments
+          clean: true # Cleanup, but leave PR deployments
+          clean-exclude: deployments

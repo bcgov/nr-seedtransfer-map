@@ -1,46 +1,31 @@
-name: PR Preview Deploy
+name: PR Deployment
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+      - 'docs/**'
 
 concurrency:
   group: pr-preview-${{ github.event.number }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
-  preview:
+  deploy:
     if: github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    runs-on: ubuntu-slim
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Deploy preview content to deployments/pr-${{ github.event.number }}
+      - uses: actions/checkout@v6
+      - name: Verify syntax and formatting
+        run: ./run lint
+      - name: Deploy to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: docs
           branch: gh-pages
-          target-folder: deployments/pr-${{ github.event.number }}
           clean: false # Do not delete other previews!
-
-      - name: Comment PR with Preview URL
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.number }}
-          REPO: ${{ github.repository }}
-        run: |
-          # Prevent commenting multiple times on sync (check if we already commented)
-          EXISTING_COMMENT=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json comments --jq '.comments[].body' | grep "Sandbox Preview Environment Ready!" || true)
-          if [ -z "$EXISTING_COMMENT" ]; then
-            gh pr comment "$PR_NUMBER" --repo "$REPO" --body "### 🧪 Sandbox Preview Environment Ready!
-            
-            A temporary sandbox preview of your changes is live at:
-            👉 **[View Preview](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/pr-${PR_NUMBER}/index.html)**
-            
-            _This preview environment will be automatically destroyed when this Pull Request is closed or merged._"
-          fi
+          target-folder: deployments/pr-${{ github.event.number }}
