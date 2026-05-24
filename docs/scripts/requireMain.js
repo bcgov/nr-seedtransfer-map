@@ -10,7 +10,7 @@ require([
 
   $('#becInputCutblock').on(
     'changed.bs.select',
-    function (e, clickedIndex, isSelected, previousValue) {
+    function (e, _clickedIndex, _isSelected, _previousValue) {
       console.log(e.target.selectedOptions)
       selected = []
       window.table = e

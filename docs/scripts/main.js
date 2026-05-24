@@ -3,7 +3,7 @@
  */
 
 define(function () {
-  var jsontxt, jsonseedlot, jsontxt2019
+  var jsontxt, jsonseedlot
   // var defineMap = require('defineMap.js');
 
   var speciesStore = [
@@ -33,7 +33,7 @@ define(function () {
     { name: 'YC', minsuit: 96.0 },
   ]
 
-  var gensuitdata = [
+  var _gensuitdata = [
     { gensuit: '1', classA: '1 to 0.98', classB: '1 to 0.985' },
     { gensuit: '2', classA: '0.98 to 0.965', classB: '0.985 to 0.975' },
     { gensuit: '3', classA: '0.965 to 0.955', classB: '0.975 to 0.965' },
@@ -313,6 +313,12 @@ define(function () {
   function addSuitabilityLayerCutblock(sp, bec) {
     // console.log(sp, bec);
     // console.log("Cutblock Go button. Species: " + sp + " BEC: " + bec); // debug
+    var spmin
+    var outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019
+    var output_suit, output_non_suit
+    var bec_name
+    var i
+
     jsontxt =
       'Version_7_0/' +
       sp.charAt(0).toUpperCase() +
@@ -337,7 +343,7 @@ define(function () {
     output_suit = []
     output_non_suit = []
 
-    let cutblock = new Promise((resolve, reject) => {
+    let cutblock = new Promise((resolve) => {
       // FDI IDFdk1 (lots of outputs; in v5 12 layers outputting)
       $.getJSON(jsontxt, function (data) {
         // good way of testing a new variable live in devtools when the page is loaded
@@ -349,9 +355,8 @@ define(function () {
 
         // find the name in becStore associated to the bec id chosen
         var results = []
-        var intersection = []
 
-        let becPromise = new Promise((resolve, reject) => {
+        let becPromise = new Promise((resolve) => {
           if (bec.length == 1) {
             bec_name = becStore.find((x) => x.id == bec).name
             results = data.filter(function (x) {
@@ -374,7 +379,7 @@ define(function () {
 
             // ========= SUITABLE OUTPUT ======================
             if (output_suit.length > 0) {
-              for (var i = 0; i < output_suit.length; i++) {
+              for (i = 0; i < output_suit.length; i++) {
                 // outlist.push(output_suit[i].BECvar_seed);
                 outlist_suit += "'" + output_suit[i].BECvar_seed + "'" + ', '
               }
@@ -383,18 +388,18 @@ define(function () {
 
             // ========= NON SUITABLE OUTPUT ==========
             if (output_non_suit.length > 0) {
-              for (var i = 0; i < output_non_suit.length; i++) {
+              for (i = 0; i < output_non_suit.length; i++) {
                 // outlist.push(output_suit[i].BECvar_seed);
                 outlist_non_suit += "'" + output_non_suit[i].BECvar_seed + "'" + ', '
               }
             }
             outlist_non_suit = outlist_non_suit.slice(0, -2)
 
-            resolve(outlist_suit, outlist_non_suit)
+            resolve(outlist_suit)
           } else {
-            let all_outputs = new Promise((resolve, reject) => {
+            new Promise((resolve) => {
               console.log('all_outputs')
-              for (var i = 0; i < bec.length; i++) {
+              for (i = 0; i < bec.length; i++) {
                 bec_name = becStore.find((x) => x.id == bec[i]).name
                 results.push(
                   data.filter(function (x) {
@@ -424,7 +429,7 @@ define(function () {
                   }),
                 )
               }
-              resolve(results, output_suit, output_non_suit)
+              resolve(results)
             }).then(function (data) {
               console.log(data)
               getIntersection(data).then(function (intersection) {
@@ -438,13 +443,6 @@ define(function () {
                 })
               })
             })
-
-            // for (var i = 0; i < bec.length; i++) {
-            //     bec_name = becStore.find(x => x.id == bec[i]).name;
-            //     results.push(data.filter(function (x) { return x["BECvar_site"] == bec_name && x["HTp_pred"] >= suit && x["Sp_suit_site"] >= spmin}));
-            //     output_suit.push(data.filter(function (x) { return x["BECvar_site"] == bec_name && x["HTp_pred"] >= suit && x["Sp_suit_site"] == 1}));
-            //     output_non_suit.push(data.filter(function (x) { return x["BECvar_site"] == bec_name && x["HTp_pred"] >= suit && x["Sp_suit_site"] == 0}));
-            // }
 
             // ========= SUITABLE OUTPUT ======================
 
@@ -471,9 +469,9 @@ define(function () {
               console.log(outlist_non_suit)
             })
 
-            resolve(results, intersection, output_suit, output_non_suit)
+            resolve(results)
           }
-        }).then(function (results, intersection, output_suit, output_non_suit) {
+        }).then(function () {
           return [[outlist_suit], [outlist_non_suit], [outlist_2019], [outlist_non_2019]]
         })
 
@@ -486,7 +484,7 @@ define(function () {
 
   function getIntersection(array) {
     var intersection = []
-    let gettingIntersection = new Promise(function (resolve, reject) {
+    let gettingIntersection = new Promise(function (resolve) {
       if (array.length == 1) {
         intersection = array[0]
       } else if (array.length == 2) {
@@ -549,6 +547,7 @@ define(function () {
       var bec_name = ''
       var results = []
       var finalarray = []
+      var i
 
       console.log('IN GETSEEDLOT')
 
@@ -559,7 +558,7 @@ define(function () {
           return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
         })
         finalarray = results
-        for (var i = 0; i < finalarray.length; i++) {
+        for (i = 0; i < finalarray.length; i++) {
           if (finalarray[i].Seedlot == '') {
             finalarray[i].Seedlot = 0
           }
@@ -570,7 +569,7 @@ define(function () {
       } else {
         console.log('this should trigger')
         console.log(bec.length)
-        for (var i = 0; i < bec.length; i++) {
+        for (i = 0; i < bec.length; i++) {
           bec_name = becStore.find((x) => x.id == bec[i]).name
           results.push(
             data.filter(function (x) {
@@ -584,7 +583,7 @@ define(function () {
           finalarray = intersection
           console.log(finalarray)
 
-          for (var i = 0; i < finalarray.length; i++) {
+          for (i = 0; i < finalarray.length; i++) {
             if (finalarray[i].Seedlot == '') {
               finalarray[i].Seedlot = 0
             }
@@ -615,7 +614,7 @@ define(function () {
   }
 
   function updateData(data) {
-    let new_res = new Promise(function (resolve, reject) {
+    let new_res = new Promise(function (resolve) {
       for (var i = 0; i < data.length; i++) {
         if (data[i].Sp_suit_seed == '1') {
           data[i].Sp_suit_seed = 'Suitable'
@@ -640,6 +639,11 @@ define(function () {
 
   function addSuitabilityLayerSeedlot(sp, bec) {
     console.log('Seedlot Go button. Species: ' + sp + ' BEC: ' + bec)
+    var spmin
+    var outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019
+    var output_suit, output_non_suit
+    var i
+
     jsontxt =
       'Version_7_0/' +
       sp.charAt(0).toUpperCase() +
@@ -648,7 +652,7 @@ define(function () {
     jsonseedlot = 'Version_7_0/' + sp.charAt(0).toUpperCase() + sp.slice(1) + '_Seedlots.json'
     let suit = speciesStore.find((x) => x.name === sp).minsuit
     //        loadgridSeed(sp, suit, 0, jsontxt, jsontxt2019);
-    console.log(jsontxt2019 + '  ' + suit)
+    console.log(suit)
 
     suit = suit / 100
     spmin = 0
@@ -659,7 +663,7 @@ define(function () {
     outlist_non_suit = []
     outlist_2019 = []
     outlist_non_2019 = []
-    let cutblock = new Promise((resolve, reject) => {
+    let cutblock = new Promise((resolve) => {
       // FDI IDFdk1 (lots of outputs; in v5 12 layers outputting)
       $.getJSON(jsontxt, function (data) {
         // good way of testing a new variable live in devtools when the page is loaded
@@ -697,7 +701,7 @@ define(function () {
 
         // ========= SUITABLE OUTPUT ==========
         if (output_suit.length > 0) {
-          for (var i = 0; i < output_suit.length; i++) {
+          for (i = 0; i < output_suit.length; i++) {
             // outlist.push(output_suit[i].BECvar_seed);
             outlist_suit += "'" + output_suit[i].BECvar_site + "'" + ', '
           }
@@ -706,7 +710,7 @@ define(function () {
 
         // ========= NON SUITABLE OUTPUT ==========
         if (output_non_suit.length > 0) {
-          for (var i = 0; i < output_non_suit.length; i++) {
+          for (i = 0; i < output_non_suit.length; i++) {
             // outlist.push(output_suit[i].BECvar_seed);
             outlist_non_suit += "'" + output_non_suit[i].BECvar_site + "'" + ', '
           }
@@ -746,9 +750,9 @@ define(function () {
 
   function populateSeedlot(orch) {
     console.log('Seedlot top button. Value entered ' + orch)
-    jsonorch = 'Version_7_0/' + 'Orchard_list.json'
-    jsonseed = 'Version_7_0/' + 'Seedlot_list.json'
-    results = ''
+    var jsonorch = 'Version_7_0/' + 'Orchard_list.json'
+    var jsonseed = 'Version_7_0/' + 'Seedlot_list.json'
+    var results = ''
 
     $.getJSON(jsonorch, function (orch_data) {
       var seedlot = orch_data.filter(function (x) {
@@ -758,7 +762,7 @@ define(function () {
         document.getElementById('seedlotNumber').value = parseInt(seedlot[0].Seedlot)
 
         $.getJSON(jsonseed, function (seed_data) {
-          let seedlot_data = new Promise((resolve, reject) => {
+          new Promise((resolve) => {
             results = seed_data.filter(function (x) {
               return x['Orchard'] == orch
             })
@@ -792,7 +796,7 @@ define(function () {
 
   function populateSpeciesBEC(lot) {
     console.log('Seedlot middle button. Value entered ' + lot)
-    jsonseed = 'Version_7_0/' + 'Seedlot_list.json'
+    var jsonseed = 'Version_7_0/' + 'Seedlot_list.json'
 
     $.getJSON(jsonseed, function (seed_data) {
       var results = seed_data.filter(function (x) {

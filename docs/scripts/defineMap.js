@@ -61,14 +61,31 @@ define([
 ) {
   var map, view, xy
   var layerButton
-  var scaleBar, layerList
+  var _scaleBar, layerList
   var activeWidget
-  var currentLayer, nonsuitLayer, current2019Layer, nonsuit2019Layer, spuLayer, muLayer
-  var suitRenderer, nonSuitRenderer
+  var expand, trackWidget, editExpand
+  var currentLayer, nonsuitLayer, _current2019Layer, _nonsuit2019Layer, spuLayer, mguLayer
+  var _suitRenderer, _nonSuitRenderer
   var portalUrl = 'https://www.arcgis.com'
+  var template
 
   template = {
     title: 'Selected {MAP_Label}',
+  }
+
+  _suitRenderer = {
+    type: 'simple-fill',
+    color: [217, 95, 2, 0.4],
+    outline: {
+      color: [115, 76, 0, 1],
+    },
+  }
+  _nonSuitRenderer = {
+    type: 'simple-fill',
+    color: [170, 102, 205, 0.4],
+    outline: {
+      color: [76, 0, 115, 1],
+    },
   }
 
   return {
@@ -80,21 +97,6 @@ define([
     displaySPU: displaySPU,
     updatePopup: updatePopup,
     clearCutBlock: clearCutBlock,
-  }
-
-  suitRenderer = {
-    type: 'simple-fill',
-    color: [217, 95, 2, 0.4],
-    outline: {
-      color: [115, 76, 0, 1],
-    },
-  }
-  nonSuitRenderer = {
-    type: 'simple-fill',
-    color: [170, 102, 205, 0.4],
-    outline: {
-      color: [76, 0, 115, 1],
-    },
   }
 
   /*
@@ -142,7 +144,7 @@ define([
       view.ui.add(expand, 'top-left')
       view.ui.add(trackWidget, 'top-left')
       view.ui.add(editExpand, 'top-right')
-      const attributeEditing = document.getElementById('featureUpdateDiv')
+      const _attributeEditing = document.getElementById('featureUpdateDiv')
 
       //            view.ui.add("titleDiv", "top-right");
       //            view.ui.add("btn_logo", "bottom-left");
@@ -174,12 +176,12 @@ define([
       ['map_label', 'SHAPE_Area'],
       'CBST Species May Not Be Suitable',
     )
-    current2019Layer = featureInit(
+    _current2019Layer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/2',
       ['map_label', 'SHAPE_Area'],
       'CBST 2019',
     )
-    nonsuit2019Layer = featureInit(
+    _nonsuit2019Layer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/3',
       ['map_label', 'SHAPE_Area'],
       '2019 Species May Not Be Suitable',
@@ -298,7 +300,7 @@ define([
     })
   }
 
-  function kmlInit(src) {
+  function _kmlInit(src) {
     return new KMLLayer({
       url: src,
       title: 'KML Sample',
@@ -306,7 +308,7 @@ define([
   }
 
   // Initialize a feature layer with definition query and custom renderer
-  function featureInit_complex(src, expression, name, renderer) {
+  function _featureInit_complex(src, expression, name, renderer) {
     return new FeatureLayer({
       url: src,
       definitionExpression: expression,
@@ -320,13 +322,13 @@ define([
   /*
    * Utility Functions
    */
-  function popupTable(lyr) {
+  function _popupTable(lyr) {
     lyr.load().then(function () {
       lyr.popupTemplate = lyr.createPopupTemplate()
     })
   }
 
-  function updateKey(list) {
+  function _updateKey(list) {
     var listLength = list.length
     var newlist = new Array()
     for (var i = 0; i < listLength; i++) {
@@ -347,7 +349,7 @@ define([
    */
 
   // Add the line and area measurement tools
-  function addMeasurement() {
+  function _addMeasurement() {
     document.getElementById('distanceButton').addEventListener('click', function () {
       setActiveWidget(null)
       if (!this.classList.contains('active')) {
@@ -369,13 +371,13 @@ define([
   }
 
   /*Create and add the extent button widget*/
-  function addExtentButton() {
+  function _addExtentButton() {
     document.getElementById('homeButton').addEventListener('click', function () {
       fullExtent()
     })
   }
 
-  function addLayerListButton() {
+  function _addLayerListButton() {
     layerButton = document.createElement('layerDiv')
     layerButton.id = 'layerButton'
     layerButton.className = 'esri-icon-layers esri-widget--button esri-component'
@@ -593,7 +595,7 @@ define([
     document.getElementById('upload-status').innerHTML = ''
   }
 
-  function addMouseCoord() {
+  function _addMouseCoord() {
     var coordsWidget = document.createElement('mouseDiv')
     coordsWidget.id = 'coordsWidget'
     coordsWidget.className = 'esri-widget esri-component'
@@ -609,7 +611,7 @@ define([
       coordsWidget.innerHTML = coords
     }
 
-    view.watch('stationary', function (isStationary) {
+    view.watch('stationary', function (_isStationary) {
       showCoordinates(view.center)
     })
     view.on('pointer-move', function (evt) {
@@ -630,7 +632,7 @@ define([
   }
 
   // Add the instructions button
-  function addLogo() {
+  function _addLogo() {
     document.getElementById('instructionButton').addEventListener('click', function () {
       setActiveWidget(null)
       if (!this.classList.contains('active')) {
@@ -655,7 +657,7 @@ define([
 
   // Create and add a scalebar
   function addScalebar() {
-    scaleBar = new ScaleBar({
+    _scaleBar = new ScaleBar({
       view: view,
       unit: 'metric',
       style: 'ruler',
