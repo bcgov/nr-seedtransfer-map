@@ -16,7 +16,7 @@ jobs:
   deploy:
     permissions:
       contents: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
       - name: Deploy static content to gh-pages branch
