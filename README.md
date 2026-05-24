@@ -57,9 +57,9 @@ npm run validate
      errors, accidental global leakage, and scope issues.
   2. Runs **Prettier** validation across HTML, CSS, and JS source files (excluding external
      datasets), as well as this `README.md` to check formatting consistency.
-- **CI Integration:** Every push and pull request to the `main` branch automatically executes
-  `npm run validate` in our automated GitHub Actions workflow to enforce clean code styles before
-  deployment.
+- **CI Integration:** Every pull request modifying files in the `docs/` directory automatically
+  executes `npm run validate` in our automated GitHub Actions workflow to enforce clean code styles
+  before the sandbox preview is deployed.
 
 ### 4. Auto-Formatting Code
 
