@@ -4,16 +4,16 @@ on:
   pull_request:
     types: [closed]
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   cleanup:
     if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout gh-pages branch
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           ref: gh-pages
 
