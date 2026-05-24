@@ -10,12 +10,12 @@ require([
 
   $('#becInputCutblock').on(
     'changed.bs.select',
-    function (e, clickedIndex, isSelected, previousValue) {
+    function (e, _clickedIndex, _isSelected, _previousValue) {
       console.log(e.target.selectedOptions)
       selected = []
       window.table = e
       var options = e.target.selectedOptions
-      for (var i = 0; i < options.length; i++) {
+      for (let i = 0; i < options.length; i++) {
         selected.push(options[i].value)
       }
     },
