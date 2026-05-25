@@ -1,7 +1,64 @@
 require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) {
   main.fillSelects()
   defineMap.mapInit()
+  var errorTimeoutId = null
   var selected = []
+
+  // Visual loader state helpers
+  function showLoader(message) {
+    $('#loading-text').text(message || 'Loading database...')
+    $('#loading-overlay').css('display', 'flex')
+    $('button, input, select').prop('disabled', true)
+    if ($('select').length > 0 && typeof $.fn.selectpicker === 'function') {
+      $('select').selectpicker('refresh')
+    }
+  }
+
+  function hideLoader() {
+    $('#loading-overlay').hide()
+    $('button, input, select').prop('disabled', false)
+    if ($('select').length > 0 && typeof $.fn.selectpicker === 'function') {
+      $('select').selectpicker('refresh')
+    }
+  }
+
+  function showError(message) {
+    hideLoader()
+    $('.alert-error-banner').remove()
+    if (errorTimeoutId) {
+      clearTimeout(errorTimeoutId)
+    }
+
+    const $alert = $('<div>')
+      .addClass('alert alert-danger alert-dismissible fade show alert-error-banner')
+      .attr('role', 'alert')
+      .css({
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 10000,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        maxWidth: '400px',
+      })
+
+    const $strong = $('<strong>').text('⚠️ Error: ')
+    const $msgSpan = $('<span>').addClass('alert-message-text').text(message)
+    const $closeBtn = $('<button>')
+      .attr({
+        type: 'button',
+        class: 'close',
+        'data-dismiss': 'alert',
+        'aria-label': 'Close',
+      })
+      .html('<span aria-hidden="true">&times;</span>')
+
+    $alert.append($strong).append($msgSpan).append($closeBtn)
+    $('body').append($alert)
+
+    errorTimeoutId = setTimeout(() => {
+      $('.alert-error-banner').alert('close')
+    }, 8000)
+  }
 
   $('#becInputCutblock').on(
     'changed.bs.select',
@@ -18,6 +75,7 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
 
   // clicking Go button on "I have a cutblock tab"
   document.getElementById('addButtonCutblock').addEventListener('click', function () {
+    showLoader('Calculating suitability map and retrieving seedlot data...')
     defineMap.clearLyrs()
     console.log(selected)
     main
@@ -25,11 +83,16 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       .then((layers) => {
         console.log(layers)
         defineMap.updateLayer(layers)
+        hideLoader()
+      })
+      .catch((error) => {
+        showError(error.message)
       })
   })
 
   // Go button "I have a Seedlot" tab
   document.getElementById('addButtonSeedlot').addEventListener('click', function () {
+    showLoader('Calculating suitability map and updating seedlot tables...')
     defineMap.clearLyrs()
     main
       .addSuitabilityLayerSeedlot(
@@ -38,15 +101,34 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       )
       .then((layers) => {
         defineMap.updateLayer(layers)
-        // defineMap.displaySPU(document.getElementById("seedlotNumber").value);
+        hideLoader()
+      })
+      .catch((error) => {
+        showError(error.message)
       })
   })
 
   document.getElementById('addSeedlotfromOrchard').addEventListener('click', function () {
-    main.populateSeedlot(document.getElementById('orchardNumber').value)
+    showLoader('Searching Orchard database...')
+    main
+      .populateSeedlot(document.getElementById('orchardNumber').value)
+      .then(() => {
+        hideLoader()
+      })
+      .catch((error) => {
+        showError(error.message)
+      })
   })
   document.getElementById('addSpeciesBecSeedlot').addEventListener('click', function () {
-    main.populateSpeciesBEC(document.getElementById('seedlotNumber').value)
+    showLoader('Searching Seedlot database...')
+    main
+      .populateSpeciesBEC(document.getElementById('seedlotNumber').value)
+      .then(() => {
+        hideLoader()
+      })
+      .catch((error) => {
+        showError(error.message)
+      })
   })
 
   document.getElementById('mapDiv').addEventListener('click', function () {
