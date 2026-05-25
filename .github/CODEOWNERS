@@ -1,0 +1,13 @@
+# Global Owner
+*                       @DerekRoberts
+
+# CI Workflows
+/.github/workflows/     @DerekRoberts
+
+# Core JavaScript Source
+/docs/scripts/          @DerekRoberts
+
+# Project Configuration
+/package.json           @DerekRoberts
+/eslint.config.mjs      @DerekRoberts
+/playwright.config.js   @DerekRoberts
