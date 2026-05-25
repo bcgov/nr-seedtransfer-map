@@ -3,6 +3,41 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
   defineMap.mapInit()
   var selected = []
 
+  // Visual loader state helpers
+  function showLoader(message) {
+    $('#loading-text').text(message || 'Loading database...')
+    $('#loading-overlay').css('display', 'flex')
+    $('button, input, select').prop('disabled', true)
+    if ($('select').length > 0 && typeof $.fn.selectpicker === 'function') {
+      $('select').selectpicker('refresh')
+    }
+  }
+
+  function hideLoader() {
+    $('#loading-overlay').hide()
+    $('button, input, select').prop('disabled', false)
+    if ($('select').length > 0 && typeof $.fn.selectpicker === 'function') {
+      $('select').selectpicker('refresh')
+    }
+  }
+
+  function showError(message) {
+    hideLoader()
+    $('.alert-error-banner').remove()
+    const alertHtml = `
+      <div class="alert alert-danger alert-dismissible fade show alert-error-banner" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-width: 400px;">
+        <strong>⚠️ Error:</strong> <span class="alert-message-text">${message}</span>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    `
+    $('body').append(alertHtml)
+    setTimeout(() => {
+      $('.alert-error-banner').alert('close')
+    }, 8000)
+  }
+
   $('#becInputCutblock').on(
     'changed.bs.select',
     function (e, _clickedIndex, _isSelected, _previousValue) {
@@ -18,6 +53,7 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
 
   // clicking Go button on "I have a cutblock tab"
   document.getElementById('addButtonCutblock').addEventListener('click', function () {
+    showLoader('Calculating suitability map and retrieving seedlot data...')
     defineMap.clearLyrs()
     console.log(selected)
     main
@@ -25,11 +61,16 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       .then((layers) => {
         console.log(layers)
         defineMap.updateLayer(layers)
+        hideLoader()
+      })
+      .catch((error) => {
+        showError(error.message)
       })
   })
 
   // Go button "I have a Seedlot" tab
   document.getElementById('addButtonSeedlot').addEventListener('click', function () {
+    showLoader('Calculating suitability map and updating seedlot tables...')
     defineMap.clearLyrs()
     main
       .addSuitabilityLayerSeedlot(
@@ -38,15 +79,34 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       )
       .then((layers) => {
         defineMap.updateLayer(layers)
-        // defineMap.displaySPU(document.getElementById("seedlotNumber").value);
+        hideLoader()
+      })
+      .catch((error) => {
+        showError(error.message)
       })
   })
 
   document.getElementById('addSeedlotfromOrchard').addEventListener('click', function () {
-    main.populateSeedlot(document.getElementById('orchardNumber').value)
+    showLoader('Searching Orchard database...')
+    main
+      .populateSeedlot(document.getElementById('orchardNumber').value)
+      .then(() => {
+        hideLoader()
+      })
+      .catch((error) => {
+        showError(error.message)
+      })
   })
   document.getElementById('addSpeciesBecSeedlot').addEventListener('click', function () {
-    main.populateSpeciesBEC(document.getElementById('seedlotNumber').value)
+    showLoader('Searching Seedlot database...')
+    main
+      .populateSpeciesBEC(document.getElementById('seedlotNumber').value)
+      .then(() => {
+        hideLoader()
+      })
+      .catch((error) => {
+        showError(error.message)
+      })
   })
 
   document.getElementById('mapDiv').addEventListener('click', function () {

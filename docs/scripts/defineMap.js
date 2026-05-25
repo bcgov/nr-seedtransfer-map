@@ -512,7 +512,9 @@ define([
     // see this link for more info: http://davidwalsh.name/fakepath
     name = name[0].replace('c:\\fakepath\\', '')
 
-    document.getElementById('upload-status').innerHTML = '<b>Loading </b>' + name
+    var statusEl = document.getElementById('upload-status')
+    statusEl.innerHTML = '<b>Loading </b>'
+    statusEl.appendChild(document.createTextNode(name))
 
     // define the input params for generate see the rest doc for details
     // https://developers.arcgis.com/rest/users-groups-and-items/generate.htm
@@ -544,15 +546,22 @@ define([
     })
       .then(function (response) {
         var layerName = response.data.featureCollection.layers[0].layerDefinition.name
-        document.getElementById('upload-status').innerHTML = '<b>Loaded: </b>' + layerName
+        var statusEl = document.getElementById('upload-status')
+        statusEl.innerHTML = '<b>Loaded: </b>'
+        statusEl.appendChild(document.createTextNode(layerName))
         addShapefileToMap(response.data.featureCollection)
       })
       .catch(errorHandler)
   }
 
   function errorHandler(error) {
-    document.getElementById('upload-status').innerHTML =
-      "<p style='color:red;max-width: 500px;'>" + error.message + '</p>'
+    var statusEl = document.getElementById('upload-status')
+    statusEl.innerHTML = ''
+    var p = document.createElement('p')
+    p.style.color = 'red'
+    p.style.maxWidth = '500px'
+    p.appendChild(document.createTextNode(error.message))
+    statusEl.appendChild(p)
   }
 
   function addShapefileToMap(featureCollection) {

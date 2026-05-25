@@ -334,8 +334,6 @@ define(function () {
     window.dat = becStore
     console.log(bec)
 
-    getSeedLot(bec, suit, 0, jsonseedlot)
-
     outlist_suit = []
     outlist_non_suit = []
     outlist_2019 = []
@@ -343,7 +341,9 @@ define(function () {
     output_suit = []
     output_non_suit = []
 
-    let cutblock = new Promise((resolve) => {
+    let p1 = getSeedLot(bec, suit, 0, jsonseedlot)
+
+    let p2 = new Promise((resolve, reject) => {
       // FDI IDFdk1 (lots of outputs; in v5 12 layers outputting)
       $.getJSON(jsontxt, function (data) {
         // good way of testing a new variable live in devtools when the page is loaded
@@ -356,7 +356,7 @@ define(function () {
         // find the name in becStore associated to the bec id chosen
         var results = []
 
-        let becPromise = new Promise((resolve) => {
+        let becPromise = new Promise((resolveInner) => {
           if (bec.length == 1) {
             bec_name = becStore.find((x) => x.id == bec).name
             results = data.filter(function (x) {
@@ -395,9 +395,9 @@ define(function () {
             }
             outlist_non_suit = outlist_non_suit.slice(0, -2)
 
-            resolve(outlist_suit)
+            resolveInner(outlist_suit)
           } else {
-            new Promise((resolve) => {
+            new Promise((resolveIntersect) => {
               console.log('all_outputs')
               for (let i = 0; i < bec.length; i++) {
                 bec_name = becStore.find((x) => x.id == bec[i]).name
@@ -429,7 +429,7 @@ define(function () {
                   }),
                 )
               }
-              resolve(results)
+              resolveIntersect(results)
             }).then(function (data) {
               console.log(data)
               getIntersection(data).then(function (intersection) {
@@ -469,17 +469,21 @@ define(function () {
               console.log(outlist_non_suit)
             })
 
-            resolve(results)
+            resolveInner(results)
           }
         }).then(function () {
           return [[outlist_suit], [outlist_non_suit], [outlist_2019], [outlist_non_2019]]
         })
 
         resolve(becPromise)
+      }).fail(function (jqxhr, textStatus, errorThrown) {
+        reject(new Error('Failed to load Species database: ' + errorThrown))
       })
     })
 
-    return cutblock
+    return Promise.all([p1, p2]).then((values) => {
+      return values[1]
+    })
   }
 
   function getIntersection(array) {
@@ -543,45 +547,21 @@ define(function () {
     // bec, spmin, 0, jsonseedlot
     // console.log(spmin);
 
-    $.getJSON(jsonseedlot, function (data) {
-      var bec_name = ''
-      var results = []
-      var finalarray = []
+    return new Promise((resolve, reject) => {
+      $.getJSON(jsonseedlot, function (data) {
+        var bec_name = ''
+        var results = []
+        var finalarray = []
 
-      console.log('IN GETSEEDLOT')
+        console.log('IN GETSEEDLOT')
 
-      if (bec.length == 1) {
-        console.log("this shouldn't trigger")
-        bec_name = becStore.find((x) => x.id == bec).name
-        results = data.filter(function (x) {
-          return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
-        })
-        finalarray = results
-        for (let i = 0; i < finalarray.length; i++) {
-          if (finalarray[i].Seedlot == '') {
-            finalarray[i].Seedlot = 0
-          }
-          if (finalarray[i].GW == '') {
-            finalarray[i].GW = 0
-          }
-        }
-      } else {
-        console.log('this should trigger')
-        console.log(bec.length)
-        for (let i = 0; i < bec.length; i++) {
-          bec_name = becStore.find((x) => x.id == bec[i]).name
-          results.push(
-            data.filter(function (x) {
-              return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
-            }),
-          )
-        }
-        console.log(results)
-
-        getIntersection(results).then(function (intersection) {
-          finalarray = intersection
-          console.log(finalarray)
-
+        if (bec.length == 1) {
+          console.log("this shouldn't trigger")
+          bec_name = becStore.find((x) => x.id == bec).name
+          results = data.filter(function (x) {
+            return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
+          })
+          finalarray = results
           for (let i = 0; i < finalarray.length; i++) {
             if (finalarray[i].Seedlot == '') {
               finalarray[i].Seedlot = 0
@@ -590,15 +570,47 @@ define(function () {
               finalarray[i].GW = 0
             }
           }
-        })
-      }
+          var $table = $('#seedlot_table')
+          $table.bootstrapTable('destroy')
+          $(function () {
+            $table.bootstrapTable({ data: finalarray })
+          })
+          resolve()
+        } else {
+          console.log('this should trigger')
+          console.log(bec.length)
+          for (let i = 0; i < bec.length; i++) {
+            bec_name = becStore.find((x) => x.id == bec[i]).name
+            results.push(
+              data.filter(function (x) {
+                return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
+              }),
+            )
+          }
+          console.log(results)
 
-      // console.log(finalarray);
+          getIntersection(results).then(function (intersection) {
+            finalarray = intersection
+            console.log(finalarray)
 
-      var $table = $('#seedlot_table')
-      $table.bootstrapTable('destroy')
-      $(function () {
-        $table.bootstrapTable({ data: finalarray })
+            for (let i = 0; i < finalarray.length; i++) {
+              if (finalarray[i].Seedlot == '') {
+                finalarray[i].Seedlot = 0
+              }
+              if (finalarray[i].GW == '') {
+                finalarray[i].GW = 0
+              }
+            }
+            var $table = $('#seedlot_table')
+            $table.bootstrapTable('destroy')
+            $(function () {
+              $table.bootstrapTable({ data: finalarray })
+            })
+            resolve()
+          })
+        }
+      }).fail(function (jqxhr, textStatus, errorThrown) {
+        reject(new Error('Failed to load Seedlot database: ' + errorThrown))
       })
     })
   }
@@ -662,7 +674,7 @@ define(function () {
     outlist_non_suit = []
     outlist_2019 = []
     outlist_non_2019 = []
-    let cutblock = new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       // FDI IDFdk1 (lots of outputs; in v5 12 layers outputting)
       $.getJSON(jsontxt, function (data) {
         // good way of testing a new variable live in devtools when the page is loaded
@@ -737,10 +749,10 @@ define(function () {
         // console.log(outlist_non_2019);
 
         resolve([outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019])
+      }).fail(function (jqxhr, textStatus, errorThrown) {
+        reject(new Error('Failed to load Species database: ' + errorThrown))
       })
     })
-
-    return cutblock
   }
 
   // function loadseedlotgrid(bec, min, spmin, json) {
@@ -753,43 +765,51 @@ define(function () {
     var jsonseed = 'Version_7_0/' + 'Seedlot_list.json'
     var results = ''
 
-    $.getJSON(jsonorch, function (orch_data) {
-      var seedlot = orch_data.filter(function (x) {
-        return x['Orchard'] == orch
-      })
-      if (seedlot.length > 0) {
-        document.getElementById('seedlotNumber').value = parseInt(seedlot[0].Seedlot)
-
-        $.getJSON(jsonseed, function (seed_data) {
-          new Promise((resolve) => {
-            results = seed_data.filter(function (x) {
-              return x['Orchard'] == orch
-            })
-            resolve(results)
-          }).then(() => {
-            window.res = results
-            console.log(results[0].BECvar)
-            let becVar = becStore.find((x) => x.name == results[0].BECvar).id
-            console.log(becVar)
-            document.getElementById('becInputSeedlot').value = results[0].BECvar
-            $('.becInputSeedlot').val(becVar).trigger('change')
-            // $('.becInputSeedlot').val(becVar).trigger('change');
-
-            document.getElementById('becInputSeedlot').selectedIndex = becVar - 1
-
-            $('#becInputSeedlot').on('show.bs.dropdown', function () {
-              window.location.reload()
-            })
-
-            document.getElementById('speciesInputSeedlot').value = results[0].Species
-            console.log(results[0].Species)
-
-            $('select').selectpicker('refresh')
-          })
+    return new Promise((resolve, reject) => {
+      $.getJSON(jsonorch, function (orch_data) {
+        var seedlot = orch_data.filter(function (x) {
+          return x['Orchard'] == orch
         })
-      } else {
-        alert('Not a valid option')
-      }
+        if (seedlot.length > 0) {
+          document.getElementById('seedlotNumber').value = parseInt(seedlot[0].Seedlot)
+
+          $.getJSON(jsonseed, function (seed_data) {
+            new Promise((resolveInner) => {
+              results = seed_data.filter(function (x) {
+                return x['Orchard'] == orch
+              })
+              resolveInner(results)
+            }).then(() => {
+              window.res = results
+              console.log(results[0].BECvar)
+              let becVar = becStore.find((x) => x.name == results[0].BECvar).id
+              console.log(becVar)
+              document.getElementById('becInputSeedlot').value = results[0].BECvar
+              $('.becInputSeedlot').val(becVar).trigger('change')
+              // $('.becInputSeedlot').val(becVar).trigger('change');
+
+              document.getElementById('becInputSeedlot').selectedIndex = becVar - 1
+
+              $('#becInputSeedlot').on('show.bs.dropdown', function () {
+                window.location.reload()
+              })
+
+              document.getElementById('speciesInputSeedlot').value = results[0].Species
+              console.log(results[0].Species)
+
+              $('select').selectpicker('refresh')
+              resolve()
+            })
+          }).fail(function (jqxhr, textStatus, errorThrown) {
+            reject(new Error('Failed to load Seedlot database: ' + errorThrown))
+          })
+        } else {
+          alert('Not a valid option')
+          resolve()
+        }
+      }).fail(function (jqxhr, textStatus, errorThrown) {
+        reject(new Error('Failed to load Orchard database: ' + errorThrown))
+      })
     })
   }
 
@@ -797,17 +817,29 @@ define(function () {
     console.log('Seedlot middle button. Value entered ' + lot)
     var jsonseed = 'Version_7_0/' + 'Seedlot_list.json'
 
-    $.getJSON(jsonseed, function (seed_data) {
-      var results = seed_data.filter(function (x) {
-        return x['Seedlot'] == lot
+    return new Promise((resolve, reject) => {
+      $.getJSON(jsonseed, function (seed_data) {
+        var results = seed_data.filter(function (x) {
+          return x['Seedlot'] == lot
+        })
+        console.log(results)
+        if (results && results.length > 0) {
+          let becVar = becStore.find((x) => x.name === results[0].BECvar).id
+          document.getElementById('orchardNumber').value = results[0].Orchard
+          document.getElementById('becInputSeedlot').value = becVar
+          document.getElementById('speciesInputSeedlot').value = results[0].Species
+          resolve()
+        } else {
+          alert('Not a valid seedlot')
+          resolve()
+        }
       })
-      console.log(results)
-      let becVar = becStore.find((x) => x.name === results[0].BECvar).id
-      document.getElementById('orchardNumber').value = results[0].Orchard
-      document.getElementById('becInputSeedlot').value = becVar
-      document.getElementById('speciesInputSeedlot').value = results[0].Species
-    }).then(() => {
-      $('select').selectpicker('refresh')
+        .fail(function (jqxhr, textStatus, errorThrown) {
+          reject(new Error('Failed to load Seedlot database: ' + errorThrown))
+        })
+        .then(() => {
+          $('select').selectpicker('refresh')
+        })
     })
   }
 })
