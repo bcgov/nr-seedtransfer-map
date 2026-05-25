@@ -5,6 +5,9 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - 'docs/**'
+      - 'tests/**'
+      - 'package*.json'
+      - 'playwright.config.js'
 
 concurrency:
   group: pr-preview-${{ github.event.number }}
@@ -13,11 +16,9 @@ concurrency:
 permissions: {}
 
 jobs:
-  deploy:
-    if: github.event.pull_request.head.repo.full_name == github.repository
-    permissions:
-      contents: write
-    runs-on: ubuntu-slim
+  validate:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - name: Set up Node.js
@@ -27,8 +28,35 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - name: Verify syntax and formatting
+      - name: Verify syntax, formatting & run unit tests
         run: npm run validate
+
+  e2e:
+    name: E2E Playwright Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Chromium & dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Run E2E Integration tests
+        run: npm run test:e2e
+
+  deploy:
+    name: Deploy PR Preview
+    needs: [validate, e2e]
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
       - name: Deploy to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:

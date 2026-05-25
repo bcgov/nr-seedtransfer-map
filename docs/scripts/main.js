@@ -323,7 +323,8 @@ define(function () {
       sp.charAt(0).toUpperCase() +
       sp.slice(1).toLowerCase() +
       '_migrated_height_list_5.json'
-    jsonseedlot = 'Version_7_0/' + sp.charAt(0).toUpperCase() + sp.slice(1) + '_Seedlots.json'
+    jsonseedlot =
+      'Version_7_0/' + sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase() + '_Seedlots.json'
     let suit = speciesStore.find((x) => x.name === sp).minsuit
 
     suit = suit / 100
@@ -646,7 +647,8 @@ define(function () {
       sp.charAt(0).toUpperCase() +
       sp.slice(1).toLowerCase() +
       '_migrated_height_list_5.json'
-    jsonseedlot = 'Version_7_0/' + sp.charAt(0).toUpperCase() + sp.slice(1) + '_Seedlots.json'
+    jsonseedlot =
+      'Version_7_0/' + sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase() + '_Seedlots.json'
     let suit = speciesStore.find((x) => x.name === sp).minsuit
     //        loadgridSeed(sp, suit, 0, jsontxt, jsontxt2019);
     console.log(suit)

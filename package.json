@@ -8,10 +8,14 @@
     "format:check": "prettier --check \"docs/**/*.{js,css,html}\" README.md",
     "lint": "eslint docs/scripts",
     "lint:fix": "eslint docs/scripts --fix",
-    "validate": "npm run lint && npm run format:check"
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test tests/unit.test.js",
+    "test:e2e": "playwright test",
+    "validate": "npm run lint && npm run format:check && npm run test:unit"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.6.0",
