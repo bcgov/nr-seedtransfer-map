@@ -1,6 +1,7 @@
 require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) {
   main.fillSelects()
   defineMap.mapInit()
+  var errorTimeoutId = null
   var selected = []
 
   // Visual loader state helpers
@@ -24,16 +25,37 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
   function showError(message) {
     hideLoader()
     $('.alert-error-banner').remove()
-    const alertHtml = `
-      <div class="alert alert-danger alert-dismissible fade show alert-error-banner" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-width: 400px;">
-        <strong>⚠️ Error:</strong> <span class="alert-message-text">${message}</span>
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-    `
-    $('body').append(alertHtml)
-    setTimeout(() => {
+    if (errorTimeoutId) {
+      clearTimeout(errorTimeoutId)
+    }
+
+    const $alert = $('<div>')
+      .addClass('alert alert-danger alert-dismissible fade show alert-error-banner')
+      .attr('role', 'alert')
+      .css({
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 10000,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        maxWidth: '400px',
+      })
+
+    const $strong = $('<strong>').text('⚠️ Error: ')
+    const $msgSpan = $('<span>').addClass('alert-message-text').text(message)
+    const $closeBtn = $('<button>')
+      .attr({
+        type: 'button',
+        class: 'close',
+        'data-dismiss': 'alert',
+        'aria-label': 'Close',
+      })
+      .html('<span aria-hidden="true">&times;</span>')
+
+    $alert.append($strong).append($msgSpan).append($closeBtn)
+    $('body').append($alert)
+
+    errorTimeoutId = setTimeout(() => {
       $('.alert-error-banner').alert('close')
     }, 8000)
   }
