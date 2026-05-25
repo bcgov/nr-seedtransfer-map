@@ -45,21 +45,77 @@ npm run dev
 
 ### 3. Linting & Code Verification
 
-Verify both JavaScript logic/correctness and Prettier formatting consistency across all source
-files:
+Verify JavaScript correctness, Prettier formatting consistency, and run lightweight unit tests:
 
 ```bash
 npm run validate
 ```
 
-- **How it works:** This command runs two distinct checks sequentially:
-  1. Executes **ESLint 10+** flat config across the `docs/scripts/` directory to detect logic
-     errors, accidental global leakage, and scope issues.
-  2. Runs **Prettier** validation across HTML, CSS, and JS source files (excluding external
-     datasets), as well as this `README.md` to check formatting consistency.
-- **CI Integration:** Every pull request modifying files in the `docs/` directory automatically
-  executes `npm run validate` in our automated GitHub Actions workflow to enforce clean code styles
-  before the sandbox preview is deployed.
+- **How it works:** This command runs three distinct checks sequentially:
+  1. Executes **ESLint 10+** flat config across the `docs/scripts/` directory to detect logic errors
+     and syntax issues.
+  2. Runs **Prettier** validation across HTML, CSS, and JS source files.
+  3. Runs **Node-native Unit Tests** on helper utility functions.
+- **CI Integration:** Every pull request automatically executes `npm run validate` to ensure fast
+  feedback.
+
+### 4. Running Unit Tests
+
+Run the lightweight utility test suite in Node.js (uses the native `node:test` runner, no bundlers
+or transpilation needed):
+
+```bash
+npm run test:unit
+```
+
+- **Speed:** Executes in under **5 milliseconds**!
+- **Tested Logic:** Business logic helpers in `docs/scripts/main.js` (e.g., `getIntersection`,
+  `updateData`).
+
+### 5. Running E2E Integration Tests (Playwright)
+
+Run the full end-to-end integration suite in a headless Chromium browser:
+
+```bash
+# 1. Install browser binary (one-time setup if needed)
+npx playwright install chromium
+
+# 2. Run tests in headless mode
+npm run test:e2e
+
+# 3. Open interactive Playwright UI for debugging/stepping through tests
+npx playwright test --ui
+```
+
+- **Covered Workflows:**
+  1. **Cutblock Flow:** Simulates opening the Cutblock tab, selecting a species & BEC variant, and
+     verifying the suitability and seedlot tables populate with live data.
+  2. **Orchard Representative Seedlot:** Simulates entering an Orchard number, resolving the
+     representative seedlot via AJAX, and displaying suitability results.
+  3. **Direct Seedlot Input:** Simulates entering a Seedlot number, auto-detecting the associated
+     Species and BEC variant, and running matching calculations.
+
+### 6. Run the Entire Test Suite
+
+Run both unit and E2E tests in a single command:
+
+```bash
+npm run test
+```
+
+---
+
+## Automated CI/CD Workflows
+
+Every Pull Request automatically triggers a parallel validation and integration testing pipeline in
+GitHub Actions (`.github/workflows/pr-open.yml`):
+
+1. **Lint & Unit Tests (`validate` job):** Runs linting, formatting, and unit tests. Takes <15
+   seconds.
+2. **E2E Integration (`e2e` job):** Boots up the local server inside the runner and executes
+   Playwright tests. Takes ~20 seconds.
+3. **Deploy Preview Sandbox (`deploy` job):** Runs sequentially _only_ after both validation and E2E
+   testing jobs complete successfully, ensuring no regressions enter staging environments.
 
 ### 4. Auto-Formatting Code
 
