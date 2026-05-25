@@ -17,8 +17,6 @@ module.exports = defineConfig({
     baseURL: 'http://localhost:8000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    // Allow network requests to external ArcGIS server layers
-    bypassCSP: true,
   },
   projects: [
     {

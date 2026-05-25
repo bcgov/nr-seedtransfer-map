@@ -2,8 +2,10 @@ const { test, expect } = require('@playwright/test')
 
 test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
   test.beforeEach(async ({ page }) => {
-    // Capture browser console logs
-    page.on('console', msg => console.log(`[BROWSER LOG] [${msg.type()}] ${msg.text()}`))
+    // Capture browser console logs only when explicitly debugging E2E runs
+    if (process.env.DEBUG_E2E) {
+      page.on('console', msg => console.log(`[BROWSER LOG] [${msg.type()}] ${msg.text()}`))
+    }
     page.on('pageerror', err => console.log(`[BROWSER ERROR] ${err.toString()}`))
 
     // Navigate to our local server
@@ -43,15 +45,6 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
 
     // Click the GO button for Cutblock
     await page.click('#addButtonCutblock')
-
-    // Wait for a few seconds to let AJAX requests complete
-    await page.waitForTimeout(5000)
-
-    // Inspect the DOM for both tables
-    const cutblockHTML = await page.locator('#cutblock_table').innerHTML()
-    const seedlotHTML = await page.locator('#seedlot_table').innerHTML()
-    console.log('[DEBUG] #cutblock_table HTML:', cutblockHTML)
-    console.log('[DEBUG] #seedlot_table HTML:', seedlotHTML)
 
     // Verify the results tables load and populate with data rows
     // Wait for the Cutblock Table to populate at least one row
