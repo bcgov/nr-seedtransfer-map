@@ -1,9 +1,4 @@
-require([
-  'scripts/defineMap.js',
-  'scripts/main.js',
-  'esri/tasks/support/Query',
-  'esri/layers/GeoJSONLayer',
-], function (defineMap, main) {
+require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) {
   main.fillSelects()
   defineMap.mapInit()
   var selected = []
