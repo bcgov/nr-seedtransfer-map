@@ -134,3 +134,9 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Playwright Test Artifacts
+test-results/
+playwright-report/
+blob-report/
+.playwright/
