@@ -19,8 +19,9 @@ We strictly follow a structured Git workflow to keep our history clean and revie
    ````bash
    git checkout main && git pull
    ````
-2. **Create a descriptive feature/chore branch:** Use Conventional Commit prefixes (e.g., `feat/` or `chore/`):
+2. **Create a descriptive feature/chore branch:** Use a branch type prefix (e.g., `feat/` or `chore/`):
    ````bash
    git switch -c feat/my-awesome-improvement
    ````
 3. **Submit a Pull Request:** Push to your feature branch and open a PR pointing back to `main`.
+4. **Commit changes using Conventional Commits:** Ensure your commit messages match the Conventional Commit format (e.g., `feat(ui): add loading spinner` or `chore(hygiene): establish templates`).
