@@ -1,13 +1,7 @@
-# Global Owner
-*                       @DerekRoberts
+# Matched against repo root (asterisk)
+*                           @SLDonnelly @DerekRoberts
 
-# CI Workflows
-/.github/workflows/     @DerekRoberts
+# Matched against directories
+# /.github/workflows/       @SLDonnelly @DerekRoberts
 
-# Core JavaScript Source
-/docs/scripts/          @DerekRoberts
-
-# Project Configuration
-/package.json           @DerekRoberts
-/eslint.config.mjs      @DerekRoberts
-/playwright.config.js   @DerekRoberts
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
