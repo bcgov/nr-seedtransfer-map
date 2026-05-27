@@ -24,6 +24,21 @@
     <script src="lib/bootstrap-table/js/bootstrap-table.min.js"></script>
 
     <!-- ArcGIS Maps SDK JS runtime loader remains on the Esri CDN due to dynamic lazy-loading Dojo modules -->
+    <script>
+      ;(function () {
+        var pathname = window.location.pathname
+        var locationPath = pathname.substring(0, pathname.lastIndexOf('/'))
+        window.dojoConfig = {
+          async: true,
+          packages: [
+            {
+              name: 'scripts',
+              location: locationPath + '/scripts',
+            },
+          ],
+        }
+      })()
+    </script>
     <script src="https://js.arcgis.com/4.30/"></script>
     <script src="scripts/requireMain.js" type="text/javascript"></script>
   </head>
