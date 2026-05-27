@@ -64,3 +64,25 @@ jobs:
           branch: gh-pages
           clean: false # Do not delete other previews!
           target-folder: deployments/pr-${{ github.event.number }}
+
+      - name: 🧪 Smoke Test PR Preview URL
+        run: |
+          PREVIEW_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/pr-${{ github.event.number }}/index.html"
+          echo "📡 Checking if preview is live at $PREVIEW_URL"
+          TIMEOUT=180
+          INTERVAL=15
+          ELAPSED=0
+          
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$PREVIEW_URL" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Smoke test passed! Preview is live and returning HTTP 200."
+              exit 0
+            fi
+            echo "⏳ Status is $STATUS, retrying in ${INTERVAL}s... ($ELAPSED/$TIMEOUT)"
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+          
+          echo "❌ Timeout reached! Preview environment is not returning HTTP 200."
+          exit 1
