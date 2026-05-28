@@ -270,6 +270,17 @@ define(function () {
     updateData: updateData,
   }
 
+  /**
+   * Helper utility to retrieve and parse JSON resources.
+   * Leverages the native Fetch API to replace old jQuery $.getJSON hooks.
+   *
+   * Error Handling Strategy:
+   * 1. Validates the HTTP status of the response first. If it's not in the 2xx range
+   *    (e.g., 404, 500), it explicitly rejects the promise chain with the status text.
+   * 2. Safely parses the parsed response body as JSON.
+   * 3. Any network failure or invalid JSON parsing will automatically bubble up
+   *    as a standard promise rejection to be caught and displayed by the UI error banner.
+   */
   function fetchJSON(url) {
     return fetch(url).then(function (r) {
       if (!r.ok) {
