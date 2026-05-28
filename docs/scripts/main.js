@@ -421,18 +421,18 @@ define(function () {
               // ========= SUITABLE OUTPUT ======================
               if (output_suit.length > 0) {
                 for (let i = 0; i < output_suit.length; i++) {
-                  outlist_suit += "'" + output_suit[i].BECvar_seed + "'" + ', '
+                  outlist_suit.push("'" + output_suit[i].BECvar_seed + "'")
                 }
               }
-              outlist_suit = outlist_suit.slice(0, -2)
+              outlist_suit = outlist_suit.join(', ')
 
               // ========= NON SUITABLE OUTPUT ==========
               if (output_non_suit.length > 0) {
                 for (let i = 0; i < output_non_suit.length; i++) {
-                  outlist_non_suit += "'" + output_non_suit[i].BECvar_seed + "'" + ', '
+                  outlist_non_suit.push("'" + output_non_suit[i].BECvar_seed + "'")
                 }
               }
-              outlist_non_suit = outlist_non_suit.slice(0, -2)
+              outlist_non_suit = outlist_non_suit.join(', ')
 
               resolveInner(outlist_suit)
             } else {
@@ -484,10 +484,10 @@ define(function () {
               let t2 = getIntersection(output_suit).then(function (output) {
                 if (output.length > 0) {
                   for (let i = 0; i < output.length; i++) {
-                    outlist_suit += "'" + output[i].BECvar_seed + "'" + ', '
+                    outlist_suit.push("'" + output[i].BECvar_seed + "'")
                   }
                 }
-                outlist_suit = outlist_suit.slice(0, -2)
+                outlist_suit = outlist_suit.join(', ')
                 console.log(outlist_suit)
               })
 
@@ -495,10 +495,10 @@ define(function () {
                 // ========= NON SUITABLE OUTPUT ==========
                 if (output.length > 0) {
                   for (let i = 0; i < output.length; i++) {
-                    outlist_non_suit += "'" + output[i].BECvar_seed + "'" + ', '
+                    outlist_non_suit.push("'" + output[i].BECvar_seed + "'")
                   }
                 }
-                outlist_non_suit = outlist_non_suit.slice(0, -2)
+                outlist_non_suit = outlist_non_suit.join(', ')
                 console.log(outlist_non_suit)
               })
 
