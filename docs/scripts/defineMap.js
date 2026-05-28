@@ -281,13 +281,17 @@ define([
   }
   // Initialize a feature layer
   function featureInit(src, fields, name) {
-    return new FeatureLayer({
+    var layer = new FeatureLayer({
       url: src,
       title: name,
       outfields: fields,
       opacity: 0.5,
       visibilityMode: 'independent',
     })
+    layer.load().catch(function (error) {
+      console.warn('Failed to load feature layer: ' + name, error)
+    })
+    return layer
   }
 
   function _kmlInit(src) {
