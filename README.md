@@ -8,11 +8,8 @@ optimal planting sites based on ecological characteristics and Biogeoclimatic Ec
 Classification (BEC) variant compatibility, fully adhering to the Climate-Based Seed Transfer (CBST)
 standard standards.
 
-**Live Deployments:**
-
-- [Production Seedlot Selection Tool](https://bcgov.github.io/nr-seedtransfer-map/index.html)
-- [Experimental Seedlot Selection Tool](https://bcgov.github.io/nr-seedtransfer-map/experimental/index.html)
-  (see `docs/experimental/READ-ME-FIRST.txt`)
+**Live Deployment:**
+[CBST Seedlot Selection Tool](https://bcgov.github.io/nr-seedtransfer-map/index.html)
 
 ---
 
