@@ -6,72 +6,86 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
 
   // Visual loader state helpers
   function showLoader(message) {
-    $('#loading-text').text(message || 'Loading database...')
-    $('#loading-overlay').css('display', 'flex')
-    $('button, input, select').prop('disabled', true)
-    if ($('select').length > 0 && typeof $.fn.selectpicker === 'function') {
-      $('select').selectpicker('refresh')
+    const loadingText = document.getElementById('loading-text')
+    if (loadingText) {
+      loadingText.innerText = message || 'Loading database...'
     }
+    const loadingOverlay = document.getElementById('loading-overlay')
+    if (loadingOverlay) {
+      loadingOverlay.style.display = 'flex'
+    }
+    document.querySelectorAll('button, input, select').forEach(function (el) {
+      el.disabled = true
+    })
   }
 
   function hideLoader() {
-    $('#loading-overlay').hide()
-    $('button, input, select').prop('disabled', false)
-    if ($('select').length > 0 && typeof $.fn.selectpicker === 'function') {
-      $('select').selectpicker('refresh')
+    const loadingOverlay = document.getElementById('loading-overlay')
+    if (loadingOverlay) {
+      loadingOverlay.style.display = 'none'
     }
+    document.querySelectorAll('button, input, select').forEach(function (el) {
+      el.disabled = false
+    })
   }
 
   function showError(message) {
     hideLoader()
-    $('.alert-error-banner').remove()
+    const existingBanner = document.querySelector('.alert-error-banner')
+    if (existingBanner) {
+      existingBanner.remove()
+    }
     if (errorTimeoutId) {
       clearTimeout(errorTimeoutId)
     }
 
-    const $alert = $('<div>')
-      .addClass('alert alert-danger alert-dismissible fade show alert-error-banner')
-      .attr('role', 'alert')
-      .css({
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        zIndex: 10000,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        maxWidth: '400px',
-      })
+    const alertDiv = document.createElement('div')
+    alertDiv.className = 'alert alert-danger alert-dismissible fade show alert-error-banner'
+    alertDiv.setAttribute('role', 'alert')
+    Object.assign(alertDiv.style, {
+      position: 'fixed',
+      top: '20px',
+      right: '20px',
+      zIndex: '10000',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      maxWidth: '400px',
+    })
 
-    const $strong = $('<strong>').text('⚠️ Error: ')
-    const $msgSpan = $('<span>').addClass('alert-message-text').text(message)
-    const $closeBtn = $('<button>')
-      .attr({
-        type: 'button',
-        class: 'close',
-        'data-dismiss': 'alert',
-        'aria-label': 'Close',
-      })
-      .html('<span aria-hidden="true">&times;</span>')
+    const strong = document.createElement('strong')
+    strong.textContent = '⚠️ Error: '
+    const span = document.createElement('span')
+    span.className = 'alert-message-text'
+    span.textContent = message
+    const closeBtn = document.createElement('button')
+    closeBtn.type = 'button'
+    closeBtn.className = 'btn-close'
+    closeBtn.setAttribute('data-bs-dismiss', 'alert')
+    closeBtn.setAttribute('aria-label', 'Close')
 
-    $alert.append($strong).append($msgSpan).append($closeBtn)
-    $('body').append($alert)
+    alertDiv.appendChild(strong)
+    alertDiv.appendChild(span)
+    alertDiv.appendChild(closeBtn)
+    document.body.appendChild(alertDiv)
 
     errorTimeoutId = setTimeout(() => {
-      $('.alert-error-banner').alert('close')
+      const banner = document.querySelector('.alert-error-banner')
+      if (banner) {
+        const bsAlert = bootstrap.Alert.getInstance(banner) || new bootstrap.Alert(banner)
+        bsAlert.close()
+      }
     }, 8000)
   }
 
-  $('#becInputCutblock').on(
-    'changed.bs.select',
-    function (e, _clickedIndex, _isSelected, _previousValue) {
-      console.log(e.target.selectedOptions)
-      selected = []
-      window.table = e
-      var options = e.target.selectedOptions
-      for (let i = 0; i < options.length; i++) {
-        selected.push(options[i].value)
-      }
-    },
-  )
+  // Listening to the standard native change event on becInputCutblock
+  const becInputCutblock = document.getElementById('becInputCutblock')
+  if (becInputCutblock) {
+    becInputCutblock.addEventListener('change', function (e) {
+      selected = Array.from(e.target.selectedOptions).map(function (opt) {
+        return opt.value
+      })
+      console.log(selected)
+    })
+  }
 
   // clicking Go button on "I have a cutblock tab"
   document.getElementById('addButtonCutblock').addEventListener('click', function () {

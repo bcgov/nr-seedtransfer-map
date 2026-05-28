@@ -270,18 +270,28 @@ define(function () {
     updateData: updateData,
   }
 
+  /**
+   * Helper utility to retrieve and parse JSON resources.
+   * Leverages the native Fetch API to replace old jQuery $.getJSON hooks.
+   *
+   * Error Handling Strategy:
+   * 1. Validates the HTTP status of the response first. If it's not in the 2xx range
+   *    (e.g., 404, 500), it explicitly rejects the promise chain with the status text.
+   * 2. Safely parses the parsed response body as JSON.
+   * 3. Any network failure or invalid JSON parsing will automatically bubble up
+   *    as a standard promise rejection to be caught and displayed by the UI error banner.
+   */
+  function fetchJSON(url) {
+    return fetch(url).then(function (r) {
+      if (!r.ok) {
+        throw new Error(r.statusText)
+      }
+      return r.json()
+    })
+  }
+
   // adds all the options to the Species and BEC Variant dropdowns
   function fillSelects() {
-    // for (const i in becStore) {
-    //     const temp = document.createElement("Option");
-    //     temp.label = becStore[i].name;
-    //     temp.value = becStore[i].id;
-    //     const temp3 = document.createElement("Option");
-    //     temp3.label = becStore[i].name;
-    //     temp3.value = becStore[i].id;
-    //     document.getElementById("becInputCutblock").options.add(temp);
-    //     document.getElementById("becInputSeedlot").options.add(temp3);
-    // }
     for (const i in becStore) {
       const temp = document.createElement('option')
       temp.label = becStore[i].name
@@ -295,24 +305,57 @@ define(function () {
       document.getElementById('becInputSeedlot').options.add(temp3)
     }
     for (const j in speciesStore) {
-      const temp2 = document.createElement('Option')
+      const temp2 = document.createElement('option')
       temp2.value = speciesStore[j].name
       temp2.label = speciesStore[j].name
       temp2.innerHTML = temp2.label
-      const temp4 = document.createElement('Option')
+      const temp4 = document.createElement('option')
       temp4.value = speciesStore[j].name
       temp4.label = speciesStore[j].name
       temp4.innerHTML = temp4.label
       document.getElementById('speciesInputCutblock').options.add(temp2)
       document.getElementById('speciesInputSeedlot').options.add(temp4)
     }
-    $('select').selectpicker()
+
+    if (window.selectSpeciesCutblock) {
+      window.selectSpeciesCutblock.destroy()
+    }
+    window.selectSpeciesCutblock = new SlimSelect({
+      select: '#speciesInputCutblock',
+    })
+
+    if (window.selectBecCutblock) {
+      window.selectBecCutblock.destroy()
+    }
+    window.selectBecCutblock = new SlimSelect({
+      select: '#becInputCutblock',
+      settings: {
+        maxSelected: 3,
+        searchPlaceholder: 'Search BEC Variants...',
+      },
+    })
+
+    if (window.selectSpeciesSeedlot) {
+      window.selectSpeciesSeedlot.destroy()
+    }
+    window.selectSpeciesSeedlot = new SlimSelect({
+      select: '#speciesInputSeedlot',
+    })
+
+    if (window.selectBecSeedlot) {
+      window.selectBecSeedlot.destroy()
+    }
+    window.selectBecSeedlot = new SlimSelect({
+      select: '#becInputSeedlot',
+      settings: {
+        maxSelected: 1,
+        searchPlaceholder: 'Search BEC Variants...',
+      },
+    })
   }
 
   // create the paths and locations for the selected cutblock and species
   function addSuitabilityLayerCutblock(sp, bec) {
-    // console.log(sp, bec);
-    // console.log("Cutblock Go button. Species: " + sp + " BEC: " + bec); // debug
     var spmin
     var outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019
     var output_suit, output_non_suit
@@ -344,135 +387,134 @@ define(function () {
     let p1 = getSeedLot(bec, suit, 0, jsonseedlot)
 
     let p2 = new Promise((resolve, reject) => {
-      // FDI IDFdk1 (lots of outputs; in v5 12 layers outputting)
-      $.getJSON(jsontxt, function (data) {
-        // good way of testing a new variable live in devtools when the page is loaded
-        // window.json_obj = data;
-        // window.suit = output_suit;
-        // window.non_suit = output_non_suit;
+      fetchJSON(jsontxt)
+        .then(function (data) {
+          var results = []
 
-        // CWHvh1, CWHvh2, CWHvm2
-
-        // find the name in becStore associated to the bec id chosen
-        var results = []
-
-        let becPromise = new Promise((resolveInner) => {
-          if (bec.length == 1) {
-            bec_name = becStore.find((x) => x.id == bec).name
-            results = data.filter(function (x) {
-              return (
-                x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] >= spmin
-              )
-            })
-            output_suit = data.filter(function (x) {
-              return x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1
-            })
-            output_non_suit = data.filter(function (x) {
-              return x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0
-            })
-            console.log(results)
-
-            updateData(results).then(function (data) {
-              console.log(data)
-              populateCutblockTable(data)
-            })
-
-            // ========= SUITABLE OUTPUT ======================
-            if (output_suit.length > 0) {
-              for (let i = 0; i < output_suit.length; i++) {
-                // outlist.push(output_suit[i].BECvar_seed);
-                outlist_suit += "'" + output_suit[i].BECvar_seed + "'" + ', '
-              }
-            }
-            outlist_suit = outlist_suit.slice(0, -2)
-
-            // ========= NON SUITABLE OUTPUT ==========
-            if (output_non_suit.length > 0) {
-              for (let i = 0; i < output_non_suit.length; i++) {
-                // outlist.push(output_suit[i].BECvar_seed);
-                outlist_non_suit += "'" + output_non_suit[i].BECvar_seed + "'" + ', '
-              }
-            }
-            outlist_non_suit = outlist_non_suit.slice(0, -2)
-
-            resolveInner(outlist_suit)
-          } else {
-            console.log('all_outputs')
-            for (let i = 0; i < bec.length; i++) {
-              bec_name = becStore.find((x) => x.id == bec[i]).name
-              results.push(
-                data.filter(function (x) {
-                  return (
-                    x['BECvar_site'] == bec_name &&
-                    x['HTp_pred'] >= suit &&
-                    x['Sp_suit_site'] >= spmin
-                  )
-                }),
-              )
-              output_suit.push(
-                data.filter(function (x) {
-                  return (
-                    x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1
-                  )
-                }),
-              )
-              output_non_suit.push(
-                data.filter(function (x) {
-                  return (
-                    x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0
-                  )
-                }),
-              )
-            }
-
-            let t1 = getIntersection(results).then(function (intersection) {
-              if (intersection.length == 0) {
-                alert('No results available for those parameters')
-              }
-              console.log(intersection)
-              return updateData(intersection).then(function (data2) {
-                console.log(data2)
-                populateCutblockTable(data2)
+          let becPromise = new Promise((resolveInner) => {
+            if (bec.length == 1) {
+              bec_name = becStore.find((x) => x.id == bec).name
+              results = data.filter(function (x) {
+                return (
+                  x['BECvar_site'] == bec_name &&
+                  x['HTp_pred'] >= suit &&
+                  x['Sp_suit_site'] >= spmin
+                )
               })
-            })
+              output_suit = data.filter(function (x) {
+                return (
+                  x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1
+                )
+              })
+              output_non_suit = data.filter(function (x) {
+                return (
+                  x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0
+                )
+              })
+              console.log(results)
 
-            // ========= SUITABLE OUTPUT ======================
+              updateData(results).then(function (data) {
+                console.log(data)
+                populateCutblockTable(data)
+              })
 
-            let t2 = getIntersection(output_suit).then(function (output) {
-              if (output.length > 0) {
-                for (let i = 0; i < output.length; i++) {
-                  // outlist.push(output_suit[i].BECvar_seed);
-                  outlist_suit += "'" + output[i].BECvar_seed + "'" + ', '
+              // ========= SUITABLE OUTPUT ======================
+              if (output_suit.length > 0) {
+                for (let i = 0; i < output_suit.length; i++) {
+                  outlist_suit += "'" + output_suit[i].BECvar_seed + "'" + ', '
                 }
               }
               outlist_suit = outlist_suit.slice(0, -2)
-              console.log(outlist_suit)
-            })
 
-            let t3 = getIntersection(output_non_suit).then(function (output) {
               // ========= NON SUITABLE OUTPUT ==========
-              if (output.length > 0) {
-                for (let i = 0; i < output.length; i++) {
-                  // outlist.push(output_suit[i].BECvar_seed);
-                  outlist_non_suit += "'" + output[i].BECvar_seed + "'" + ', '
+              if (output_non_suit.length > 0) {
+                for (let i = 0; i < output_non_suit.length; i++) {
+                  outlist_non_suit += "'" + output_non_suit[i].BECvar_seed + "'" + ', '
                 }
               }
               outlist_non_suit = outlist_non_suit.slice(0, -2)
-              console.log(outlist_non_suit)
-            })
 
-            Promise.all([t1, t2, t3]).then(() => {
-              resolveInner(results)
-            })
-          }
-        }).then(function () {
-          return [[outlist_suit], [outlist_non_suit], [outlist_2019], [outlist_non_2019]]
+              resolveInner(outlist_suit)
+            } else {
+              console.log('all_outputs')
+              for (let i = 0; i < bec.length; i++) {
+                bec_name = becStore.find((x) => x.id == bec[i]).name
+                results.push(
+                  data.filter(function (x) {
+                    return (
+                      x['BECvar_site'] == bec_name &&
+                      x['HTp_pred'] >= suit &&
+                      x['Sp_suit_site'] >= spmin
+                    )
+                  }),
+                )
+                output_suit.push(
+                  data.filter(function (x) {
+                    return (
+                      x['BECvar_site'] == bec_name &&
+                      x['HTp_pred'] >= suit &&
+                      x['Sp_suit_site'] == 1
+                    )
+                  }),
+                )
+                output_non_suit.push(
+                  data.filter(function (x) {
+                    return (
+                      x['BECvar_site'] == bec_name &&
+                      x['HTp_pred'] >= suit &&
+                      x['Sp_suit_site'] == 0
+                    )
+                  }),
+                )
+              }
+
+              let t1 = getIntersection(results).then(function (intersection) {
+                if (intersection.length == 0) {
+                  alert('No results available for those parameters')
+                }
+                console.log(intersection)
+                return updateData(intersection).then(function (data2) {
+                  console.log(data2)
+                  populateCutblockTable(data2)
+                })
+              })
+
+              // ========= SUITABLE OUTPUT ======================
+
+              let t2 = getIntersection(output_suit).then(function (output) {
+                if (output.length > 0) {
+                  for (let i = 0; i < output.length; i++) {
+                    outlist_suit += "'" + output[i].BECvar_seed + "'" + ', '
+                  }
+                }
+                outlist_suit = outlist_suit.slice(0, -2)
+                console.log(outlist_suit)
+              })
+
+              let t3 = getIntersection(output_non_suit).then(function (output) {
+                // ========= NON SUITABLE OUTPUT ==========
+                if (output.length > 0) {
+                  for (let i = 0; i < output.length; i++) {
+                    outlist_non_suit += "'" + output[i].BECvar_seed + "'" + ', '
+                  }
+                }
+                outlist_non_suit = outlist_non_suit.slice(0, -2)
+                console.log(outlist_non_suit)
+              })
+
+              Promise.all([t1, t2, t3]).then(() => {
+                resolveInner(results)
+              })
+            }
+          }).then(function () {
+            return [[outlist_suit], [outlist_non_suit], [outlist_2019], [outlist_non_2019]]
+          })
+
+          resolve(becPromise)
         })
-
-        resolve(becPromise)
-      }).fail(function (jqxhr, textStatus, errorThrown) {
-        reject(new Error('Failed to load Species database: ' + errorThrown))
-      })
+        .catch(function (errorThrown) {
+          reject(new Error('Failed to load Species database: ' + errorThrown.message))
+        })
     })
 
     return Promise.all([p1, p2]).then((values) => {
@@ -506,31 +548,6 @@ define(function () {
         })
       }
 
-      //     arr1 = array[0];
-      //     arr2 = array[1];
-      //     for (var i = 0; i < arr1.length; i++) {
-      //         for (var j = 0; j < arr2.length; j++) {
-      //             if (arr1[i]["BECvar_seed"] == arr2[j]["BECvar_seed"]) {
-      //                 intersection.push(arr1[i]);
-      //             }
-      //         }
-      //     }
-
-      // } else if (array.length == 3) {
-      //     arr1 = array[0];
-      //     arr2 = array[1];
-      //     arr3 = array[2];
-      //     for (var i = 0; i < arr1.length; i++) {
-      //         for (var j = 0; j < arr2.length; j++) {
-      //             for (var k = 0; k < arr3.length; k++) {
-      //                 if (arr1[i]["BECvar_seed"] == arr2[j]["BECvar_seed"] && arr1[i]["BECvar_seed"] == arr3[k]["BECvar_seed"]) {
-      //                     intersection.push(arr1[i]);
-      //                 }
-      //             }
-      //         }
-      //     }
-      // }
-
       resolve(intersection)
     })
 
@@ -538,58 +555,55 @@ define(function () {
   }
 
   function getSeedLot(bec, spmin, min, jsonseedlot) {
-    // bec, spmin, 0, jsonseedlot
-    // console.log(spmin);
-
     return new Promise((resolve, reject) => {
-      $.getJSON(jsonseedlot, function (data) {
-        var bec_name = ''
-        var results = []
-        let finalPromise
+      fetchJSON(jsonseedlot)
+        .then(function (data) {
+          var bec_name = ''
+          var results = []
+          let finalPromise
 
-        console.log('IN GETSEEDLOT')
+          console.log('IN GETSEEDLOT')
 
-        if (bec.length == 1) {
-          console.log("this shouldn't trigger")
-          bec_name = becStore.find((x) => x.id == bec).name
-          results = data.filter(function (x) {
-            return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
-          })
-          finalPromise = Promise.resolve(results)
-        } else {
-          console.log('this should trigger')
-          console.log(bec.length)
-          for (let i = 0; i < bec.length; i++) {
-            bec_name = becStore.find((x) => x.id == bec[i]).name
-            results.push(
-              data.filter(function (x) {
-                return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
-              }),
-            )
-          }
-          console.log(results)
-          finalPromise = getIntersection(results)
-        }
-
-        finalPromise.then((finalarray) => {
-          for (let i = 0; i < finalarray.length; i++) {
-            if (finalarray[i].Seedlot == '') {
-              finalarray[i].Seedlot = 0
+          if (bec.length == 1) {
+            console.log("this shouldn't trigger")
+            bec_name = becStore.find((x) => x.id == bec).name
+            results = data.filter(function (x) {
+              return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
+            })
+            finalPromise = Promise.resolve(results)
+          } else {
+            console.log('this should trigger')
+            console.log(bec.length)
+            for (let i = 0; i < bec.length; i++) {
+              bec_name = becStore.find((x) => x.id == bec[i]).name
+              results.push(
+                data.filter(function (x) {
+                  return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
+                }),
+              )
             }
-            if (finalarray[i].GW == '') {
-              finalarray[i].GW = 0
-            }
+            console.log(results)
+            finalPromise = getIntersection(results)
           }
-          var $table = $('#seedlot_table')
-          $table.bootstrapTable('destroy')
-          $(function () {
+
+          finalPromise.then((finalarray) => {
+            for (let i = 0; i < finalarray.length; i++) {
+              if (finalarray[i].Seedlot == '') {
+                finalarray[i].Seedlot = 0
+              }
+              if (finalarray[i].GW == '') {
+                finalarray[i].GW = 0
+              }
+            }
+            var $table = $('#seedlot_table')
+            $table.bootstrapTable('destroy')
             $table.bootstrapTable({ data: finalarray })
+            resolve()
           })
-          resolve()
         })
-      }).fail(function (jqxhr, textStatus, errorThrown) {
-        reject(new Error('Failed to load Seedlot database: ' + errorThrown))
-      })
+        .catch(function (errorThrown) {
+          reject(new Error('Failed to load Seedlot database: ' + errorThrown.message))
+        })
     })
   }
 
@@ -597,9 +611,7 @@ define(function () {
     // adding all the data to the bootstrap table
     var $table = $('#seed')
     $table.bootstrapTable('destroy')
-    $(function () {
-      $table.bootstrapTable({ data: results })
-    })
+    $table.bootstrapTable({ data: results })
   }
 
   function updateData(data) {
@@ -621,9 +633,7 @@ define(function () {
     // adding all the data to the bootstrap table
     var $table = $('#cutblock_table')
     $table.bootstrapTable('destroy')
-    $(function () {
-      $table.bootstrapTable({ data: results })
-    })
+    $table.bootstrapTable({ data: results })
   }
 
   function addSuitabilityLayerSeedlot(sp, bec) {
@@ -640,7 +650,7 @@ define(function () {
     jsonseedlot =
       'Version_7_0/' + sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase() + '_Seedlots.json'
     let suit = speciesStore.find((x) => x.name === sp).minsuit
-    //        loadgridSeed(sp, suit, 0, jsontxt, jsontxt2019);
+
     console.log(suit)
 
     suit = suit / 100
@@ -653,89 +663,58 @@ define(function () {
     outlist_2019 = []
     outlist_non_2019 = []
     return new Promise((resolve, reject) => {
-      // FDI IDFdk1 (lots of outputs; in v5 12 layers outputting)
-      $.getJSON(jsontxt, function (data) {
-        // good way of testing a new variable live in devtools when the page is loaded
-        window.json_obj = data
-        // window.suit = output_suit;
-        // window.non_suit = output_non_suit;
+      fetchJSON(jsontxt)
+        .then(function (data) {
+          window.json_obj = data
 
-        // find the name in becStore associated to the bec id chosen
-        var bec_name = becStore.find((x) => x.id == bec).name
-        var results = data.filter(function (x) {
-          return x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] >= spmin
-        })
-        console.log(results)
+          // find the name in becStore associated to the bec id chosen
+          var bec_name = becStore.find((x) => x.id == bec).name
+          var results = data.filter(function (x) {
+            return (
+              x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] >= spmin
+            )
+          })
+          console.log(results)
 
-        // populateSeedlotTable(data)
+          updateData(results).then(function (data) {
+            populateSeedlotTable(data)
+          })
 
-        updateData(results).then(function (data) {
-          populateSeedlotTable(data)
-        })
+          // 1 means the area is suitable and 0 means it is not a suitable area
+          output_suit = data.filter(function (x) {
+            return x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1
+          })
+          output_non_suit = data.filter(function (x) {
+            return x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0
+          })
 
-        // 1 means the area is suitable and 0 means it is not a suitable area
-        output_suit = data.filter(function (x) {
-          return x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1
-        })
-        output_non_suit = data.filter(function (x) {
-          return x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0
-        })
-
-        // output_suit_2019 = data.filter(function (x) { return x["BECvar_seed"] == bec_name && x["HTp_pred_2019"] >= suit && x["Sp_suit_site_2019"] == 1});
-        // output_non_suit_2019 = data.filter(function (x) { return x["BECvar_seed"] == bec_name && x["HTp_pred_2019"] >= suit && x["Sp_suit_site_2019"] == 0});
-
-        if (results.length == 0) {
-          alert('No results available for those parameters')
-        }
-
-        // ========= SUITABLE OUTPUT ==========
-        if (output_suit.length > 0) {
-          for (let i = 0; i < output_suit.length; i++) {
-            // outlist.push(output_suit[i].BECvar_seed);
-            outlist_suit += "'" + output_suit[i].BECvar_site + "'" + ', '
+          if (results.length == 0) {
+            alert('No results available for those parameters')
           }
-        }
-        outlist_suit = outlist_suit.slice(0, -2)
 
-        // ========= NON SUITABLE OUTPUT ==========
-        if (output_non_suit.length > 0) {
-          for (let i = 0; i < output_non_suit.length; i++) {
-            // outlist.push(output_suit[i].BECvar_seed);
-            outlist_non_suit += "'" + output_non_suit[i].BECvar_site + "'" + ', '
+          // ========= SUITABLE OUTPUT ==========
+          if (output_suit.length > 0) {
+            for (let i = 0; i < output_suit.length; i++) {
+              outlist_suit += "'" + output_suit[i].BECvar_site + "'" + ', '
+            }
           }
-        }
-        outlist_non_suit = outlist_non_suit.slice(0, -2)
-        // console.log(outlist_non_suit);
+          outlist_suit = outlist_suit.slice(0, -2)
 
-        // // ========= 2019 SUITABLE OUTPUT ==========
-        // if (output_suit_2019.length > 0) {
-        //     for (var i = 0; i < output_suit_2019.length; i++) {
-        //         // outlist.push(output_suit[i].BECvar_seed);
-        //         outlist_2019 += "'" + output_suit_2019[i].BECvar_site + "'" + ", ";
-        //     };
-        // };
-        // outlist_2019 = outlist_2019.slice(0,-2);
+          // ========= NON SUITABLE OUTPUT ==========
+          if (output_non_suit.length > 0) {
+            for (let i = 0; i < output_non_suit.length; i++) {
+              outlist_non_suit += "'" + output_non_suit[i].BECvar_site + "'" + ', '
+            }
+          }
+          outlist_non_suit = outlist_non_suit.slice(0, -2)
 
-        // // ========= NON 2019 SUITABLE OUTPUT ==========
-        // if (output_non_suit_2019.length > 0) {
-        //     for (var i = 0; i < output_non_suit_2019.length; i++) {
-        //         // outlist.push(output_suit[i].BECvar_seed);
-        //         outlist_non_2019 += "'" + output_non_suit_2019[i].BECvar_site + "'" + ", ";
-        //     };
-        // };
-        // outlist_non_2019 = outlist_non_2019.slice(0,-2);
-        // console.log(outlist_non_2019);
-
-        resolve([outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019])
-      }).fail(function (jqxhr, textStatus, errorThrown) {
-        reject(new Error('Failed to load Species database: ' + errorThrown))
-      })
+          resolve([outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019])
+        })
+        .catch(function (errorThrown) {
+          reject(new Error('Failed to load Species database: ' + errorThrown.message))
+        })
     })
   }
-
-  // function loadseedlotgrid(bec, min, spmin, json) {
-
-  // };
 
   function populateSeedlot(orch) {
     console.log('Seedlot top button. Value entered ' + orch)
@@ -744,50 +723,49 @@ define(function () {
     var results = ''
 
     return new Promise((resolve, reject) => {
-      $.getJSON(jsonorch, function (orch_data) {
-        var seedlot = orch_data.filter(function (x) {
-          return x['Orchard'] == orch
-        })
-        if (seedlot.length > 0) {
-          document.getElementById('seedlotNumber').value = parseInt(seedlot[0].Seedlot)
-
-          $.getJSON(jsonseed, function (seed_data) {
-            new Promise((resolveInner) => {
-              results = seed_data.filter(function (x) {
-                return x['Orchard'] == orch
-              })
-              resolveInner(results)
-            }).then(() => {
-              window.res = results
-              console.log(results[0].BECvar)
-              let becVar = becStore.find((x) => x.name == results[0].BECvar).id
-              console.log(becVar)
-              document.getElementById('becInputSeedlot').value = results[0].BECvar
-              $('.becInputSeedlot').val(becVar).trigger('change')
-              // $('.becInputSeedlot').val(becVar).trigger('change');
-
-              document.getElementById('becInputSeedlot').selectedIndex = becVar - 1
-
-              $('#becInputSeedlot').on('show.bs.dropdown', function () {
-                window.location.reload()
-              })
-
-              document.getElementById('speciesInputSeedlot').value = results[0].Species
-              console.log(results[0].Species)
-
-              $('select').selectpicker('refresh')
-              resolve()
-            })
-          }).fail(function (jqxhr, textStatus, errorThrown) {
-            reject(new Error('Failed to load Seedlot database: ' + errorThrown))
+      fetchJSON(jsonorch)
+        .then(function (orch_data) {
+          var seedlot = orch_data.filter(function (x) {
+            return x['Orchard'] == orch
           })
-        } else {
-          alert('Not a valid option')
-          resolve()
-        }
-      }).fail(function (jqxhr, textStatus, errorThrown) {
-        reject(new Error('Failed to load Orchard database: ' + errorThrown))
-      })
+          if (seedlot.length > 0) {
+            document.getElementById('seedlotNumber').value = parseInt(seedlot[0].Seedlot)
+
+            fetchJSON(jsonseed)
+              .then(function (seed_data) {
+                new Promise((resolveInner) => {
+                  results = seed_data.filter(function (x) {
+                    return x['Orchard'] == orch
+                  })
+                  resolveInner(results)
+                }).then(() => {
+                  window.res = results
+                  console.log(results[0].BECvar)
+                  let becVar = becStore.find((x) => x.name == results[0].BECvar).id
+                  console.log(becVar)
+                  if (window.selectBecSeedlot) {
+                    window.selectBecSeedlot.setSelected(becVar.toString())
+                  }
+
+                  if (window.selectSpeciesSeedlot) {
+                    window.selectSpeciesSeedlot.setSelected(results[0].Species)
+                  }
+                  console.log(results[0].Species)
+
+                  resolve()
+                })
+              })
+              .catch(function (errorThrown) {
+                reject(new Error('Failed to load Seedlot database: ' + errorThrown.message))
+              })
+          } else {
+            alert('Not a valid option')
+            resolve()
+          }
+        })
+        .catch(function (errorThrown) {
+          reject(new Error('Failed to load Orchard database: ' + errorThrown.message))
+        })
     })
   }
 
@@ -796,27 +774,29 @@ define(function () {
     var jsonseed = 'Version_7_0/' + 'Seedlot_list.json'
 
     return new Promise((resolve, reject) => {
-      $.getJSON(jsonseed, function (seed_data) {
-        var results = seed_data.filter(function (x) {
-          return x['Seedlot'] == lot
+      fetchJSON(jsonseed)
+        .then(function (seed_data) {
+          var results = seed_data.filter(function (x) {
+            return x['Seedlot'] == lot
+          })
+          console.log(results)
+          if (results && results.length > 0) {
+            let becVar = becStore.find((x) => x.name === results[0].BECvar).id
+            document.getElementById('orchardNumber').value = results[0].Orchard
+            if (window.selectBecSeedlot) {
+              window.selectBecSeedlot.setSelected(becVar.toString())
+            }
+            if (window.selectSpeciesSeedlot) {
+              window.selectSpeciesSeedlot.setSelected(results[0].Species)
+            }
+            resolve()
+          } else {
+            alert('Not a valid seedlot')
+            resolve()
+          }
         })
-        console.log(results)
-        if (results && results.length > 0) {
-          let becVar = becStore.find((x) => x.name === results[0].BECvar).id
-          document.getElementById('orchardNumber').value = results[0].Orchard
-          document.getElementById('becInputSeedlot').value = becVar
-          document.getElementById('speciesInputSeedlot').value = results[0].Species
-          resolve()
-        } else {
-          alert('Not a valid seedlot')
-          resolve()
-        }
-      })
-        .fail(function (jqxhr, textStatus, errorThrown) {
-          reject(new Error('Failed to load Seedlot database: ' + errorThrown))
-        })
-        .then(() => {
-          $('select').selectpicker('refresh')
+        .catch(function (errorThrown) {
+          reject(new Error('Failed to load Seedlot database: ' + errorThrown.message))
         })
     })
   }
