@@ -21,7 +21,7 @@ HOW TO MAKE A CHANGE
   1. Pull the latest from main.
   2. Edit any file inside this experimental/ folder.
   3. Upload data files into Version_7_0/ as needed.
-  4. Commit and push directly to main.
+  4. Commit, push to a feature branch, and open a Pull Request. Once approved and merged, GitHub Actions will deploy.
   5. Wait 30-60 seconds for GitHub Pages to deploy.
   6. Refresh the experimental URL above to see your changes.
 
