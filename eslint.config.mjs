@@ -20,6 +20,8 @@ export default [
         ...globals.jquery,
         ...globals.amd,
         esri: "readonly",
+        SlimSelect: "readonly",
+        bootstrap: "readonly",
       },
     },
     rules: {

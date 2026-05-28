@@ -20,24 +20,20 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     // Click the "I Have A Cutblock" tab
     await page.click('#cutblock-tab')
 
-    // Click the Species selectpicker dropdown to open it
-    await page.click('button[data-id="speciesInputCutblock"]')
+    // Click the Species SlimSelect dropdown to open it
+    await page.locator('#speciesInputCutblock + .ss-main').click()
 
     // Click the "FDI" option inside the visible dropdown
-    const speciesOption = page.locator('div.dropdown-menu.show span.text', { hasText: 'FDI' }).first()
-    await speciesOption.waitFor({ state: 'visible' })
-    await speciesOption.click()
+    await page.getByRole('option', { name: 'FDI', exact: true }).first().click()
 
-    // Click the BEC Variant selectpicker dropdown to open it
-    await page.click('button[data-id="becInputCutblock"]')
+    // Click the BEC Variant SlimSelect dropdown to open it
+    await page.locator('#becInputCutblock + .ss-main').click()
 
     // Click the "IDFdk1" option inside the visible dropdown
-    const becOption = page.locator('div.dropdown-menu.show span.text', { hasText: 'IDFdk1' }).first()
-    await becOption.waitFor({ state: 'visible' })
-    await becOption.click()
+    await page.getByRole('option', { name: 'IDFdk1', exact: true }).first().click()
 
-    // Click the dropdown button again to close the dropdown (since it is multiple select and stays open)
-    await page.click('button[data-id="becInputCutblock"]')
+    // Close the dropdown by pressing Escape
+    await page.keyboard.press('Escape')
 
     // Assert selections are set on the underlying select elements
     await expect(page.locator('#speciesInputCutblock')).toHaveValue('FDI')
