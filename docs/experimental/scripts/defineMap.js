@@ -8,7 +8,6 @@ define([
   'esri/layers/FeatureLayer',
   'esri/layers/GraphicsLayer',
   'esri/widgets/LayerList',
-  'esri/form/elements/inputs/TextBoxInput',
   'esri/widgets/Print',
   'esri/widgets/BasemapGallery',
   'esri/widgets/Search',
@@ -25,9 +24,6 @@ define([
   'esri/layers/support/Field',
   'esri/Graphic',
   'esri/widgets/Track',
-  'esri/widgets/FeatureForm/InputField',
-  'esri/widgets/FeatureForm',
-  'esri/widgets/FeatureTemplates',
   'esri/geometry/support/webMercatorUtils',
   'esri/layers/KMLLayer',
 ], function (
@@ -36,7 +32,6 @@ define([
   FeatureLayer,
   GraphicsLayer,
   LayerList,
-  TextBoxInput,
   Print,
   BasemapGallery,
   Search,
@@ -53,22 +48,36 @@ define([
   Field,
   Graphic,
   Track,
-  InputField,
-  FeatureForm,
-  FeatureTemplates,
   webMercatorUtils,
   KMLLayer,
 ) {
   var map, view, xy
   var layerButton
-  var scaleBar, layerList
+  var _scaleBar, layerList
   var activeWidget
-  var currentLayer, nonsuitLayer, current2019Layer, nonsuit2019Layer, spuLayer, muLayer
-  var suitRenderer, nonSuitRenderer
+  var expand, trackWidget, editExpand
+  var currentLayer, nonsuitLayer, _current2019Layer, _nonsuit2019Layer, spuLayer, mguLayer
+  var _suitRenderer, _nonSuitRenderer
   var portalUrl = 'https://www.arcgis.com'
+  var template
 
   template = {
     title: 'Selected {MAP_Label}',
+  }
+
+  _suitRenderer = {
+    type: 'simple-fill',
+    color: [217, 95, 2, 0.4],
+    outline: {
+      color: [115, 76, 0, 1],
+    },
+  }
+  _nonSuitRenderer = {
+    type: 'simple-fill',
+    color: [170, 102, 205, 0.4],
+    outline: {
+      color: [76, 0, 115, 1],
+    },
   }
 
   return {
@@ -80,21 +89,6 @@ define([
     displaySPU: displaySPU,
     updatePopup: updatePopup,
     clearCutBlock: clearCutBlock,
-  }
-
-  suitRenderer = {
-    type: 'simple-fill',
-    color: [217, 95, 2, 0.4],
-    outline: {
-      color: [115, 76, 0, 1],
-    },
-  }
-  nonSuitRenderer = {
-    type: 'simple-fill',
-    color: [170, 102, 205, 0.4],
-    outline: {
-      color: [76, 0, 115, 1],
-    },
   }
 
   /*
@@ -142,7 +136,7 @@ define([
       view.ui.add(expand, 'top-left')
       view.ui.add(trackWidget, 'top-left')
       view.ui.add(editExpand, 'top-right')
-      const attributeEditing = document.getElementById('featureUpdateDiv')
+      const _attributeEditing = document.getElementById('featureUpdateDiv')
 
       //            view.ui.add("titleDiv", "top-right");
       //            view.ui.add("btn_logo", "bottom-left");
@@ -174,12 +168,12 @@ define([
       ['map_label', 'SHAPE_Area'],
       'CBST Species May Not Be Suitable',
     )
-    current2019Layer = featureInit(
+    _current2019Layer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/2',
       ['map_label', 'SHAPE_Area'],
       'CBST 2019',
     )
-    nonsuit2019Layer = featureInit(
+    _nonsuit2019Layer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/3',
       ['map_label', 'SHAPE_Area'],
       '2019 Species May Not Be Suitable',
@@ -277,11 +271,9 @@ define([
    */
 
   function clearCutBlock() {
-    // var $table = $('#becInputCutblock');
-    // $('#becInputCutblock option').attr("selected",false);
-    $('.selectpicker').selectpicker('val', '')
-    $('.selectpicker').selectpicker('refresh')
-    // $('select').selectpicker();
+    if (window.selectBecCutblock) {
+      window.selectBecCutblock.setSelected([])
+    }
   }
 
   function clearLyrs() {
@@ -289,16 +281,20 @@ define([
   }
   // Initialize a feature layer
   function featureInit(src, fields, name) {
-    return new FeatureLayer({
+    var layer = new FeatureLayer({
       url: src,
       title: name,
       outfields: fields,
       opacity: 0.5,
       visibilityMode: 'independent',
     })
+    layer.load().catch(function (error) {
+      console.warn('Failed to load feature layer: ' + name, error)
+    })
+    return layer
   }
 
-  function kmlInit(src) {
+  function _kmlInit(src) {
     return new KMLLayer({
       url: src,
       title: 'KML Sample',
@@ -306,7 +302,7 @@ define([
   }
 
   // Initialize a feature layer with definition query and custom renderer
-  function featureInit_complex(src, expression, name, renderer) {
+  function _featureInit_complex(src, expression, name, renderer) {
     return new FeatureLayer({
       url: src,
       definitionExpression: expression,
@@ -320,16 +316,16 @@ define([
   /*
    * Utility Functions
    */
-  function popupTable(lyr) {
+  function _popupTable(lyr) {
     lyr.load().then(function () {
       lyr.popupTemplate = lyr.createPopupTemplate()
     })
   }
 
-  function updateKey(list) {
+  function _updateKey(list) {
     var listLength = list.length
     var newlist = new Array()
-    for (var i = 0; i < listLength; i++) {
+    for (let i = 0; i < listLength; i++) {
       newlist.push(list[i][1].replace(/ /g, '_'))
     }
     return newlist
@@ -347,7 +343,7 @@ define([
    */
 
   // Add the line and area measurement tools
-  function addMeasurement() {
+  function _addMeasurement() {
     document.getElementById('distanceButton').addEventListener('click', function () {
       setActiveWidget(null)
       if (!this.classList.contains('active')) {
@@ -369,13 +365,13 @@ define([
   }
 
   /*Create and add the extent button widget*/
-  function addExtentButton() {
+  function _addExtentButton() {
     document.getElementById('homeButton').addEventListener('click', function () {
       fullExtent()
     })
   }
 
-  function addLayerListButton() {
+  function _addLayerListButton() {
     layerButton = document.createElement('layerDiv')
     layerButton.id = 'layerButton'
     layerButton.className = 'esri-icon-layers esri-widget--button esri-component'
@@ -433,14 +429,21 @@ define([
   }
 
   function addLegend() {
-    document.getElementById('legendButton').addEventListener('click', function () {
-      setActiveWidget(null)
-      if (!this.classList.contains('active')) {
-        setActiveWidget('legend')
-      } else {
-        setActiveButton(null)
-      }
-    })
+    const legendButton = document.getElementById('legendButton')
+    if (legendButton) {
+      legendButton.addEventListener('click', function () {
+        setActiveWidget(null)
+        if (!this.classList.contains('active')) {
+          setActiveWidget('legend')
+        } else {
+          setActiveButton(null)
+        }
+      })
+    } else {
+      console.warn(
+        "Element with ID 'legendButton' not found. Legend widget will not be initialized.",
+      )
+    }
   }
 
   function addTracking() {
@@ -511,7 +514,9 @@ define([
     // see this link for more info: http://davidwalsh.name/fakepath
     name = name[0].replace('c:\\fakepath\\', '')
 
-    document.getElementById('upload-status').innerHTML = '<b>Loading </b>' + name
+    var statusEl = document.getElementById('upload-status')
+    statusEl.innerHTML = '<b>Loading </b>'
+    statusEl.appendChild(document.createTextNode(name))
 
     // define the input params for generate see the rest doc for details
     // https://developers.arcgis.com/rest/users-groups-and-items/generate.htm
@@ -543,15 +548,22 @@ define([
     })
       .then(function (response) {
         var layerName = response.data.featureCollection.layers[0].layerDefinition.name
-        document.getElementById('upload-status').innerHTML = '<b>Loaded: </b>' + layerName
+        var statusEl = document.getElementById('upload-status')
+        statusEl.innerHTML = '<b>Loaded: </b>'
+        statusEl.appendChild(document.createTextNode(layerName))
         addShapefileToMap(response.data.featureCollection)
       })
       .catch(errorHandler)
   }
 
   function errorHandler(error) {
-    document.getElementById('upload-status').innerHTML =
-      "<p style='color:red;max-width: 500px;'>" + error.message + '</p>'
+    var statusEl = document.getElementById('upload-status')
+    statusEl.innerHTML = ''
+    var p = document.createElement('p')
+    p.style.color = 'red'
+    p.style.maxWidth = '500px'
+    p.appendChild(document.createTextNode(error.message))
+    statusEl.appendChild(p)
   }
 
   function addShapefileToMap(featureCollection) {
@@ -586,7 +598,7 @@ define([
     document.getElementById('upload-status').innerHTML = ''
   }
 
-  function addMouseCoord() {
+  function _addMouseCoord() {
     var coordsWidget = document.createElement('mouseDiv')
     coordsWidget.id = 'coordsWidget'
     coordsWidget.className = 'esri-widget esri-component'
@@ -602,7 +614,7 @@ define([
       coordsWidget.innerHTML = coords
     }
 
-    view.watch('stationary', function (isStationary) {
+    view.watch('stationary', function (_isStationary) {
       showCoordinates(view.center)
     })
     view.on('pointer-move', function (evt) {
@@ -623,7 +635,7 @@ define([
   }
 
   // Add the instructions button
-  function addLogo() {
+  function _addLogo() {
     document.getElementById('instructionButton').addEventListener('click', function () {
       setActiveWidget(null)
       if (!this.classList.contains('active')) {
@@ -648,7 +660,7 @@ define([
 
   // Create and add a scalebar
   function addScalebar() {
-    scaleBar = new ScaleBar({
+    _scaleBar = new ScaleBar({
       view: view,
       unit: 'metric',
       style: 'ruler',
@@ -658,7 +670,7 @@ define([
 
   function setActiveButton(selectedButton) {
     var elements = document.getElementsByClassName('action-button')
-    for (var i = 0; i < elements.length; i++) {
+    for (let i = 0; i < elements.length; i++) {
       elements[i].classList.remove('active')
     }
     if (selectedButton) {
