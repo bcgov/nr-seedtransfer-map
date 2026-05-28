@@ -51,11 +51,20 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       maxWidth: '400px',
     })
 
-    alertDiv.innerHTML = `
-      <strong>⚠️ Error: </strong>
-      <span class="alert-message-text">${message}</span>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `
+    const strong = document.createElement('strong')
+    strong.textContent = '⚠️ Error: '
+    const span = document.createElement('span')
+    span.className = 'alert-message-text'
+    span.textContent = message
+    const closeBtn = document.createElement('button')
+    closeBtn.type = 'button'
+    closeBtn.className = 'btn-close'
+    closeBtn.setAttribute('data-bs-dismiss', 'alert')
+    closeBtn.setAttribute('aria-label', 'Close')
+
+    alertDiv.appendChild(strong)
+    alertDiv.appendChild(span)
+    alertDiv.appendChild(closeBtn)
     document.body.appendChild(alertDiv)
 
     errorTimeoutId = setTimeout(() => {

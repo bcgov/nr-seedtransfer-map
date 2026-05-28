@@ -306,9 +306,16 @@ define(function () {
       document.getElementById('speciesInputSeedlot').options.add(temp4)
     }
 
+    if (window.selectSpeciesCutblock) {
+      window.selectSpeciesCutblock.destroy()
+    }
     window.selectSpeciesCutblock = new SlimSelect({
       select: '#speciesInputCutblock',
     })
+
+    if (window.selectBecCutblock) {
+      window.selectBecCutblock.destroy()
+    }
     window.selectBecCutblock = new SlimSelect({
       select: '#becInputCutblock',
       settings: {
@@ -316,9 +323,17 @@ define(function () {
         searchPlaceholder: 'Search BEC Variants...',
       },
     })
+
+    if (window.selectSpeciesSeedlot) {
+      window.selectSpeciesSeedlot.destroy()
+    }
     window.selectSpeciesSeedlot = new SlimSelect({
       select: '#speciesInputSeedlot',
     })
+
+    if (window.selectBecSeedlot) {
+      window.selectBecSeedlot.destroy()
+    }
     window.selectBecSeedlot = new SlimSelect({
       select: '#becInputSeedlot',
       settings: {
@@ -717,14 +732,10 @@ define(function () {
                   console.log(results[0].BECvar)
                   let becVar = becStore.find((x) => x.name == results[0].BECvar).id
                   console.log(becVar)
-                  document.getElementById('becInputSeedlot').value = results[0].BECvar
                   if (window.selectBecSeedlot) {
                     window.selectBecSeedlot.setSelected(becVar.toString())
                   }
 
-                  document.getElementById('becInputSeedlot').selectedIndex = becVar - 1
-
-                  document.getElementById('speciesInputSeedlot').value = results[0].Species
                   if (window.selectSpeciesSeedlot) {
                     window.selectSpeciesSeedlot.setSelected(results[0].Species)
                   }
@@ -761,11 +772,9 @@ define(function () {
           if (results && results.length > 0) {
             let becVar = becStore.find((x) => x.name === results[0].BECvar).id
             document.getElementById('orchardNumber').value = results[0].Orchard
-            document.getElementById('becInputSeedlot').value = becVar
             if (window.selectBecSeedlot) {
               window.selectBecSeedlot.setSelected(becVar.toString())
             }
-            document.getElementById('speciesInputSeedlot').value = results[0].Species
             if (window.selectSpeciesSeedlot) {
               window.selectSpeciesSeedlot.setSelected(results[0].Species)
             }
