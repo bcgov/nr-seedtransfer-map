@@ -10,8 +10,8 @@ on:
       - 'playwright.config.js'
 
 concurrency:
-  group: pr-preview-${{ github.event.number }}
-  cancel-in-progress: true
+  group: gh-pages-state
+  cancel-in-progress: false
 
 permissions: {}
 
