@@ -13,13 +13,12 @@
     <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css" />
     <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css" />
     <link rel="stylesheet" href="lib/fontawesome/css/all.min.css" />
-    <link rel="stylesheet" href="lib/bootstrap-select/css/bootstrap-select.min.css" />
+    <link rel="stylesheet" href="lib/slim-select/slimselect.css" />
     <link href="css/styles.css" rel="stylesheet" type="text/css" />
 
     <script src="lib/jquery/jquery.min.js"></script>
-    <script src="lib/popper/popper.min.js"></script>
-    <script src="lib/bootstrap/js/bootstrap.min.js"></script>
-    <script src="lib/bootstrap-select/js/bootstrap-select.min.js"></script>
+    <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="lib/slim-select/slimselect.min.js"></script>
     <link rel="stylesheet" href="lib/bootstrap-table/css/bootstrap-table.min.css" />
     <script src="lib/bootstrap-table/js/bootstrap-table.min.js"></script>
 
@@ -44,8 +43,8 @@
   </head>
 
   <body>
-    <div id="ctn" class="container-fluid no-gutters">
-      <div class="row no-gutters navbar-light bg-light fixed-top" id="titleRow">
+    <div id="ctn" class="container-fluid g-0">
+      <div class="row g-0 bg-light fixed-top" id="titleRow">
         <nav class="col-12">
           <div id="titleDiv" class="bg-light">
             <div class="navbar-brand">
@@ -69,7 +68,7 @@
         </nav>
       </div>
 
-      <div class="row no-gutters" id="mainRow">
+      <div class="row g-0" id="mainRow">
         <div class="col-3">
           <div id="leftCol" class="card">
             <div id="tabContainer" class="card-header" role="tablist">
@@ -78,8 +77,8 @@
                   <a
                     class="nav-link active"
                     id="instructions-tab"
-                    data-toggle="tab"
-                    href="#instructions"
+                    data-bs-toggle="tab"
+                    data-bs-target="#instructions"
                     role="tab"
                     aria-controls="instructions"
                     aria-selected="true"
@@ -90,8 +89,8 @@
                   <a
                     class="nav-link"
                     id="cutblock-tab"
-                    data-toggle="tab"
-                    href="#cutblock"
+                    data-bs-toggle="tab"
+                    data-bs-target="#cutblock"
                     role="tab"
                     aria-controls="cutblock"
                     aria-selected="false"
@@ -102,8 +101,8 @@
                   <a
                     class="nav-link"
                     id="seedlot-tab"
-                    data-toggle="tab"
-                    href="#seedlot"
+                    data-bs-toggle="tab"
+                    data-bs-target="#seedlot"
                     role="tab"
                     aria-controls="seedlot"
                     aria-selected="false"
@@ -201,21 +200,15 @@
                 aria-labelledby="cutblock-tab"
               >
                 <form>
-                  <div class="form-group">
+                  <div class="mb-3">
                     <label for="speciesInputCutblock">Species: </label><br />
-                    <select class="form-control select" id="speciesInputCutblock"></select>
+                    <select class="form-select" id="speciesInputCutblock"></select>
                   </div>
 
-                  <div class="form-group">
+                  <div class="mb-3">
                     <label for="becInputCutblock">BEC Variant: (Select up to 3) </label><br />
                     <!-- <select class="form-control" id="becInputCutblock"></select> -->
-                    <select
-                      class="form-control selectpicker"
-                      multiple
-                      data-max-options="3"
-                      data-live-search="true"
-                      id="becInputCutblock"
-                    ></select>
+                    <select class="form-select" multiple id="becInputCutblock"></select>
                   </div>
 
                   <button
@@ -276,36 +269,30 @@
                 aria-labelledby="seedlot-tab"
               >
                 <form>
-                  <div class="form-group">
+                  <div class="mb-3">
                     <label for="orchardNumber">Orchard Number: </label><br />
-                    <input id="orchardNumber" type="number" />
+                    <input id="orchardNumber" type="number" class="form-control" />
                   </div>
-                  <button id="addSeedlotfromOrchard" type="button" class="btn btn-secondary">
+                  <button id="addSeedlotfromOrchard" type="button" class="btn btn-secondary mb-3">
                     Set Representative Seedlot</button
                   ><br />
 
                   <b>OR</b>
-                  <div class="form-group">
+                  <div class="mb-3">
                     <label for="seedlotNumber">Seedlot Number: </label><br />
-                    <input id="seedlotNumber" type="number" /><br />
+                    <input id="seedlotNumber" type="number" class="form-control" /><br />
                   </div>
-                  <button id="addSpeciesBecSeedlot" type="button" class="btn btn-secondary">
+                  <button id="addSpeciesBecSeedlot" type="button" class="btn btn-secondary mb-3">
                     Set Species & BEC</button
                   ><br />
                   <b>OR</b><br />
-                  <div class="form-group">
+                  <div class="mb-3">
                     <label for="speciesInputSeedlot">Species: </label><br />
-                    <select class="form-control" id="speciesInputSeedlot"></select>
+                    <select class="form-select" id="speciesInputSeedlot"></select>
                   </div>
-                  <div class="form-group">
+                  <div class="mb-3">
                     <label for="becInputSeedlot">BEC Variant: </label><br />
-                    <select
-                      class="form-control select"
-                      multiple
-                      data-max-options="1"
-                      data-live-search="true"
-                      id="becInputSeedlot"
-                    ></select>
+                    <select class="form-select" multiple id="becInputSeedlot"></select>
                   </div>
                   <br />
                   <button
@@ -366,7 +353,7 @@
           </div>
         </div>
 
-        <div id="mapDiv" class="col-9 no-gutters">
+        <div id="mapDiv" class="col-9 g-0">
           <!--add the below divs in the JS when making the widgets-->
           <div id="coords"></div>
           <!-- <div id ="scaleDiv"></div> -->

@@ -271,11 +271,9 @@ define([
    */
 
   function clearCutBlock() {
-    // var $table = $('#becInputCutblock');
-    // $('#becInputCutblock option').attr("selected",false);
-    $('.selectpicker').selectpicker('val', '')
-    $('.selectpicker').selectpicker('refresh')
-    // $('select').selectpicker();
+    if (window.selectBecCutblock) {
+      window.selectBecCutblock.setSelected([])
+    }
   }
 
   function clearLyrs() {
