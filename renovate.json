@@ -3,5 +3,26 @@
   "description": "Repository-specific Renovate config. Extends the shared bcgov/renovate-config preset. Downstream repos should reference this file for consistent update management.",
   "extends": [
     "github>bcgov/renovate-config#2026.5.24"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track ArcGIS Maps SDK pinned in docs/index.html via @arcgis/core on npm (CDN URLs use MAJOR.MINOR; npm publishes full semver).",
+      "managerFilePatterns": ["docs/index.html"],
+      "matchStrings": ["https://js\\.arcgis\\.com/(?<currentValue>\\d+\\.\\d+)/"],
+      "depNameTemplate": "@arcgis/core",
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "loose",
+      "extractVersionTemplate": "^(?<version>\\d+\\.\\d+)"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Cap ArcGIS Maps SDK CDN pin to 4.x; 5.x is a separate major-bump migration.",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["@arcgis/core"],
+      "matchFileNames": ["docs/index.html"],
+      "allowedVersions": "<5.0.0"
+    }
   ]
 }
