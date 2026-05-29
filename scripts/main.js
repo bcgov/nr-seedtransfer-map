@@ -4,7 +4,6 @@
 
 define(function () {
   var jsontxt, jsonseedlot
-  // var defineMap = require('defineMap.js');
 
   var speciesStore = [
     { name: 'AT', minsuit: 97.5 },
@@ -396,11 +395,9 @@ define(function () {
     let suit = speciesStore.find((x) => x.name === sp).minsuit
 
     suit = suit / 100
-    console.log(suit)
     spmin = 0
     spmin = spmin / 100
     window.dat = becStore
-    console.log(bec)
 
     outlist_suit = []
     outlist_non_suit = []
@@ -436,10 +433,8 @@ define(function () {
                   x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0
                 )
               })
-              console.log(results)
 
               updateData(results).then(function (data) {
-                console.log(data)
                 populateCutblockTable(data)
               })
 
@@ -461,7 +456,6 @@ define(function () {
 
               resolveInner(outlist_suit)
             } else {
-              console.log('all_outputs')
               for (let i = 0; i < bec.length; i++) {
                 bec_name = becStore.find((x) => x.id == bec[i]).name
                 results.push(
@@ -497,9 +491,7 @@ define(function () {
                 if (intersection.length == 0) {
                   alert('No results available for those parameters')
                 }
-                console.log(intersection)
                 return updateData(intersection).then(function (data2) {
-                  console.log(data2)
                   populateCutblockTable(data2)
                 })
               })
@@ -513,7 +505,6 @@ define(function () {
                   }
                 }
                 outlist_suit = outlist_suit.join(', ')
-                console.log(outlist_suit)
               })
 
               let t3 = getIntersection(output_non_suit).then(function (output) {
@@ -524,7 +515,6 @@ define(function () {
                   }
                 }
                 outlist_non_suit = outlist_non_suit.join(', ')
-                console.log(outlist_non_suit)
               })
 
               Promise.all([t1, t2, t3]).then(() => {
@@ -587,18 +577,13 @@ define(function () {
           var results = []
           let finalPromise
 
-          console.log('IN GETSEEDLOT')
-
           if (bec.length == 1) {
-            console.log("this shouldn't trigger")
             bec_name = becStore.find((x) => x.id == bec).name
             results = data.filter(function (x) {
               return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
             })
             finalPromise = Promise.resolve(results)
           } else {
-            console.log('this should trigger')
-            console.log(bec.length)
             for (let i = 0; i < bec.length; i++) {
               bec_name = becStore.find((x) => x.id == bec[i]).name
               results.push(
@@ -607,7 +592,6 @@ define(function () {
                 }),
               )
             }
-            console.log(results)
             finalPromise = getIntersection(results)
           }
 
@@ -662,7 +646,6 @@ define(function () {
   }
 
   function addSuitabilityLayerSeedlot(sp, bec) {
-    console.log('Seedlot Go button. Species: ' + sp + ' BEC: ' + bec)
     var spmin
     var outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019
     var output_suit, output_non_suit
@@ -675,8 +658,6 @@ define(function () {
     jsonseedlot =
       'Version_7_0/' + sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase() + '_Seedlots.json'
     let suit = speciesStore.find((x) => x.name === sp).minsuit
-
-    console.log(suit)
 
     suit = suit / 100
     spmin = 0
@@ -699,7 +680,6 @@ define(function () {
               x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] >= spmin
             )
           })
-          console.log(results)
 
           updateData(results).then(function (data) {
             populateSeedlotTable(data)
@@ -742,7 +722,6 @@ define(function () {
   }
 
   function populateSeedlot(orch) {
-    console.log('Seedlot top button. Value entered ' + orch)
     var jsonorch = 'Version_7_0/' + 'Orchard_list.json'
     var jsonseed = 'Version_7_0/' + 'Seedlot_list.json'
     var results = ''
@@ -765,9 +744,7 @@ define(function () {
                   resolveInner(results)
                 }).then(() => {
                   window.res = results
-                  console.log(results[0].BECvar)
                   let becVar = becStore.find((x) => x.name == results[0].BECvar).id
-                  console.log(becVar)
                   if (window.selectBecSeedlot) {
                     window.selectBecSeedlot.setSelected(becVar.toString())
                   }
@@ -775,7 +752,6 @@ define(function () {
                   if (window.selectSpeciesSeedlot) {
                     window.selectSpeciesSeedlot.setSelected(results[0].Species)
                   }
-                  console.log(results[0].Species)
 
                   resolve()
                 })
@@ -795,7 +771,6 @@ define(function () {
   }
 
   function populateSpeciesBEC(lot) {
-    console.log('Seedlot middle button. Value entered ' + lot)
     var jsonseed = 'Version_7_0/' + 'Seedlot_list.json'
 
     return new Promise((resolve, reject) => {
@@ -804,7 +779,6 @@ define(function () {
           var results = seed_data.filter(function (x) {
             return x['Seedlot'] == lot
           })
-          console.log(results)
           if (results && results.length > 0) {
             let becVar = becStore.find((x) => x.name === results[0].BECvar).id
             document.getElementById('orchardNumber').value = results[0].Orchard

@@ -83,7 +83,6 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       selected = Array.from(e.target.selectedOptions).map(function (opt) {
         return opt.value
       })
-      console.log(selected)
     })
   }
 
@@ -91,11 +90,9 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
   document.getElementById('addButtonCutblock').addEventListener('click', function () {
     showLoader('Calculating suitability map and retrieving seedlot data...')
     defineMap.clearLyrs()
-    console.log(selected)
     main
       .addSuitabilityLayerCutblock(document.getElementById('speciesInputCutblock').value, selected)
       .then((layers) => {
-        console.log(layers)
         defineMap.updateLayer(layers)
         hideLoader()
       })
@@ -153,31 +150,3 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
     defineMap.clearCutBlock()
   })
 })
-
-// document.getElementById("addButtonCutblock")
-// .addEventListener("click", function () {
-//     defineMap.clearLyrs();
-//     var selected = [];
-//     let selectedPromise = new Promise(function (resolve, reject) {
-//         $('#becInputCutblock').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
-//             console.log(e.target.selectedOptions);
-//             window.table = e;
-//             // e.target.selectionOptions[clickedIndex].selected = true;
-//             var options = e.target.selectedOptions;
-//             for (var i = 0; i < options.length; i++) {
-//                 selected.push(options[i].value);
-//             }
-//             console.log(selected);
-
-//         });
-//     }).then(function () {
-//         console.log(document.getElementById("becInputCutblock").value);
-//         main.addSuitabilityLayerCutblock(document.getElementById("speciesInputCutblock").value, selected).then((layers) => {
-//             // console.log(layers);
-//             defineMap.updateLayer(layers);
-//         });
-//     });
-
-//     return selectedPromise;
-
-//  });
