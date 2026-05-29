@@ -284,6 +284,31 @@ define(function () {
   function fetchJSON(url) {
     return fetch(url).then(function (r) {
       if (!r.ok) {
+        // Fallback for PR Previews: if a local DB fetch fails (e.g. 404 because
+        // pr-open.yml pruned docs/Version_7_0/ when the PR didn't touch it),
+        // retry against the stable production database at the gh-pages root.
+        //
+        // Assumes:
+        //   1. Previews live exactly two path segments deep: /deployments/pr-N/
+        //      so '../../' resolves to the gh-pages site root.
+        //   2. Everything under Version_7_0/ is JSON and loaded via fetchJSON().
+        //      If you add non-JSON assets there, either widen this fallback or
+        //      disable the prune step in .github/workflows/pr-open.yml.
+        if (
+          url.startsWith('Version_7_0/') &&
+          window.location.pathname.includes('/deployments/pr-')
+        ) {
+          const fallbackUrl = '../../' + url
+          console.warn(
+            `Local database file not found at ${url}. Falling back to production database: ${fallbackUrl}`,
+          )
+          return fetch(fallbackUrl).then(function (fallbackR) {
+            if (!fallbackR.ok) {
+              throw new Error(fallbackR.statusText)
+            }
+            return fallbackR.json()
+          })
+        }
         throw new Error(r.statusText)
       }
       return r.json()
@@ -421,18 +446,18 @@ define(function () {
               // ========= SUITABLE OUTPUT ======================
               if (output_suit.length > 0) {
                 for (let i = 0; i < output_suit.length; i++) {
-                  outlist_suit += "'" + output_suit[i].BECvar_seed + "'" + ', '
+                  outlist_suit.push("'" + output_suit[i].BECvar_seed + "'")
                 }
               }
-              outlist_suit = outlist_suit.slice(0, -2)
+              outlist_suit = outlist_suit.join(', ')
 
               // ========= NON SUITABLE OUTPUT ==========
               if (output_non_suit.length > 0) {
                 for (let i = 0; i < output_non_suit.length; i++) {
-                  outlist_non_suit += "'" + output_non_suit[i].BECvar_seed + "'" + ', '
+                  outlist_non_suit.push("'" + output_non_suit[i].BECvar_seed + "'")
                 }
               }
-              outlist_non_suit = outlist_non_suit.slice(0, -2)
+              outlist_non_suit = outlist_non_suit.join(', ')
 
               resolveInner(outlist_suit)
             } else {
@@ -484,10 +509,10 @@ define(function () {
               let t2 = getIntersection(output_suit).then(function (output) {
                 if (output.length > 0) {
                   for (let i = 0; i < output.length; i++) {
-                    outlist_suit += "'" + output[i].BECvar_seed + "'" + ', '
+                    outlist_suit.push("'" + output[i].BECvar_seed + "'")
                   }
                 }
-                outlist_suit = outlist_suit.slice(0, -2)
+                outlist_suit = outlist_suit.join(', ')
                 console.log(outlist_suit)
               })
 
@@ -495,10 +520,10 @@ define(function () {
                 // ========= NON SUITABLE OUTPUT ==========
                 if (output.length > 0) {
                   for (let i = 0; i < output.length; i++) {
-                    outlist_non_suit += "'" + output[i].BECvar_seed + "'" + ', '
+                    outlist_non_suit.push("'" + output[i].BECvar_seed + "'")
                   }
                 }
-                outlist_non_suit = outlist_non_suit.slice(0, -2)
+                outlist_non_suit = outlist_non_suit.join(', ')
                 console.log(outlist_non_suit)
               })
 
