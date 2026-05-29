@@ -10,21 +10,15 @@ define([
   'esri/widgets/LayerList',
   'esri/widgets/Print',
   'esri/widgets/BasemapGallery',
-  'esri/widgets/Search',
   'esri/widgets/Legend',
   'esri/widgets/DistanceMeasurement2D',
   'esri/widgets/AreaMeasurement2D',
   'esri/widgets/ScaleBar',
-  'esri/core/urlUtils',
-  'esri/symbols/SimpleMarkerSymbol',
-  'esri/Color',
-  'esri/PopupTemplate',
   'esri/widgets/Expand',
   'esri/request',
   'esri/layers/support/Field',
   'esri/Graphic',
   'esri/widgets/Track',
-  'esri/geometry/support/webMercatorUtils',
   'esri/layers/KMLLayer',
 ], function (
   Map,
@@ -34,21 +28,15 @@ define([
   LayerList,
   Print,
   BasemapGallery,
-  Search,
   Legend,
   DistanceMeasurement2D,
   AreaMeasurement2D,
   ScaleBar,
-  urlUtils,
-  SimpleMarkerSymbol,
-  Color,
-  PopupTemplate,
   Expand,
   request,
   Field,
   Graphic,
   Track,
-  webMercatorUtils,
   KMLLayer,
 ) {
   var map, view, xy
@@ -95,16 +83,13 @@ define([
    * Initialize the map and all layers and functionality
    */
   function mapInit() {
-    //*Create a new map
-
     map = new Map({
       basemap: 'topo',
       layers: [],
     })
 
-    //Create a new map view and add the map to it
+    // Create a new map view and add the map to it
     xy = [-125.877, 54]
-    // xy = [-119.877, 51.674]; // older model
     view = new MapView({
       center: xy,
       zoom: 6,
@@ -122,15 +107,13 @@ define([
     // Make the layers
     layerInit()
     updatePopup()
-    //Enable Pop Up Tables
-    // popupTable();
 
     addExpand()
     addTracking()
     addCoords()
     zoomToLocation()
 
-    //When the view UI is loaded, add the buttons
+    // When the view UI is loaded, add the buttons
     view.when(function () {
       view.ui.add('topbar', 'top-left')
       view.ui.add(expand, 'top-left')
@@ -138,18 +121,11 @@ define([
       view.ui.add(editExpand, 'top-right')
       const _attributeEditing = document.getElementById('featureUpdateDiv')
 
-      //            view.ui.add("titleDiv", "top-right");
-      //            view.ui.add("btn_logo", "bottom-left");
-      // addLayerListButton();
       addLayerList()
-      //            addMeasurement();
-      //            addLogo();
-      //            addExtentButton();
       addBasemapGallery()
       addPrintButton()
       addLegend()
       addScalebar()
-      //            addMouseCoord();
     })
   }
 
@@ -190,20 +166,12 @@ define([
     )
     map.add(spuLayer)
     map.add(mguLayer)
-    // kmlsample = kmlInit("//geostore.corp.forsite.ca/www/204/SeedTransferRevamp/examples.kml");
-    // kmlsample = kmlInit("http://quickmap.dot.ca.gov/data/lcs.kml");
-    // map.add(kmlsample);
   }
 
   function updateLayer(outlist) {
     // outlist: all 4 possible queries that reflect the users chosen species and bec variant
     // outlist = [outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019]
-    // nonsuit
     window.outlist = outlist
-    // console.log(outlist);
-
-    // currentLayer.definitionExpression = 'MAP_LABEL in ("BAFAun", "ESSFmcp", "ESSFun", "ESSFunp", "ESSFwvp")';
-    // currentLayer.definitionExpression = "MAP_LABEL in ('BAFAunp', 'ESSFmk','ESSFmkp', 'ESSFmw','IMAunp', 'MHmm2')";
 
     if (outlist[1].length != 0) {
       nonsuitLayer.definitionExpression = 'MAP_LABEL in (' + outlist[1] + ')'
@@ -225,21 +193,6 @@ define([
       map.add(currentLayer)
     }
 
-    // if (outlist[2].length != 0) {
-    //     current2019Layer.definitionExpression = "MAP_LABEL in (" + outlist[2] + ")";
-    //     map.add(current2019Layer);
-    // } else {
-    //     current2019Layer.definitionExpression = "MAP_LABEL in ()";
-    //     map.add(current2019Layer);
-    // }
-
-    // if (outlist[3].length != 0) {
-    //     nonsuit2019Layer.definitionExpression = "MAP_LABEL in (" + outlist[3] + ")";
-    //     map.add(nonsuit2019Layer);
-    // } else {
-    //     nonsuit2019Layer.definitionExpression = "MAP_LABEL in ()";
-    //     map.add(nonsuit2019Layer);
-    // }
     map.add(mguLayer)
     map.add(spuLayer)
   }
@@ -250,11 +203,8 @@ define([
   }
 
   function updatePopup() {
-    // currentLayer.popup.autoOpenEnabled = false;
     nonsuitLayer.on('selection-complete', (event) => {
-      // Get the coordinates of the click on the view
-      // around the decimals to 3 decimals
-      console.log('non suit layer triggered')
+      // Round coordinates to 3 decimals
       const lat = Math.round(event.mapPoint.latitude * 1000) / 1000
       const lon = Math.round(event.mapPoint.longitude * 1000) / 1000
 
@@ -469,14 +419,12 @@ define([
       // coords[1] = long
 
       if (!Number(coords[0]) || !Number(coords[1])) {
-        console.log('its working')
         alert('The coordinates you entered are invalid')
       } else {
         if (coords[0] < -90 || coords[0] > 90 || coords[1] < -180 || coords[1] > 180) {
           alert('One of those numbers is out of valid range')
           return
         } else {
-          console.log(coords[0], coords[1])
           view.center = [coords[1], coords[0]]
           view.zoom = 12
         }
