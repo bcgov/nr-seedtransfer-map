@@ -284,6 +284,23 @@ define(function () {
   function fetchJSON(url) {
     return fetch(url).then(function (r) {
       if (!r.ok) {
+        // Fallback for PR Previews: if a local DB fetch fails (e.g. 404),
+        // try fetching from the stable production root database instead.
+        if (
+          url.startsWith('Version_7_0/') &&
+          window.location.pathname.includes('/deployments/pr-')
+        ) {
+          const fallbackUrl = '../../' + url
+          console.warn(
+            `Local database file not found at ${url}. Falling back to production database: ${fallbackUrl}`,
+          )
+          return fetch(fallbackUrl).then(function (fallbackR) {
+            if (!fallbackR.ok) {
+              throw new Error(fallbackR.statusText)
+            }
+            return fallbackR.json()
+          })
+        }
         throw new Error(r.statusText)
       }
       return r.json()

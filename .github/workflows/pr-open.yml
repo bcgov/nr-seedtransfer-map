@@ -68,6 +68,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Check if database has changed
+        id: db-check
+        run: |
+          git fetch origin main:main
+          if git diff --name-only main...HEAD | grep -q "^docs/Version_7_0/"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "📂 Database changes detected. Keeping full database in deployment."
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "⚡ Database is unchanged. Pruning for speed."
+          fi
+      - name: Prune database if unchanged
+        if: steps.db-check.outputs.changed == 'false'
+        run: rm -rf docs/Version_7_0
       - name: Deploy to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
