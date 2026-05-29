@@ -284,8 +284,16 @@ define(function () {
   function fetchJSON(url) {
     return fetch(url).then(function (r) {
       if (!r.ok) {
-        // Fallback for PR Previews: if a local DB fetch fails (e.g. 404),
-        // try fetching from the stable production root database instead.
+        // Fallback for PR Previews: if a local DB fetch fails (e.g. 404 because
+        // pr-open.yml pruned docs/Version_7_0/ when the PR didn't touch it),
+        // retry against the stable production database at the gh-pages root.
+        //
+        // Assumes:
+        //   1. Previews live exactly two path segments deep: /deployments/pr-N/
+        //      so '../../' resolves to the gh-pages site root.
+        //   2. Everything under Version_7_0/ is JSON and loaded via fetchJSON().
+        //      If you add non-JSON assets there, either widen this fallback or
+        //      disable the prune step in .github/workflows/pr-open.yml.
         if (
           url.startsWith('Version_7_0/') &&
           window.location.pathname.includes('/deployments/pr-')
