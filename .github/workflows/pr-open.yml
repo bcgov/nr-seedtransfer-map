@@ -9,6 +9,8 @@ on:
       - 'package*.json'
       - 'playwright.config.js'
 
+# Workflow-level: per-PR cancellation so rapid pushes don't queue stale runs.
+# The deploy job adds its own gh-pages-state lock to serialize gh-pages mutations.
 concurrency:
   group: pr-preview-${{ github.event.number }}
   cancel-in-progress: true
@@ -18,7 +20,7 @@ permissions: {}
 jobs:
   validate:
     name: Lint & Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
       - name: Set up Node.js
@@ -43,8 +45,24 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -e "console.log(require('@playwright/test/package.json').version)")" >> $GITHUB_OUTPUT
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
       - name: Install Playwright Chromium & dependencies
-        run: npx playwright install --with-deps chromium
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
       - name: Run E2E Integration tests
         run: npm run test:e2e
 
@@ -52,11 +70,26 @@ jobs:
     name: Deploy PR Preview
     needs: [validate, e2e]
     if: github.event.pull_request.head.repo.full_name == github.repository
+    # Serialize gh-pages mutations across pr-open, pr-close, and merge workflows.
+    concurrency:
+      group: gh-pages-state
+      cancel-in-progress: false
     permissions:
       contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Prune database if unchanged
+        run: |
+          git fetch --depth=1 origin main
+          # Two-dot diff: HEAD is the PR merge commit, so origin/main..HEAD is the PR's delta.
+          # Avoids needing a deep history for a merge-base (triple-dot).
+          if git diff --name-only origin/main HEAD | grep -q "^docs/Version_7_0/"; then
+            echo "📂 Database changes detected. Keeping full database in deployment."
+          else
+            echo "⚡ Database is unchanged. Pruning for speed."
+            rm -rf docs/Version_7_0
+          fi
       - name: Deploy to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:

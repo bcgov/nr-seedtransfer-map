@@ -7,8 +7,8 @@ on:
       - 'docs/**'
 
 concurrency:
-  group: deploy-production
-  cancel-in-progress: true
+  group: gh-pages-state
+  cancel-in-progress: false
 
 permissions: {}
 
