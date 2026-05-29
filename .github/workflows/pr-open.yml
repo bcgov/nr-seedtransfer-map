@@ -9,9 +9,11 @@ on:
       - 'package*.json'
       - 'playwright.config.js'
 
+# Workflow-level: per-PR cancellation so rapid pushes don't queue stale runs.
+# The deploy job adds its own gh-pages-state lock to serialize gh-pages mutations.
 concurrency:
-  group: gh-pages-state
-  cancel-in-progress: false
+  group: pr-preview-${{ github.event.number }}
+  cancel-in-progress: true
 
 permissions: {}
 
@@ -55,7 +57,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-playwright-
       - name: Install Playwright Chromium & dependencies
-        run: npx playwright install --with-deps chromium
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
       - name: Run E2E Integration tests
         run: npm run test:e2e
 
@@ -63,18 +70,22 @@ jobs:
     name: Deploy PR Preview
     needs: [validate, e2e]
     if: github.event.pull_request.head.repo.full_name == github.repository
+    # Serialize gh-pages mutations across pr-open, pr-close, and merge workflows.
+    concurrency:
+      group: gh-pages-state
+      cancel-in-progress: false
     permissions:
       contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
       - name: Check if database has changed
         id: db-check
         run: |
-          git fetch origin main:main
-          if git diff --name-only main...HEAD | grep -q "^docs/Version_7_0/"; then
+          git fetch --depth=1 origin main
+          # Two-dot diff: HEAD is the PR merge commit, so origin/main..HEAD is the PR's delta.
+          # Avoids needing a deep history for a merge-base (triple-dot).
+          if git diff --name-only origin/main HEAD | grep -q "^docs/Version_7_0/"; then
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "📂 Database changes detected. Keeping full database in deployment."
           else
