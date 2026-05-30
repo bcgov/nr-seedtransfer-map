@@ -203,3 +203,9 @@ body {
   font-size: 14px;
 }
 
+@media (max-width: 767.98px) {
+  #mapDiv {
+    min-height: 450px;
+    height: 60vh;
+  }
+}
