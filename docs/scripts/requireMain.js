@@ -19,19 +19,6 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
     })
   }
 
-  function autoCollapseMobileSidebar() {
-    if (window.innerWidth <= 768) {
-      const leftCol = document.getElementById('leftCol')
-      if (leftCol && leftCol.classList.contains('show-mobile')) {
-        leftCol.classList.remove('show-mobile')
-        const toggleBtn = document.getElementById('sidebarToggle')
-        if (toggleBtn) {
-          toggleBtn.innerHTML = '☰ Show Options'
-        }
-      }
-    }
-  }
-
   function hideLoader() {
     const loadingOverlay = document.getElementById('loading-overlay')
     if (loadingOverlay) {
@@ -40,7 +27,6 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
     document.querySelectorAll('button, input, select').forEach(function (el) {
       el.disabled = false
     })
-    autoCollapseMobileSidebar()
   }
 
   function showError(message) {
