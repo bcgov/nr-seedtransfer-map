@@ -117,6 +117,7 @@ define([
       view.ui.add('topbar', 'top-left')
       view.ui.add(expand, 'top-left')
       view.ui.add(trackWidget, 'top-left')
+
       const _attributeEditing = document.getElementById('featureUpdateDiv')
 
       addLayerList()

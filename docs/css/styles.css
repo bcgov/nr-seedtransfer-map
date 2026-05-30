@@ -208,4 +208,13 @@ body {
     min-height: 450px;
     height: 60vh;
   }
+
+  /* Force GPU compositing layer promotion on mobile to prevent Chrome blanking out the WebGL canvas */
+  #mapDiv,
+  .esri-view-surface {
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
 }
