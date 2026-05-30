@@ -90,10 +90,9 @@ define([
 
     // Create a new map view and add the map to it
     xy = [-125.877, 54]
-    var initialZoom = window.innerWidth <= 768 ? 4.8 : 6
     view = new MapView({
       center: xy,
-      zoom: initialZoom,
+      zoom: 6,
       container: 'mapDiv',
       map: map,
       popup: {
@@ -127,28 +126,6 @@ define([
       addPrintButton()
       addLegend()
       addScalebar()
-
-      // Programmatically expand coords widget only on desktop after load settles
-      if (window.innerWidth > 768) {
-        editExpand.expanded = true
-      }
-
-      // Snap center to British Columbia after DOM has fully settled to prevent offset shifts
-      setTimeout(function () {
-        view
-          .goTo(
-            {
-              center: xy,
-              zoom: initialZoom,
-            },
-            { animate: false },
-          )
-          .catch(function (error) {
-            if (error.name !== 'AbortError') {
-              console.error(error)
-            }
-          })
-      }, 300)
     })
   }
 
@@ -429,7 +406,7 @@ define([
     editExpand = new Expand({
       expandIconClass: 'esri-icon-edit',
       expandTooltip: 'Expand Edit',
-      expanded: false,
+      expanded: true,
       view: view,
       content: document.getElementById('editArea'),
     })
