@@ -98,7 +98,7 @@
                     aria-controls="cutblock"
                     aria-selected="false"
                   >
-                    I Have A Cutblock
+                    I Have a Cutblock
                   </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -112,7 +112,7 @@
                     aria-controls="seedlot"
                     aria-selected="false"
                   >
-                    I Have A Seedlot
+                    I Have a Seedlot
                   </button>
                 </li>
               </ul>
@@ -126,7 +126,7 @@
                 role="tabpanel"
                 aria-labelledby="instructions-tab"
               >
-                <h5 class="card-title">I Have A Cutblock:</h5>
+                <h5 class="card-title">I Have a Cutblock:</h5>
                 <ul class="card-text">
                   <li>
                     Use this tab when you have a cutblock and you are searching for a seed source
@@ -138,7 +138,7 @@
                   <li>BEC Variant: Select the BEC variant for your cutblock location.</li>
                   <li>Go: refreshes the map and tables according to the selections.</li>
                 </ul>
-                <h5 class="card-title">I Have A Seedlot:</h5>
+                <h5 class="card-title">I Have a Seedlot:</h5>
                 <ul class="card-text">
                   <li>
                     Use this tab when you:
@@ -199,7 +199,7 @@
                 </ul>
               </div>
               <div
-                title="I Have A Cutblock"
+                title="I Have a Cutblock"
                 id="cutblock"
                 class="card-body tab-pane fade"
                 role="tabpanel"
@@ -236,17 +236,17 @@
                 </form>
                 <hr class="my-4" />
                 <div class="mb-3">
-                  <label for="coordsforlocation" class="form-label font-weight-bold"
+                  <label for="coordsforlocation_cutblock" class="form-label font-weight-bold"
                     >Zoom to Location (Lat,Long):</label
                   >
                   <input
-                    id="coordsforlocation"
+                    id="coordsforlocation_cutblock"
                     type="text"
                     class="form-control"
                     placeholder="e.g. 54.123, -125.456"
                   />
                 </div>
-                <button id="btnUpdate" type="button" class="btn btn-secondary w-100">
+                <button id="btnUpdate_cutblock" type="button" class="btn btn-secondary w-100">
                   Zoom to Location
                 </button>
                 <p></p>
@@ -283,7 +283,7 @@
                 </div>
               </div>
               <div
-                title="I Have A Seedlot"
+                title="I Have a Seedlot"
                 id="seedlot"
                 class="card-body tab-pane fade"
                 role="tabpanel"
@@ -343,6 +343,21 @@
                 <br />
                 <div id="gensuitGrid"></div>
                 <div id="messages"></div>
+                <hr class="my-4" />
+                <div class="mb-3">
+                  <label for="coordsforlocation_seedlot" class="form-label font-weight-bold"
+                    >Zoom to Location (Lat,Long):</label
+                  >
+                  <input
+                    id="coordsforlocation_seedlot"
+                    type="text"
+                    class="form-control"
+                    placeholder="e.g. 54.123, -125.456"
+                  />
+                </div>
+                <button id="btnUpdate_seedlot" type="button" class="btn btn-secondary w-100">
+                  Zoom to Location
+                </button>
               </div>
             </div>
           </div>
