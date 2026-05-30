@@ -63,19 +63,6 @@ body {
   overflow-y: visible;
 }
 
-.editArea-container {
-  background: #fff;
-  line-height: 1.5em;
-  overflow: auto;
-  padding: 10px;
-  width: 300px;
-}
-
-.expandInputCoords {
-  width: 100%;
-  margin-bottom: 10px;
-}
-
 .list-heading {
   text-align: center;
   font-weight: normal;
@@ -217,11 +204,5 @@ body {
     will-change: transform;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-  }
-
-  /* Completely vanish coordinates widget from map UI on mobile screens */
-  .esri-expand:has(.esri-icon-edit),
-  #editArea {
-    display: none !important;
   }
 }
