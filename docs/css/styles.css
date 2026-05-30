@@ -217,4 +217,10 @@ body {
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
   }
+
+  /* Completely vanish coordinates widget from map UI on mobile screens */
+  .esri-expand:has(.esri-icon-edit),
+  #editArea {
+    display: none !important;
+  }
 }
