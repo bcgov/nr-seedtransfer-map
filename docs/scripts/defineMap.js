@@ -426,6 +426,15 @@ define([
     })
   }
 
+  function addCoords() {
+    editExpand = new Expand({
+      expandIconClass: 'esri-icon-edit',
+      expandTooltip: 'Expand Edit',
+      expanded: window.innerWidth > 768,
+      view: view,
+      content: document.getElementById('editArea'),
+    })
+  }
   function zoomToLocation() {
     function performZoom(inputId) {
       var coords = document.getElementById(inputId).value.split(',')
