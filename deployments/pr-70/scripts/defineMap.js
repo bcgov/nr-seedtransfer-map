@@ -90,10 +90,9 @@ define([
 
     // Create a new map view and add the map to it
     xy = [-125.877, 54]
-    var initialZoom = window.innerWidth <= 768 ? 4.8 : 6
     view = new MapView({
       center: xy,
-      zoom: initialZoom,
+      zoom: 6,
       container: 'mapDiv',
       map: map,
       popup: {
@@ -127,28 +126,6 @@ define([
       addPrintButton()
       addLegend()
       addScalebar()
-
-      // Programmatically expand coords widget only on desktop after load settles
-      if (window.innerWidth > 768) {
-        editExpand.expanded = true
-      }
-
-      // Snap center to British Columbia after DOM has fully settled to prevent offset shifts
-      setTimeout(function () {
-        view
-          .goTo(
-            {
-              center: xy,
-              zoom: initialZoom,
-            },
-            { animate: false },
-          )
-          .catch(function (error) {
-            if (error.name !== 'AbortError') {
-              console.error(error)
-            }
-          })
-      }, 300)
     })
   }
 
@@ -187,8 +164,28 @@ define([
       ['Management_Units'],
       'Management Unit',
     )
-    map.add(spuLayer)
-    map.add(mguLayer)
+    spuLayer
+      .load()
+      .then(function () {
+        map.add(spuLayer)
+      })
+      .catch(function (error) {
+        console.error(
+          'Failed to load Area of Use layer. Skipping map addition to prevent WebGL crash.',
+          error,
+        )
+      })
+    mguLayer
+      .load()
+      .then(function () {
+        map.add(mguLayer)
+      })
+      .catch(function (error) {
+        console.error(
+          'Failed to load Management Unit layer. Skipping map addition to prevent WebGL crash.',
+          error,
+        )
+      })
   }
 
   function updateLayer(outlist) {
@@ -216,13 +213,19 @@ define([
       map.add(currentLayer)
     }
 
-    map.add(mguLayer)
-    map.add(spuLayer)
+    if (mguLayer.loadStatus === 'loaded') {
+      map.add(mguLayer)
+    }
+    if (spuLayer.loadStatus === 'loaded') {
+      map.add(spuLayer)
+    }
   }
 
   function displaySPU(SPLayer) {
-    spuLayer.definitionExpression = 'Seedlot = ' + SPLayer
-    map.add(spuLayer)
+    if (spuLayer.loadStatus === 'loaded') {
+      spuLayer.definitionExpression = 'Seedlot = ' + SPLayer
+      map.add(spuLayer)
+    }
   }
 
   function updatePopup() {
@@ -429,7 +432,7 @@ define([
     editExpand = new Expand({
       expandIconClass: 'esri-icon-edit',
       expandTooltip: 'Expand Edit',
-      expanded: false,
+      expanded: true,
       view: view,
       content: document.getElementById('editArea'),
     })
