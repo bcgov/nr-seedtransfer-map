@@ -172,5 +172,24 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     expect(mapDivBoundingBox).not.toBeNull()
     expect(mapDivBoundingBox.width).toBeGreaterThan(0)
     expect(mapDivBoundingBox.height).toBeGreaterThanOrEqual(400)
+
+    // Verify floating toggle button is visible on mobile
+    const toggleBtn = page.locator('#sidebarToggle')
+    await expect(toggleBtn).toBeVisible()
+    await expect(toggleBtn).toContainText('Show Options')
+
+    // Sidebar should start hidden by default on mobile viewports
+    const sidebar = page.locator('#leftCol')
+    await expect(sidebar).not.toBeVisible()
+
+    // Click toggle button to open sidebar floating overlay
+    await toggleBtn.click()
+    await expect(sidebar).toBeVisible()
+    await expect(sidebar).toHaveClass(/show-mobile/)
+    await expect(toggleBtn).toContainText('Hide Panel')
+
+    // Click toggle button again to collapse the sidebar
+    await toggleBtn.click()
+    await expect(sidebar).not.toBeVisible()
   })
 })
