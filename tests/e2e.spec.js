@@ -4,14 +4,31 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
   test.beforeEach(async ({ page }) => {
     // Capture browser console logs only when explicitly debugging E2E runs
     if (process.env.DEBUG_E2E) {
-      page.on('console', msg => console.log(`[BROWSER LOG] [${msg.type()}] ${msg.text()}`))
+      page.on('console', (msg) => console.log(`[BROWSER LOG] [${msg.type()}] ${msg.text()}`))
     }
-    page.on('pageerror', err => console.log(`[BROWSER ERROR] ${err.toString()}`))
+    page.on('pageerror', (err) => console.log(`[BROWSER ERROR] ${err.toString()}`))
 
     // Navigate to our local server
     await page.goto('/index.html')
     // Wait for the app title to load to ensure base page is ready
     await expect(page.locator('#titleText')).toContainText('CBST Seedlot Selection Tool')
+
+    // Disable all CSS transitions and animations to prevent E2E race conditions during tab switching
+    await page.addStyleTag({
+      content: `
+        *, *::before, *::after {
+          transition: none !important;
+          animation: none !important;
+        }
+      `,
+    })
+
+    // Wait for SlimSelect dropdowns to initialize and the layout to stabilize
+    await page.locator('#speciesInputCutblock + .ss-main').waitFor({ state: 'attached', timeout: 15 * 1000 })
+
+    // Wait for the Esri Map to fully load and relocate `#editArea` to the Esri UI,
+    // which prevents the Esri widgets from stealing input focus during E2E runs.
+    await page.locator('.esri-ui #editArea').waitFor({ state: 'attached', timeout: 30 * 1000 })
   })
 
   test('Cutblock Flow: Selecting FDI species and IDFdk1 BEC variant populates tables', async ({
@@ -60,8 +77,15 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     // Click the "I Have A Seedlot" tab
     await page.click('#seedlot-tab')
 
+    // Wait for the tab pane to become active and visible before interacting
+    await expect(page.locator('#seedlot')).toHaveClass(/active/)
+    await page.waitForTimeout(500) // Settle focus/transitions
+
     // Fill in Orchard Number
-    await page.fill('#orchardNumber', '101')
+    const orchardInput = page.locator('#orchardNumber')
+    await orchardInput.click()
+    await orchardInput.fill('101')
+    await expect(orchardInput).toHaveValue('101')
 
     // Click "Set Representative Seedlot"
     // Mock the alert popup to prevent test blockage just in case
@@ -91,8 +115,15 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     // Click the "I Have A Seedlot" tab
     await page.click('#seedlot-tab')
 
+    // Wait for the tab pane to become active and visible before interacting
+    await expect(page.locator('#seedlot')).toHaveClass(/active/)
+    await page.waitForTimeout(500) // Settle focus/transitions
+
     // Fill in Seedlot Number
-    await page.fill('#seedlotNumber', '52')
+    const seedlotInput = page.locator('#seedlotNumber')
+    await seedlotInput.click()
+    await seedlotInput.fill('52')
+    await expect(seedlotInput).toHaveValue('52')
 
     // Click "Set Species & BEC"
     page.on('dialog', async (dialog) => {
@@ -110,5 +141,36 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     const seedRow = page.locator('#seed tbody tr').first()
     await seedRow.waitFor({ state: 'visible', timeout: 15 * 1000 })
     await expect(seedRow).not.toContainText('No matching records found')
+  })
+
+  test('Mobile Viewport Flow: Map container (#mapDiv) does not collapse on mobile screens', async ({
+    page,
+  }) => {
+    // Set viewport to mobile screen size
+    await page.setViewportSize({ width: 375, height: 667 })
+
+    // Reload the page under mobile viewport
+    await page.goto('/index.html')
+
+    // Wait for the app title to load to ensure base page is ready
+    await expect(page.locator('#titleText')).toContainText('CBST Seedlot Selection Tool')
+
+    // Verify that the map column (#mapCol) is visible
+    const mapCol = page.locator('#mapCol')
+    await expect(mapCol).toBeVisible()
+
+    // Bounding box dimensions of the map column must not be zero
+    const boundingBox = await mapCol.boundingBox()
+    expect(boundingBox).not.toBeNull()
+    expect(boundingBox.width).toBeGreaterThan(0)
+    expect(boundingBox.height).toBeGreaterThanOrEqual(400) // min-height is 400px
+
+    // Verify map div (#mapDiv) is visible and has height
+    const mapDiv = page.locator('#mapDiv')
+    await expect(mapDiv).toBeVisible()
+    const mapDivBoundingBox = await mapDiv.boundingBox()
+    expect(mapDivBoundingBox).not.toBeNull()
+    expect(mapDivBoundingBox.width).toBeGreaterThan(0)
+    expect(mapDivBoundingBox.height).toBeGreaterThanOrEqual(400)
   })
 })

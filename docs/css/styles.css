@@ -63,6 +63,23 @@ body {
   overflow-y: visible;
 }
 
+.editArea-container {
+  background: #fff;
+  line-height: 1.5em;
+  overflow: auto;
+  padding: 10px;
+  width: 300px;
+  display: none;
+}
+
+.esri-ui .editArea-container {
+  display: block;
+}
+
+.expandInputCoords {
+  width: 100%;
+  margin-bottom: 10px;
+}
 .list-heading {
   text-align: center;
   font-weight: normal;
@@ -204,5 +221,21 @@ body {
     will-change: transform;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
+  }
+
+  #mainRow {
+    height: auto;
+    padding-top: 0;
+  }
+  #mapCol {
+    height: 500px;
+    min-height: 400px;
+  }
+  #titleRow {
+    height: auto;
+    position: relative;
+  }
+  .titleTextsmall {
+    margin-left: 0;
   }
 }
