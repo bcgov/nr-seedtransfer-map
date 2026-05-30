@@ -427,11 +427,8 @@ define([
   }
 
   function zoomToLocation() {
-    document.getElementById('btnUpdate').onclick = () => {
-      var coords = document.getElementById('coordsforlocation').value.split(',')
-      // coords[0] = lat
-      // coords[1] = long
-
+    function performZoom(inputId) {
+      var coords = document.getElementById(inputId).value.split(',')
       if (!Number(coords[0]) || !Number(coords[1])) {
         alert('The coordinates you entered are invalid')
       } else {
@@ -442,6 +439,20 @@ define([
           view.center = [coords[1], coords[0]]
           view.zoom = 12
         }
+      }
+    }
+
+    var btnCutblock = document.getElementById('btnUpdate_cutblock')
+    if (btnCutblock) {
+      btnCutblock.onclick = function () {
+        performZoom('coordsforlocation_cutblock')
+      }
+    }
+
+    var btnSeedlot = document.getElementById('btnUpdate_seedlot')
+    if (btnSeedlot) {
+      btnSeedlot.onclick = function () {
+        performZoom('coordsforlocation_seedlot')
       }
     }
   }
