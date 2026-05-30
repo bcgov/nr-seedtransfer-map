@@ -726,6 +726,11 @@ define(function () {
     var jsonseed = 'Version_7_0/' + 'Seedlot_list.json'
     var results = ''
 
+    if (!orch || !orch.trim()) {
+      alert('Please enter a valid Orchard Number')
+      return Promise.resolve()
+    }
+
     return new Promise((resolve, reject) => {
       fetchJSON(jsonorch)
         .then(function (orch_data) {
@@ -772,6 +777,11 @@ define(function () {
 
   function populateSpeciesBEC(lot) {
     var jsonseed = 'Version_7_0/' + 'Seedlot_list.json'
+
+    if (!lot || !lot.trim()) {
+      alert('Please enter a valid Seedlot Number')
+      return Promise.resolve()
+    }
 
     return new Promise((resolve, reject) => {
       fetchJSON(jsonseed)
