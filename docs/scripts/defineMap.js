@@ -43,7 +43,7 @@ define([
   var layerButton
   var _scaleBar, layerList
   var activeWidget
-  var expand, trackWidget, editExpand
+  var expand, trackWidget
   var currentLayer, nonsuitLayer, _current2019Layer, _nonsuit2019Layer, spuLayer, mguLayer
   var _suitRenderer, _nonSuitRenderer
   var portalUrl = 'https://www.arcgis.com'
@@ -110,7 +110,6 @@ define([
 
     addExpand()
     addTracking()
-    addCoords()
     zoomToLocation()
 
     // When the view UI is loaded, add the buttons
@@ -118,7 +117,6 @@ define([
       view.ui.add('topbar', 'top-left')
       view.ui.add(expand, 'top-left')
       view.ui.add(trackWidget, 'top-left')
-      view.ui.add(editExpand, 'top-right')
       const _attributeEditing = document.getElementById('featureUpdateDiv')
 
       addLayerList()
@@ -164,8 +162,28 @@ define([
       ['Management_Units'],
       'Management Unit',
     )
-    map.add(spuLayer)
-    map.add(mguLayer)
+    spuLayer
+      .load()
+      .then(function () {
+        map.add(spuLayer)
+      })
+      .catch(function (error) {
+        console.error(
+          'Failed to load Area of Use layer. Skipping map addition to prevent WebGL crash.',
+          error,
+        )
+      })
+    mguLayer
+      .load()
+      .then(function () {
+        map.add(mguLayer)
+      })
+      .catch(function (error) {
+        console.error(
+          'Failed to load Management Unit layer. Skipping map addition to prevent WebGL crash.',
+          error,
+        )
+      })
   }
 
   function updateLayer(outlist) {
@@ -193,13 +211,19 @@ define([
       map.add(currentLayer)
     }
 
-    map.add(mguLayer)
-    map.add(spuLayer)
+    if (mguLayer.loadStatus === 'loaded') {
+      map.add(mguLayer)
+    }
+    if (spuLayer.loadStatus === 'loaded') {
+      map.add(spuLayer)
+    }
   }
 
   function displaySPU(SPLayer) {
-    spuLayer.definitionExpression = 'Seedlot = ' + SPLayer
-    map.add(spuLayer)
+    if (spuLayer.loadStatus === 'loaded') {
+      spuLayer.definitionExpression = 'Seedlot = ' + SPLayer
+      map.add(spuLayer)
+    }
   }
 
   function updatePopup() {
@@ -402,22 +426,9 @@ define([
     })
   }
 
-  function addCoords() {
-    editExpand = new Expand({
-      expandIconClass: 'esri-icon-edit',
-      expandTooltip: 'Expand Edit',
-      expanded: true,
-      view: view,
-      content: document.getElementById('editArea'),
-    })
-  }
-
   function zoomToLocation() {
-    document.getElementById('btnUpdate').onclick = () => {
-      var coords = document.getElementById('coordsforlocation').value.split(',')
-      // coords[0] = lat
-      // coords[1] = long
-
+    function performZoom(inputId) {
+      var coords = document.getElementById(inputId).value.split(',')
       if (!Number(coords[0]) || !Number(coords[1])) {
         alert('The coordinates you entered are invalid')
       } else {
@@ -428,6 +439,20 @@ define([
           view.center = [coords[1], coords[0]]
           view.zoom = 12
         }
+      }
+    }
+
+    var btnCutblock = document.getElementById('btnUpdate_cutblock')
+    if (btnCutblock) {
+      btnCutblock.onclick = function () {
+        performZoom('coordsforlocation_cutblock')
+      }
+    }
+
+    var btnSeedlot = document.getElementById('btnUpdate_seedlot')
+    if (btnSeedlot) {
+      btnSeedlot.onclick = function () {
+        performZoom('coordsforlocation_seedlot')
       }
     }
   }
