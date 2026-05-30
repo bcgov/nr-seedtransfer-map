@@ -63,19 +63,6 @@ body {
   overflow-y: visible;
 }
 
-.editArea-container {
-  background: #fff;
-  line-height: 1.5em;
-  overflow: auto;
-  padding: 10px;
-  width: 300px;
-}
-
-.expandInputCoords {
-  width: 100%;
-  margin-bottom: 10px;
-}
-
 .list-heading {
   text-align: center;
   font-weight: normal;
@@ -202,4 +189,20 @@ body {
 
 .card-text {
   font-size: 14px;
+}
+
+@media (max-width: 767.98px) {
+  #mapDiv {
+    min-height: 450px;
+    height: 60vh;
+  }
+
+  /* Force GPU compositing layer promotion on mobile to prevent Chrome blanking out the WebGL canvas */
+  #mapDiv,
+  .esri-view-surface {
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
 }
