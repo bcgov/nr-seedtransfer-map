@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
     <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css" />
     <link rel="stylesheet" href="lib/slim-select/slimselect.css" />
-    <link href="css/styles.css" rel="stylesheet" type="text/css" />
+    <link href="css/styles.css?v=7.0.5" rel="stylesheet" type="text/css" />
 
     <script src="lib/jquery/jquery.min.js"></script>
     <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -28,6 +28,7 @@
         var locationPath = pathname.substring(0, pathname.lastIndexOf('/'))
         window.dojoConfig = {
           async: true,
+          cacheBust: 'v=7.0.5',
           packages: [
             {
               name: 'scripts',
@@ -38,7 +39,7 @@
       })()
     </script>
     <script src="https://js.arcgis.com/4.34/"></script>
-    <script src="scripts/requireMain.js" type="text/javascript"></script>
+    <script src="scripts/requireMain.js?v=7.0.5" type="text/javascript"></script>
   </head>
 
   <body>
@@ -233,6 +234,21 @@
                     Clear
                   </button>
                 </form>
+                <hr class="my-4" />
+                <div class="mb-3">
+                  <label for="coordsforlocation" class="form-label font-weight-bold"
+                    >Zoom to Location (Lat,Long):</label
+                  >
+                  <input
+                    id="coordsforlocation"
+                    type="text"
+                    class="form-control"
+                    placeholder="e.g. 54.123, -125.456"
+                  />
+                </div>
+                <button id="btnUpdate" type="button" class="btn btn-secondary w-100">
+                  Zoom to Location
+                </button>
                 <p></p>
                 <div id="grid"></div>
                 <br />
@@ -394,16 +410,6 @@
               >
                 Layers
               </button>
-            </div>
-          </div>
-        </div>
-        <div id="editArea" class="editArea-container esri-widget--panel">
-          <div id="featureUpdateDiv" style="margin-top: 1em">
-            <h4 class="list-heading">Enter a location (Lat,Long)</h4>
-            <div id="attributeArea">
-              <!-- <div id="formDiv"></div> -->
-              <input id="coordsforlocation" class="expandInputCoords" type="text" />
-              <input type="button" class="esri-button" value="Zoom to Location" id="btnUpdate" />
             </div>
           </div>
         </div>

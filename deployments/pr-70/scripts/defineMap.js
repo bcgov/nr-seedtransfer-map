@@ -43,7 +43,7 @@ define([
   var layerButton
   var _scaleBar, layerList
   var activeWidget
-  var expand, trackWidget, editExpand
+  var expand, trackWidget
   var currentLayer, nonsuitLayer, _current2019Layer, _nonsuit2019Layer, spuLayer, mguLayer
   var _suitRenderer, _nonSuitRenderer
   var portalUrl = 'https://www.arcgis.com'
@@ -110,7 +110,6 @@ define([
 
     addExpand()
     addTracking()
-    addCoords()
     zoomToLocation()
 
     // When the view UI is loaded, add the buttons
@@ -118,10 +117,6 @@ define([
       view.ui.add('topbar', 'top-left')
       view.ui.add(expand, 'top-left')
       view.ui.add(trackWidget, 'top-left')
-      // Only add coordinates input widget on desktop screens to prevent mobile focus/touch deadlocks
-      if (window.innerWidth > 768) {
-        view.ui.add(editExpand, 'top-right')
-      }
       const _attributeEditing = document.getElementById('featureUpdateDiv')
 
       addLayerList()
@@ -428,16 +423,6 @@ define([
   function addTracking() {
     trackWidget = new Track({
       view: view,
-    })
-  }
-
-  function addCoords() {
-    editExpand = new Expand({
-      expandIconClass: 'esri-icon-edit',
-      expandTooltip: 'Expand Edit',
-      expanded: true,
-      view: view,
-      content: document.getElementById('editArea'),
     })
   }
 
