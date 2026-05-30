@@ -225,6 +225,9 @@ body {
     margin: 0;
     padding-top: 0;
   }
+  #mainRow > div:first-of-type {
+    display: contents;
+  }
   #mapCol {
     flex: 1 1 auto;
     width: 100% !important;
