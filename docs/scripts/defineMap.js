@@ -118,7 +118,10 @@ define([
       view.ui.add('topbar', 'top-left')
       view.ui.add(expand, 'top-left')
       view.ui.add(trackWidget, 'top-left')
-      view.ui.add(editExpand, 'top-right')
+      // Only add coordinates input widget on desktop screens to prevent mobile focus/touch deadlocks
+      if (window.innerWidth > 768) {
+        view.ui.add(editExpand, 'top-right')
+      }
       const _attributeEditing = document.getElementById('featureUpdateDiv')
 
       addLayerList()
