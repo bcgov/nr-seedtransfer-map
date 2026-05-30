@@ -164,8 +164,28 @@ define([
       ['Management_Units'],
       'Management Unit',
     )
-    map.add(spuLayer)
-    map.add(mguLayer)
+    spuLayer
+      .load()
+      .then(function () {
+        map.add(spuLayer)
+      })
+      .catch(function (error) {
+        console.error(
+          'Failed to load Area of Use layer. Skipping map addition to prevent WebGL crash.',
+          error,
+        )
+      })
+    mguLayer
+      .load()
+      .then(function () {
+        map.add(mguLayer)
+      })
+      .catch(function (error) {
+        console.error(
+          'Failed to load Management Unit layer. Skipping map addition to prevent WebGL crash.',
+          error,
+        )
+      })
   }
 
   function updateLayer(outlist) {
@@ -193,13 +213,19 @@ define([
       map.add(currentLayer)
     }
 
-    map.add(mguLayer)
-    map.add(spuLayer)
+    if (mguLayer.loadStatus === 'loaded') {
+      map.add(mguLayer)
+    }
+    if (spuLayer.loadStatus === 'loaded') {
+      map.add(spuLayer)
+    }
   }
 
   function displaySPU(SPLayer) {
-    spuLayer.definitionExpression = 'Seedlot = ' + SPLayer
-    map.add(spuLayer)
+    if (spuLayer.loadStatus === 'loaded') {
+      spuLayer.definitionExpression = 'Seedlot = ' + SPLayer
+      map.add(spuLayer)
+    }
   }
 
   function updatePopup() {
