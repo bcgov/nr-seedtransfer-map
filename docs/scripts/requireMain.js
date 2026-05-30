@@ -151,19 +151,4 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
   document.getElementById('clearButtonCutblock').addEventListener('click', function () {
     defineMap.clearCutBlock()
   })
-
-  const toggleBtn = document.getElementById('sidebarToggle')
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', function () {
-      const leftCol = document.getElementById('leftCol')
-      if (leftCol) {
-        leftCol.classList.toggle('show-mobile')
-        if (leftCol.classList.contains('show-mobile')) {
-          toggleBtn.innerHTML = '✕ Hide Panel'
-        } else {
-          toggleBtn.innerHTML = '☰ Show Options'
-        }
-      }
-    })
-  }
 })
