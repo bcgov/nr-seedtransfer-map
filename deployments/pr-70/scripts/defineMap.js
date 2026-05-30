@@ -406,7 +406,7 @@ define([
     editExpand = new Expand({
       expandIconClass: 'esri-icon-edit',
       expandTooltip: 'Expand Edit',
-      expanded: true,
+      expanded: window.innerWidth > 768,
       view: view,
       content: document.getElementById('editArea'),
     })
