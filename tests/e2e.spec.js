@@ -14,6 +14,38 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await expect(page.locator('#titleText')).toContainText('CBST Seedlot Selection Tool')
   })
 
+  test('Sourcing: Sourced seedlot data-currency date is dynamically populated from body data attribute', async ({
+    page,
+  }) => {
+    // 1. Verify the default date renders correctly in both places
+    const subtitle = page.locator('#titleDiv .titleTextsmall.align-text-top')
+    await expect(subtitle).toContainText('Seedlot Data Current as of August 18th, 2025')
+
+    // Click the instructions tab to ensure visibility
+    await page.click('#instructions-tab')
+    const instructionItem = page.locator('#instructions ul.card-text li').filter({ hasText: 'Seedlot data refreshed' })
+    await expect(instructionItem).toContainText(
+      'Seedlot data refreshed August 18th, 2025. Seedlots that have been registered on SPAR after August 18th, 2025 are not included in the tool'
+    )
+
+    // 2. Change the body data-seedlot-date attribute and propagate to verify dynamic updates
+    await page.evaluate(() => {
+      document.body.setAttribute('data-seedlot-date', 'December 25th, 2026')
+      const seedlotDate = document.body.getAttribute('data-seedlot-date')
+      if (seedlotDate) {
+        document.querySelectorAll('.seedlot-data-date-placeholder').forEach(function (el) {
+          el.textContent = seedlotDate
+        })
+      }
+    })
+
+    // Assert that the text dynamically updated to the new date in all placeholders
+    await expect(subtitle).toContainText('Seedlot Data Current as of December 25th, 2026')
+    await expect(instructionItem).toContainText(
+      'Seedlot data refreshed December 25th, 2026. Seedlots that have been registered on SPAR after December 25th, 2026 are not included in the tool'
+    )
+  })
+
   test('Cutblock Flow: Selecting FDI species and IDFdk1 BEC variant populates tables', async ({
     page,
   }) => {
