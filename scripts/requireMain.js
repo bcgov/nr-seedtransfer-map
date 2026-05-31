@@ -1,5 +1,11 @@
 require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) {
   $(function () {
+    const seedlotDate = document.body.getAttribute('data-seedlot-date')
+    if (seedlotDate) {
+      document.querySelectorAll('.seedlot-data-date-placeholder').forEach(function (el) {
+        el.textContent = seedlotDate
+      })
+    }
     main.fillSelects()
     setTimeout(function () {
       defineMap.mapInit()
