@@ -42,6 +42,7 @@ define([
   var _suitRenderer, _nonSuitRenderer
   var portalUrl = 'https://www.arcgis.com'
   var template
+  var uploadFormEl, uploadStatusEl
 
   template = {
     title: 'Selected {MAP_Label}',
@@ -458,23 +459,26 @@ define([
 
   function addExpand() {
     var fileForm = document.getElementById('mainWindow')
+    uploadFormEl = document.getElementById('uploadForm')
+    uploadStatusEl = document.getElementById('upload-status')
 
     expand = document.createElement('arcgis-expand')
     expand.view = view
     expand.setAttribute('expand-icon', 'upload')
     expand.appendChild(fileForm)
 
-    document.getElementById('uploadForm').addEventListener('change', function (event) {
-      var fileName = event.target.value.toLowerCase()
+    if (uploadFormEl) {
+      uploadFormEl.addEventListener('change', function (event) {
+        var fileName = event.target.value.toLowerCase()
 
-      if (fileName.indexOf('.zip') !== -1) {
-        //is file a zip - if not notify user
-        generateFeatureCollection(fileName)
-      } else {
-        document.getElementById('upload-status').innerHTML =
-          '<p style="color:red">Add shapefile as .zip file</p>'
-      }
-    })
+        if (fileName.indexOf('.zip') !== -1) {
+          //is file a zip - if not notify user
+          generateFeatureCollection(fileName)
+        } else if (uploadStatusEl) {
+          uploadStatusEl.innerHTML = '<p style="color:red">Add shapefile as .zip file</p>'
+        }
+      })
+    }
   }
 
   function generateFeatureCollection(fileName) {
@@ -483,9 +487,10 @@ define([
     // see this link for more info: http://davidwalsh.name/fakepath
     name = name[0].replace('c:\\fakepath\\', '')
 
-    var statusEl = document.getElementById('upload-status')
-    statusEl.innerHTML = '<b>Loading </b>'
-    statusEl.appendChild(document.createTextNode(name))
+    if (uploadStatusEl) {
+      uploadStatusEl.innerHTML = '<b>Loading </b>'
+      uploadStatusEl.appendChild(document.createTextNode(name))
+    }
 
     // define the input params for generate see the rest doc for details
     // https://developers.arcgis.com/rest/users-groups-and-items/generate.htm
@@ -512,27 +517,29 @@ define([
     // use the REST generate operation to generate a feature collection from the zipped shapefile
     request(portalUrl + '/sharing/rest/content/features/generate', {
       query: myContent,
-      body: document.getElementById('uploadForm'),
+      body: uploadFormEl,
       responseType: 'json',
     })
       .then(function (response) {
         var layerName = response.data.featureCollection.layers[0].layerDefinition.name
-        var statusEl = document.getElementById('upload-status')
-        statusEl.innerHTML = '<b>Loaded: </b>'
-        statusEl.appendChild(document.createTextNode(layerName))
+        if (uploadStatusEl) {
+          uploadStatusEl.innerHTML = '<b>Loaded: </b>'
+          uploadStatusEl.appendChild(document.createTextNode(layerName))
+        }
         addShapefileToMap(response.data.featureCollection)
       })
       .catch(errorHandler)
   }
 
   function errorHandler(error) {
-    var statusEl = document.getElementById('upload-status')
-    statusEl.innerHTML = ''
-    var p = document.createElement('p')
-    p.style.color = 'red'
-    p.style.maxWidth = '500px'
-    p.appendChild(document.createTextNode(error.message))
-    statusEl.appendChild(p)
+    if (uploadStatusEl) {
+      uploadStatusEl.innerHTML = ''
+      var p = document.createElement('p')
+      p.style.color = 'red'
+      p.style.maxWidth = '500px'
+      p.appendChild(document.createTextNode(error.message))
+      uploadStatusEl.appendChild(p)
+    }
   }
 
   function addShapefileToMap(featureCollection) {
@@ -564,7 +571,9 @@ define([
       }
     })
 
-    document.getElementById('upload-status').innerHTML = ''
+    if (uploadStatusEl) {
+      uploadStatusEl.innerHTML = ''
+    }
   }
 
   function _addMouseCoord() {
