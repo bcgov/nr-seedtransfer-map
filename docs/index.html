@@ -27,19 +27,45 @@
       // to keep the developer console 100% clean of expected public deployment warnings.
       const originalConsoleError = console.error
       console.error = function (...args) {
-        const errorStr = args
-          .map(function (arg) {
+        let hasFailedToLoad = false
+        let hasAreaOfUse = false
+
+        args.forEach(function (arg) {
+          if (!arg) return
+          const str = String(arg)
+          if (str.indexOf('Failed to load layer') !== -1 || str.indexOf('FeatureLayer') !== -1) {
+            hasFailedToLoad = true
+          }
+          if (str.indexOf('Area of Use') !== -1) {
+            hasAreaOfUse = true
+          }
+          // Check object properties
+          if (typeof arg === 'object') {
             try {
-              return arg && typeof arg.toString === 'function' ? arg.toString() : String(arg)
+              const json = JSON.stringify(arg)
+              if (json.indexOf('Area of Use') !== -1) {
+                hasAreaOfUse = true
+              }
+              if (json.indexOf('Failed to load layer') !== -1) {
+                hasFailedToLoad = true
+              }
             } catch (e) {
-              return String(arg)
+              // Circular object fallback: inspect common fields
+              if (
+                arg.title === 'Area of Use' ||
+                arg.name === 'Area of Use' ||
+                arg.message === 'Area of Use'
+              ) {
+                hasAreaOfUse = true
+              }
+              if (arg.message && arg.message.indexOf('Failed to load layer') !== -1) {
+                hasFailedToLoad = true
+              }
             }
-          })
-          .join(' ')
-        if (
-          errorStr.indexOf('Failed to load layer') !== -1 &&
-          errorStr.indexOf('Area of Use') !== -1
-        ) {
+          }
+        })
+
+        if (hasFailedToLoad && hasAreaOfUse) {
           return
         }
         originalConsoleError.apply(console, args)
