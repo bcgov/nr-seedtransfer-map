@@ -13,12 +13,9 @@ define([
   'esri/widgets/Legend',
   'esri/widgets/DistanceMeasurement2D',
   'esri/widgets/AreaMeasurement2D',
-  'esri/widgets/ScaleBar',
-  'esri/widgets/Expand',
   'esri/request',
   'esri/layers/support/Field',
   'esri/Graphic',
-  'esri/widgets/Track',
   'esri/layers/KMLLayer',
 ], function (
   Map,
@@ -31,12 +28,9 @@ define([
   Legend,
   DistanceMeasurement2D,
   AreaMeasurement2D,
-  ScaleBar,
-  Expand,
   request,
   Field,
   Graphic,
-  Track,
   KMLLayer,
 ) {
   var map, view, xy
@@ -117,6 +111,7 @@ define([
       view.ui.add('topbar', 'top-left')
       view.ui.add(expand, 'top-left')
       view.ui.add(trackWidget, 'top-left')
+
       const _attributeEditing = document.getElementById('featureUpdateDiv')
 
       addLayerList()
@@ -167,10 +162,9 @@ define([
       .then(function () {
         map.add(spuLayer)
       })
-      .catch(function (error) {
-        console.error(
-          'Failed to load Area of Use layer. Skipping map addition to prevent WebGL crash.',
-          error,
+      .catch(function () {
+        console.info(
+          'Area of Use layer failed to load (expected in public deployment). Skipping map addition.',
         )
       })
     mguLayer
@@ -263,7 +257,11 @@ define([
       visibilityMode: 'independent',
     })
     layer.load().catch(function (error) {
-      console.warn('Failed to load feature layer: ' + name, error)
+      if (name === 'Area of Use') {
+        console.info('Area of Use layer requires authentication and is skipped in public mode.')
+      } else {
+        console.warn('Failed to load feature layer: ' + name, error)
+      }
     })
     return layer
   }
@@ -421,9 +419,8 @@ define([
   }
 
   function addTracking() {
-    trackWidget = new Track({
-      view: view,
-    })
+    trackWidget = document.createElement('arcgis-track')
+    trackWidget.view = view
   }
 
   function zoomToLocation() {
@@ -462,11 +459,10 @@ define([
   function addExpand() {
     var fileForm = document.getElementById('mainWindow')
 
-    expand = new Expand({
-      expandIconClass: 'esri-icon-upload uploadformatting',
-      view: view,
-      content: fileForm,
-    })
+    expand = document.createElement('arcgis-expand')
+    expand.view = view
+    expand.setAttribute('expand-icon', 'upload')
+    expand.appendChild(fileForm)
 
     document.getElementById('uploadForm').addEventListener('change', function (event) {
       var fileName = event.target.value.toLowerCase()
@@ -633,12 +629,11 @@ define([
 
   // Create and add a scalebar
   function addScalebar() {
-    _scaleBar = new ScaleBar({
-      view: view,
-      unit: 'metric',
-      style: 'ruler',
-      container: 'scaleDiv',
-    })
+    _scaleBar = document.createElement('arcgis-scale-bar')
+    _scaleBar.view = view
+    _scaleBar.setAttribute('unit', 'metric')
+    _scaleBar.setAttribute('bar-style', 'ruler')
+    view.ui.add(_scaleBar, 'bottom-left')
   }
 
   function setActiveButton(selectedButton) {
