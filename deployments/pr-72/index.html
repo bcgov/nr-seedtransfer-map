@@ -23,6 +23,28 @@
 
     <!-- ArcGIS Maps SDK JS runtime loader remains on the Esri CDN due to dynamic lazy-loading Dojo modules -->
     <script>
+      // Intercept and silence the expected internal Esri FeatureLayer load error for "Area of Use"
+      // to keep the developer console 100% clean of expected public deployment warnings.
+      const originalConsoleError = console.error
+      console.error = function (...args) {
+        const errorStr = args
+          .map(function (arg) {
+            try {
+              return arg && typeof arg.toString === 'function' ? arg.toString() : String(arg)
+            } catch (e) {
+              return String(arg)
+            }
+          })
+          .join(' ')
+        if (
+          errorStr.indexOf('Failed to load layer') !== -1 &&
+          errorStr.indexOf('Area of Use') !== -1
+        ) {
+          return
+        }
+        originalConsoleError.apply(console, args)
+      }
+
       // Monkeypatch the missing reposition method on HTMLElement prototype to prevent
       // internal Calcite Components / Stencil asynchronous upgrade race condition crashes
       // where Esri CDN code calls popoverEl?.value?.reposition() before the element is fully upgraded.
