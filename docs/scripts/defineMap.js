@@ -162,9 +162,9 @@ define([
       .then(function () {
         map.add(spuLayer)
       })
-      .catch(function (error) {
+      .catch(function () {
         console.info(
-          'Area of Use layer failed to load (expected in public deployment). Skipping map addition.'
+          'Area of Use layer failed to load (expected in public deployment). Skipping map addition.',
         )
       })
     mguLayer
@@ -422,7 +422,6 @@ define([
     trackWidget = document.createElement('arcgis-track')
     trackWidget.view = view
   }
-
 
   function zoomToLocation() {
     function performZoom(inputId) {
