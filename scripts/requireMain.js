@@ -1,7 +1,9 @@
 require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) {
   $(function () {
     main.fillSelects()
-    defineMap.mapInit()
+    setTimeout(function () {
+      defineMap.mapInit()
+    }, 0)
   })
   var errorTimeoutId = null
   var selected = []
