@@ -26,7 +26,7 @@
     <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
     <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css" />
     <link rel="stylesheet" href="lib/slim-select/slimselect.css" />
-    <link href="css/styles.css?v=7.0.5" rel="stylesheet" type="text/css" />
+    <link href="css/styles.css?v=7.0.6" rel="stylesheet" type="text/css" />
 
     <script src="lib/jquery/jquery.min.js"></script>
     <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -35,10 +35,14 @@
     <script src="lib/bootstrap-table/js/bootstrap-table.min.js"></script>
 
     <!-- ArcGIS Maps SDK JS runtime loader remains on the Esri CDN due to dynamic lazy-loading Dojo modules -->
-    <script src="scripts/loader-init.js?v=7.0.5" type="text/javascript"></script>
+    <script src="scripts/loader-init.js?v=7.0.6" type="text/javascript"></script>
     <script src="https://js.arcgis.com/4.34/"></script>
     <script type="module" src="https://js.arcgis.com/4.34/map-components/"></script>
-    <script src="scripts/requireMain.js?v=7.0.5" type="text/javascript"></script>
+    <script
+      type="module"
+      src="https://js.arcgis.com/calcite-components/3.3.2/calcite.esm.js"
+    ></script>
+    <script src="scripts/requireMain.js?v=7.0.6" type="text/javascript"></script>
   </head>
 
   <body data-seedlot-date="August 18th, 2025">
@@ -434,7 +438,7 @@
             </div>
           </div>
         </div>
-        <div id="mainWindow">
+        <div id="mainWindow" style="display: none">
           <div>
             <div class="uploadExpand">
               <p>Add a zipped shapefile to the map.</p>
@@ -461,7 +465,7 @@
           </div>
         </div>
 
-        <div id="mapCol" class="col-md-9 col-12 g-0">
+        <div id="mapCol" class="col-md-9 col-12 g-0" style="position: relative">
           <!--add the below divs in the JS when making the widgets-->
           <div id="coords"></div>
           <!-- <div id ="scaleDiv"></div> -->
@@ -485,28 +489,56 @@
                 type="button"
                 title="Export Map to PDF"
               >
-                Print
+                Export
               </button>
             </div>
-            <div>
-              <button
-                class="action-button esri-widget"
-                id="layerButton"
-                type="button"
-                title="Layers"
-              >
-                Layers
-              </button>
+          </div>
+
+          <!-- Dynamic Legend Card -->
+          <div
+            id="mapLegend"
+            class="card shadow-sm border p-2"
+            style="
+              position: absolute;
+              bottom: 20px;
+              right: 20px;
+              z-index: 99;
+              background: rgba(255, 255, 255, 0.95);
+              font-size: 13px;
+              border-radius: 6px;
+              display: none;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            "
+          >
+            <div
+              class="fw-bold mb-1 border-bottom pb-1 text-dark"
+              style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px"
+            >
+              CBST Suitability
             </div>
-            <div>
-              <button
-                class="action-button esri-widget"
-                id="legendButton"
-                type="button"
-                title="Legend"
-              >
-                Legend
-              </button>
+            <div class="d-flex align-items-center mb-1">
+              <span
+                class="d-inline-block rounded-circle me-2"
+                style="
+                  width: 12px;
+                  height: 12px;
+                  background-color: rgba(217, 95, 2, 0.7);
+                  border: 1.5px solid rgb(115, 76, 0);
+                "
+              ></span>
+              <span class="text-dark">Suitable</span>
+            </div>
+            <div class="d-flex align-items-center">
+              <span
+                class="d-inline-block rounded-circle me-2"
+                style="
+                  width: 12px;
+                  height: 12px;
+                  background-color: rgba(170, 102, 205, 0.7);
+                  border: 1.5px solid rgb(76, 0, 115);
+                "
+              ></span>
+              <span class="text-dark">Borderline Suitable</span>
             </div>
           </div>
         </div>
