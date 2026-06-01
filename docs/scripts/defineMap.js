@@ -29,7 +29,7 @@ define([
   var _scaleBar
   var activeWidget
   var expand, trackWidget
-  var currentLayer, nonsuitLayer, _current2019Layer, _nonsuit2019Layer, spuLayer, mguLayer
+  var currentLayer, nonsuitLayer, _current2019Layer, _nonsuit2019Layer, mguLayer
   var _suitRenderer, _nonSuitRenderer
   var portalUrl = 'https://www.arcgis.com'
   var template
@@ -60,7 +60,6 @@ define([
     clearLyrs: clearLyrs,
     addLayers: addLayers,
     updateLayer: updateLayer,
-    displaySPU: displaySPU,
     updatePopup: updatePopup,
     clearCutBlock: clearCutBlock,
   }
@@ -137,26 +136,11 @@ define([
       ['map_label', 'SHAPE_Area'],
       '2019 Species May Not Be Suitable',
     )
-    spuLayer = featureInit(
-      'https://maps.forsite.ca/server/rest/services/204_2/CBST_BEC_v11/MapServer/1',
-      ['Seedlot', 'SPU'],
-      'Area of Use',
-    )
     mguLayer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/0',
       ['Management_Units'],
       'Management Unit',
     )
-    spuLayer
-      .load()
-      .then(function () {
-        map.add(spuLayer)
-      })
-      .catch(function () {
-        console.info(
-          'Area of Use layer failed to load (expected in public deployment). Skipping map addition.',
-        )
-      })
     mguLayer
       .load()
       .then(function () {
@@ -198,16 +182,6 @@ define([
     if (mguLayer.loadStatus === 'loaded') {
       map.add(mguLayer)
     }
-    if (spuLayer.loadStatus === 'loaded') {
-      map.add(spuLayer)
-    }
-  }
-
-  function displaySPU(SPLayer) {
-    if (spuLayer.loadStatus === 'loaded') {
-      spuLayer.definitionExpression = 'Seedlot = ' + SPLayer
-      map.add(spuLayer)
-    }
   }
 
   function updatePopup() {
@@ -247,11 +221,7 @@ define([
       visibilityMode: 'independent',
     })
     layer.load().catch(function (error) {
-      if (name === 'Area of Use') {
-        console.info('Area of Use layer requires authentication and is skipped in public mode.')
-      } else {
-        console.warn('Failed to load feature layer: ' + name, error)
-      }
+      console.warn('Failed to load feature layer: ' + name, error)
     })
     return layer
   }
