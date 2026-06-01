@@ -105,6 +105,7 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       .then((layers) => {
         defineMap.updateLayer(layers)
         hideLoader()
+        $('#mapLegend').fadeIn(300)
       })
       .catch((error) => {
         showError(error.message)
@@ -123,6 +124,7 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       .then((layers) => {
         defineMap.updateLayer(layers)
         hideLoader()
+        $('#mapLegend').fadeIn(300)
       })
       .catch((error) => {
         showError(error.message)
@@ -158,5 +160,6 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
 
   document.getElementById('clearButtonCutblock').addEventListener('click', function () {
     defineMap.clearCutBlock()
+    $('#mapLegend').fadeOut(300)
   })
 })

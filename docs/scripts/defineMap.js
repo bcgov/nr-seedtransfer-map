@@ -7,10 +7,6 @@ define([
   'esri/views/MapView',
   'esri/layers/FeatureLayer',
   'esri/layers/GraphicsLayer',
-  'esri/widgets/LayerList',
-  'esri/widgets/Print',
-  'esri/widgets/BasemapGallery',
-  'esri/widgets/Legend',
   'esri/widgets/DistanceMeasurement2D',
   'esri/widgets/AreaMeasurement2D',
   'esri/request',
@@ -22,10 +18,6 @@ define([
   MapView,
   FeatureLayer,
   GraphicsLayer,
-  LayerList,
-  Print,
-  BasemapGallery,
-  Legend,
   DistanceMeasurement2D,
   AreaMeasurement2D,
   request,
@@ -34,8 +26,7 @@ define([
   KMLLayer,
 ) {
   var map, view, xy
-  var layerButton
-  var _scaleBar, layerList
+  var _scaleBar
   var activeWidget
   var expand, trackWidget
   var currentLayer, nonsuitLayer, _current2019Layer, _nonsuit2019Layer, spuLayer, mguLayer
@@ -115,10 +106,8 @@ define([
 
       const _attributeEditing = document.getElementById('featureUpdateDiv')
 
-      addLayerList()
       addBasemapGallery()
       addPrintButton()
-      addLegend()
       addScalebar()
     })
   }
@@ -344,81 +333,6 @@ define([
     })
   }
 
-  function _addLayerListButton() {
-    layerButton = document.createElement('layerDiv')
-    layerButton.id = 'layerButton'
-    layerButton.className = 'esri-icon-layers esri-widget--button esri-component'
-    view.ui.add(layerButton, 'top-right')
-  }
-
-  function addLayerList() {
-    document.getElementById('layerButton').addEventListener('click', function () {
-      setActiveWidget(null)
-      if (!this.classList.contains('active')) {
-        layerList = new LayerList({
-          view: view,
-          listItemCreatedFunction: function (event) {
-            var item = event.item
-            item.actionsSections = [
-              [
-                {
-                  title: 'Increase opacity',
-                  className: 'esri-icon-up',
-                  id: 'increase-opacity',
-                },
-                {
-                  title: 'Decrease opacity',
-                  className: 'esri-icon-down',
-                  id: 'decrease-opacity',
-                },
-              ],
-            ]
-            item.panel = {
-              content: 'legend',
-              open: true,
-            }
-          },
-        })
-        layerList.on('trigger-action', function (event) {
-          var item = event.item
-          var id = event.action.id
-          if (id === 'increase-opacity') {
-            if (item.layer.opacity < 1) {
-              item.layer.opacity += 0.25
-            }
-          } else if (id === 'decrease-opacity') {
-            if (item.layer.opacity > 0) {
-              item.layer.opacity -= 0.25
-            }
-          }
-        })
-        view.ui.add(layerList, 'top-right')
-        setActiveWidget('layer')
-      } else {
-        setActiveButton(null)
-        layerList.destroy()
-      }
-    })
-  }
-
-  function addLegend() {
-    const legendButton = document.getElementById('legendButton')
-    if (legendButton) {
-      legendButton.addEventListener('click', function () {
-        setActiveWidget(null)
-        if (!this.classList.contains('active')) {
-          setActiveWidget('legend')
-        } else {
-          setActiveButton(null)
-        }
-      })
-    } else {
-      console.warn(
-        "Element with ID 'legendButton' not found. Legend widget will not be initialized.",
-      )
-    }
-  }
-
   function addTracking() {
     trackWidget = document.createElement('arcgis-track')
     trackWidget.view = view
@@ -459,13 +373,24 @@ define([
 
   function addExpand() {
     var fileForm = document.getElementById('mainWindow')
+    if (fileForm) {
+      fileForm.style.display = 'block'
+    }
     uploadFormEl = document.getElementById('uploadForm')
     uploadStatusEl = document.getElementById('upload-status')
 
     expand = document.createElement('arcgis-expand')
     expand.view = view
+    expand.expanded = false
     expand.setAttribute('expand-icon', 'upload')
     expand.appendChild(fileForm)
+
+    // Collapse the expand widget whenever the user clicks outside on the map view
+    view.on('click', function () {
+      if (expand) {
+        expand.expanded = false
+      }
+    })
 
     if (uploadFormEl) {
       uploadFormEl.addEventListener('change', function (event) {
@@ -657,35 +582,24 @@ define([
 
   function setActiveWidget(type) {
     switch (type) {
-      case 'legend':
-        activeWidget = new Legend({
-          view: view,
-        })
-        view.ui.add(activeWidget, 'top-left')
-        setActiveButton(document.getElementById('legendButton'))
-        break
-      case 'layer':
-        setActiveButton(document.getElementById('layerButton'))
-        break
       case 'home':
         activeWidget = fullExtent()
         view.ui.add(activeWidget)
         setActiveButton(document.getElementById('homeButton'))
         break
       case 'basemap':
-        activeWidget = new BasemapGallery({
-          view: view,
-        })
+        activeWidget = document.createElement('arcgis-basemap-gallery')
+        activeWidget.view = view
         view.ui.add(activeWidget, 'top-right')
         setActiveButton(document.getElementById('basemapButton'))
         break
       case 'printer':
-        activeWidget = new Print({
-          view: view,
-          id: 'printer',
-          printServiceUrl:
-            'https://utility.arcgisonline.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task',
-        })
+        activeWidget = document.createElement('arcgis-print')
+        activeWidget.view = view
+        activeWidget.setAttribute(
+          'print-service-url',
+          'https://utility.arcgisonline.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task',
+        )
         view.ui.add(activeWidget, 'top-right')
         setActiveButton(document.getElementById('printerButton'))
         break
@@ -712,7 +626,9 @@ define([
       case null:
         if (activeWidget) {
           view.ui.remove(activeWidget)
-          activeWidget.destroy()
+          if (typeof activeWidget.destroy === 'function') {
+            activeWidget.destroy()
+          }
           activeWidget = null
         }
         break
