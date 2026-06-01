@@ -7,8 +7,6 @@ define([
   'esri/views/MapView',
   'esri/layers/FeatureLayer',
   'esri/layers/GraphicsLayer',
-  'esri/widgets/Print',
-  'esri/widgets/BasemapGallery',
   'esri/widgets/DistanceMeasurement2D',
   'esri/widgets/AreaMeasurement2D',
   'esri/request',
@@ -20,8 +18,6 @@ define([
   MapView,
   FeatureLayer,
   GraphicsLayer,
-  Print,
-  BasemapGallery,
   DistanceMeasurement2D,
   AreaMeasurement2D,
   request,
@@ -30,8 +26,7 @@ define([
   KMLLayer,
 ) {
   var map, view, xy
-  var layerButton
-  var _scaleBar, layerList
+  var _scaleBar
   var activeWidget
   var expand, trackWidget
   var currentLayer, nonsuitLayer, _current2019Layer, _nonsuit2019Layer, spuLayer, mguLayer
@@ -593,19 +588,18 @@ define([
         setActiveButton(document.getElementById('homeButton'))
         break
       case 'basemap':
-        activeWidget = new BasemapGallery({
-          view: view,
-        })
+        activeWidget = document.createElement('arcgis-basemap-gallery')
+        activeWidget.view = view
         view.ui.add(activeWidget, 'top-right')
         setActiveButton(document.getElementById('basemapButton'))
         break
       case 'printer':
-        activeWidget = new Print({
-          view: view,
-          id: 'printer',
-          printServiceUrl:
-            'https://utility.arcgisonline.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task',
-        })
+        activeWidget = document.createElement('arcgis-print')
+        activeWidget.view = view
+        activeWidget.setAttribute(
+          'print-service-url',
+          'https://utility.arcgisonline.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task',
+        )
         view.ui.add(activeWidget, 'top-right')
         setActiveButton(document.getElementById('printerButton'))
         break
@@ -632,7 +626,9 @@ define([
       case null:
         if (activeWidget) {
           view.ui.remove(activeWidget)
-          activeWidget.destroy()
+          if (typeof activeWidget.destroy === 'function') {
+            activeWidget.destroy()
+          }
           activeWidget = null
         }
         break
