@@ -2,7 +2,7 @@
  seedlot selector functionality and data
  */
 
-define(function () {
+define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
   var jsontxt, jsonseedlot
 
   var speciesStore = [
@@ -314,6 +314,61 @@ define(function () {
     })
   }
 
+  function fetchFGB(url, becName, type) {
+    let fgbUrl = url
+    if (url.endsWith('.json')) {
+      if (url.endsWith('_migrated_height_list_5.json')) {
+        fgbUrl = url.replace('.json', '_' + type + '.fgb')
+      } else {
+        fgbUrl = url.replace('.json', '.fgb')
+      }
+    }
+
+    const idx = becStore.findIndex((b) => b.name === becName)
+    if (idx === -1) {
+      return Promise.reject(new Error('BEC Variant ' + becName + ' not found in becStore'))
+    }
+
+    const rect = {
+      minX: idx * 10 - 1,
+      minY: -1,
+      maxX: idx * 10 + 1,
+      maxY: 1,
+    }
+
+    const isPrPreview = window.location.pathname.includes('/deployments/pr-')
+
+    function executeFetch(urlToFetch) {
+      return new Promise((resolve, reject) => {
+        const features = []
+        try {
+          const iterator = flatgeobuf.deserialize(urlToFetch, rect)
+          ;(async () => {
+            for await (const feature of iterator) {
+              features.push(feature.properties)
+            }
+            resolve(features)
+          })().catch((err) => {
+            reject(err)
+          })
+        } catch (e) {
+          reject(e)
+        }
+      })
+    }
+
+    return executeFetch(fgbUrl).catch((err) => {
+      if (fgbUrl.startsWith('Version_7_0/') && isPrPreview) {
+        const fallbackUrl = '../../' + fgbUrl
+        console.warn(
+          `Local FGB file not found at ${fgbUrl}. Falling back to production database: ${fallbackUrl}`,
+        )
+        return executeFetch(fallbackUrl)
+      }
+      throw err
+    })
+  }
+
   // adds all the options to the Species and BEC Variant dropdowns
   function fillSelects() {
     for (const i in becStore) {
@@ -383,7 +438,7 @@ define(function () {
     var spmin
     var outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019
     var output_suit, output_non_suit
-    var bec_name
+    var bec_name, results
 
     jsontxt =
       'Version_7_0/' +
@@ -409,13 +464,11 @@ define(function () {
     let p1 = getSeedLot(bec, suit, 0, jsonseedlot)
 
     let p2 = new Promise((resolve, reject) => {
-      fetchJSON(jsontxt)
-        .then(function (data) {
-          var results = []
-
-          let becPromise = new Promise((resolveInner) => {
-            if (bec.length == 1) {
-              bec_name = becStore.find((x) => x.id == bec).name
+      let becPromise = new Promise((resolveInner) => {
+        if (bec.length == 1) {
+          bec_name = becStore.find((x) => x.id == bec).name
+          fetchFGB(jsontxt, bec_name, 'site')
+            .then(function (data) {
               results = data.filter(function (x) {
                 return (
                   x['BECvar_site'] == bec_name &&
@@ -455,39 +508,52 @@ define(function () {
               outlist_non_suit = outlist_non_suit.join(', ')
 
               resolveInner(outlist_suit)
-            } else {
-              for (let i = 0; i < bec.length; i++) {
-                bec_name = becStore.find((x) => x.id == bec[i]).name
-                results.push(
+            })
+            .catch(reject)
+        } else {
+          const promises = []
+          const results_arrays = []
+          const output_suit_arrays = []
+          const output_non_suit_arrays = []
+
+          for (let i = 0; i < bec.length; i++) {
+            const current_bec_name = becStore.find((x) => x.id == bec[i]).name
+            promises.push(
+              fetchFGB(jsontxt, current_bec_name, 'site').then(function (data) {
+                results_arrays.push(
                   data.filter(function (x) {
                     return (
-                      x['BECvar_site'] == bec_name &&
+                      x['BECvar_site'] == current_bec_name &&
                       x['HTp_pred'] >= suit &&
                       x['Sp_suit_site'] >= spmin
                     )
                   }),
                 )
-                output_suit.push(
+                output_suit_arrays.push(
                   data.filter(function (x) {
                     return (
-                      x['BECvar_site'] == bec_name &&
+                      x['BECvar_site'] == current_bec_name &&
                       x['HTp_pred'] >= suit &&
                       x['Sp_suit_site'] == 1
                     )
                   }),
                 )
-                output_non_suit.push(
+                output_non_suit_arrays.push(
                   data.filter(function (x) {
                     return (
-                      x['BECvar_site'] == bec_name &&
+                      x['BECvar_site'] == current_bec_name &&
                       x['HTp_pred'] >= suit &&
                       x['Sp_suit_site'] == 0
                     )
                   }),
                 )
-              }
+              }),
+            )
+          }
 
-              let t1 = getIntersection(results).then(function (intersection) {
+          Promise.all(promises)
+            .then(() => {
+              let t1 = getIntersection(results_arrays).then(function (intersection) {
                 if (intersection.length == 0) {
                   alert('No results available for those parameters')
                 }
@@ -496,9 +562,7 @@ define(function () {
                 })
               })
 
-              // ========= SUITABLE OUTPUT ======================
-
-              let t2 = getIntersection(output_suit).then(function (output) {
+              let t2 = getIntersection(output_suit_arrays).then(function (output) {
                 if (output.length > 0) {
                   for (let i = 0; i < output.length; i++) {
                     outlist_suit.push("'" + output[i].BECvar_seed + "'")
@@ -507,8 +571,7 @@ define(function () {
                 outlist_suit = outlist_suit.join(', ')
               })
 
-              let t3 = getIntersection(output_non_suit).then(function (output) {
-                // ========= NON SUITABLE OUTPUT ==========
+              let t3 = getIntersection(output_non_suit_arrays).then(function (output) {
                 if (output.length > 0) {
                   for (let i = 0; i < output.length; i++) {
                     outlist_non_suit.push("'" + output[i].BECvar_seed + "'")
@@ -518,18 +581,16 @@ define(function () {
               })
 
               Promise.all([t1, t2, t3]).then(() => {
-                resolveInner(results)
+                resolveInner(results_arrays)
               })
-            }
-          }).then(function () {
-            return [[outlist_suit], [outlist_non_suit], [outlist_2019], [outlist_non_2019]]
-          })
+            })
+            .catch(reject)
+        }
+      }).then(function () {
+        return [[outlist_suit], [outlist_non_suit], [outlist_2019], [outlist_non_2019]]
+      })
 
-          resolve(becPromise)
-        })
-        .catch(function (errorThrown) {
-          reject(new Error('Failed to load Species database: ' + errorThrown.message))
-        })
+      resolve(becPromise)
     })
 
     return Promise.all([p1, p2]).then((values) => {
@@ -571,44 +632,46 @@ define(function () {
 
   function getSeedLot(bec, spmin, min, jsonseedlot) {
     return new Promise((resolve, reject) => {
-      fetchJSON(jsonseedlot)
-        .then(function (data) {
-          var bec_name = ''
-          var results = []
-          let finalPromise
+      let finalPromise
 
-          if (bec.length == 1) {
-            bec_name = becStore.find((x) => x.id == bec).name
-            results = data.filter(function (x) {
-              return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
-            })
-            finalPromise = Promise.resolve(results)
-          } else {
-            for (let i = 0; i < bec.length; i++) {
-              bec_name = becStore.find((x) => x.id == bec[i]).name
-              results.push(
-                data.filter(function (x) {
-                  return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
-                }),
-              )
-            }
-            finalPromise = getIntersection(results)
-          }
-
-          finalPromise.then((finalarray) => {
-            for (let i = 0; i < finalarray.length; i++) {
-              if (finalarray[i].Seedlot == '') {
-                finalarray[i].Seedlot = 0
-              }
-              if (finalarray[i].GW == '') {
-                finalarray[i].GW = 0
-              }
-            }
-            var $table = $('#seedlot_table')
-            $table.bootstrapTable('destroy')
-            $table.bootstrapTable({ data: finalarray })
-            resolve()
+      if (bec.length == 1) {
+        const bec_name = becStore.find((x) => x.id == bec[0] || x.id == bec).name
+        finalPromise = fetchFGB(jsonseedlot, bec_name).then(function (data) {
+          return data.filter(function (x) {
+            return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
           })
+        })
+      } else {
+        const promises = []
+        for (let i = 0; i < bec.length; i++) {
+          const current_bec_name = becStore.find((x) => x.id == bec[i]).name
+          promises.push(
+            fetchFGB(jsonseedlot, current_bec_name).then(function (data) {
+              return data.filter(function (x) {
+                return x['BECvar_site'] == current_bec_name && x['MigrationDistance'] >= spmin
+              })
+            }),
+          )
+        }
+        finalPromise = Promise.all(promises).then(function (res_arrays) {
+          return getIntersection(res_arrays)
+        })
+      }
+
+      finalPromise
+        .then((finalarray) => {
+          for (let i = 0; i < finalarray.length; i++) {
+            if (finalarray[i].Seedlot == '') {
+              finalarray[i].Seedlot = 0
+            }
+            if (finalarray[i].GW == '') {
+              finalarray[i].GW = 0
+            }
+          }
+          var $table = $('#seedlot_table')
+          $table.bootstrapTable('destroy')
+          $table.bootstrapTable({ data: finalarray })
+          resolve()
         })
         .catch(function (errorThrown) {
           reject(new Error('Failed to load Seedlot database: ' + errorThrown.message))
@@ -669,12 +732,11 @@ define(function () {
     outlist_2019 = []
     outlist_non_2019 = []
     return new Promise((resolve, reject) => {
-      fetchJSON(jsontxt)
+      var bec_name = becStore.find((x) => x.id == bec).name
+      fetchFGB(jsontxt, bec_name, 'seed')
         .then(function (data) {
           window.json_obj = data
 
-          // find the name in becStore associated to the bec id chosen
-          var bec_name = becStore.find((x) => x.id == bec).name
           var results = data.filter(function (x) {
             return (
               x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] >= spmin
