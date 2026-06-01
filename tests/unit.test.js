@@ -3,8 +3,14 @@ const assert = require('node:assert')
 
 // Expose a global define function to load the AMD module inside Node.js
 let exportedModule
-globalThis.define = function (factory) {
-  exportedModule = factory()
+globalThis.define = function (dependencies, factory) {
+  if (typeof dependencies === 'function') {
+    factory = dependencies
+  }
+  const mockFlatGeobuf = {
+    deserialize: () => {}
+  }
+  exportedModule = factory(mockFlatGeobuf)
 }
 
 // Load the target module
