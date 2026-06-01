@@ -386,6 +386,7 @@ define([
 
     expand = document.createElement('arcgis-expand')
     expand.view = view
+    expand.expanded = false
     expand.setAttribute('expand-icon', 'upload')
     expand.appendChild(fileForm)
 
