@@ -29,7 +29,7 @@ define([
   var _scaleBar
   var activeWidget
   var expand, trackWidget
-  var currentLayer, nonsuitLayer, _current2019Layer, _nonsuit2019Layer, mguLayer
+  var currentLayer, nonsuitLayer, mguLayer
   var _suitRenderer, _nonSuitRenderer
   var portalUrl = 'https://www.arcgis.com'
   var template
@@ -126,16 +126,7 @@ define([
       ['map_label', 'SHAPE_Area'],
       'CBST Species May Not Be Suitable',
     )
-    _current2019Layer = featureInit(
-      'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/2',
-      ['map_label', 'SHAPE_Area'],
-      'CBST 2019',
-    )
-    _nonsuit2019Layer = featureInit(
-      'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/3',
-      ['map_label', 'SHAPE_Area'],
-      '2019 Species May Not Be Suitable',
-    )
+
     mguLayer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/0',
       ['Management_Units'],
