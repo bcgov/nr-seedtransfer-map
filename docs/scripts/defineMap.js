@@ -9,6 +9,7 @@ define([
   'esri/layers/GraphicsLayer',
   'esri/widgets/Print',
   'esri/widgets/BasemapGallery',
+  'esri/widgets/Expand',
   'esri/widgets/DistanceMeasurement2D',
   'esri/widgets/AreaMeasurement2D',
   'esri/request',
@@ -22,6 +23,7 @@ define([
   GraphicsLayer,
   Print,
   BasemapGallery,
+  Expand,
   DistanceMeasurement2D,
   AreaMeasurement2D,
   request,
@@ -384,10 +386,12 @@ define([
     uploadFormEl = document.getElementById('uploadForm')
     uploadStatusEl = document.getElementById('upload-status')
 
-    expand = document.createElement('arcgis-expand')
-    expand.view = view
-    expand.setAttribute('expand-icon', 'upload')
-    expand.appendChild(fileForm)
+    expand = new Expand({
+      view: view,
+      content: fileForm,
+      expandIcon: 'upload',
+      expanded: false,
+    })
 
     // Collapse the expand widget whenever the user clicks outside on the map view
     view.on('click', function () {
