@@ -3,8 +3,8 @@
  */
 
 define(function () {
-   var jsontxt, jsonseedlot
-   var timeSeriesYear = '2053'
+  var jsontxt, jsonseedlot
+  var timeSeriesYear = '2053'
 
   var speciesStore = [
     { name: 'AT', minsuit: 97.5 },

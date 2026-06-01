@@ -76,36 +76,36 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
     }, 8000)
   }
 
-// Listening to the standard native change event on becInputCutblock
-   const becInputCutblock = document.getElementById('becInputCutblock')
-   if (becInputCutblock) {
-     becInputCutblock.addEventListener('change', function (e) {
-       selected = Array.from(e.target.selectedOptions).map(function (opt) {
-         return opt.value
-       })
-       console.log(selected)
-     })
-   }
-
-// Update time series year when changed (Cutblock tab)
-    const yearInputCutblock = document.getElementById('yearInputCutblock')
-    if (yearInputCutblock) {
-      yearInputCutblock.addEventListener('change', function (e) {
-        main.setTimeSeriesYear(e.target.value)
-        console.log('Time series year set to:', e.target.value)
+  // Listening to the standard native change event on becInputCutblock
+  const becInputCutblock = document.getElementById('becInputCutblock')
+  if (becInputCutblock) {
+    becInputCutblock.addEventListener('change', function (e) {
+      selected = Array.from(e.target.selectedOptions).map(function (opt) {
+        return opt.value
       })
-    }
+      console.log(selected)
+    })
+  }
 
-    // Update time series year when changed (Seedlot tab)
-    const yearInputSeedlot = document.getElementById('yearInputSeedlot')
-    if (yearInputSeedlot) {
-      yearInputSeedlot.addEventListener('change', function (e) {
-        main.setTimeSeriesYear(e.target.value)
-        console.log('Time series year set to:', e.target.value)
-      })
-    }
+  // Update time series year when changed (Cutblock tab)
+  const yearInputCutblock = document.getElementById('yearInputCutblock')
+  if (yearInputCutblock) {
+    yearInputCutblock.addEventListener('change', function (e) {
+      main.setTimeSeriesYear(e.target.value)
+      console.log('Time series year set to:', e.target.value)
+    })
+  }
 
-   // clicking Go button on "I have a cutblock tab"
+  // Update time series year when changed (Seedlot tab)
+  const yearInputSeedlot = document.getElementById('yearInputSeedlot')
+  if (yearInputSeedlot) {
+    yearInputSeedlot.addEventListener('change', function (e) {
+      main.setTimeSeriesYear(e.target.value)
+      console.log('Time series year set to:', e.target.value)
+    })
+  }
+
+  // clicking Go button on "I have a cutblock tab"
   document.getElementById('addButtonCutblock').addEventListener('click', function () {
     showLoader('Calculating suitability map and retrieving seedlot data...')
     defineMap.clearLyrs()
