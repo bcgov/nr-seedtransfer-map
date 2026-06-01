@@ -461,7 +461,7 @@
           </div>
         </div>
 
-        <div id="mapCol" class="col-md-9 col-12 g-0">
+        <div id="mapCol" class="col-md-9 col-12 g-0" style="position: relative">
           <!--add the below divs in the JS when making the widgets-->
           <div id="coords"></div>
           <!-- <div id ="scaleDiv"></div> -->
@@ -485,28 +485,56 @@
                 type="button"
                 title="Export Map to PDF"
               >
-                Print
+                Export
               </button>
             </div>
-            <div>
-              <button
-                class="action-button esri-widget"
-                id="layerButton"
-                type="button"
-                title="Layers"
-              >
-                Layers
-              </button>
+          </div>
+
+          <!-- Dynamic Legend Card -->
+          <div
+            id="mapLegend"
+            class="card shadow-sm border p-2"
+            style="
+              position: absolute;
+              bottom: 20px;
+              right: 20px;
+              z-index: 99;
+              background: rgba(255, 255, 255, 0.95);
+              font-size: 13px;
+              border-radius: 6px;
+              display: none;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            "
+          >
+            <div
+              class="fw-bold mb-1 border-bottom pb-1 text-dark"
+              style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px"
+            >
+              CBST Suitability
             </div>
-            <div>
-              <button
-                class="action-button esri-widget"
-                id="legendButton"
-                type="button"
-                title="Legend"
-              >
-                Legend
-              </button>
+            <div class="d-flex align-items-center mb-1">
+              <span
+                class="d-inline-block rounded-circle me-2"
+                style="
+                  width: 12px;
+                  height: 12px;
+                  background-color: rgba(217, 95, 2, 0.7);
+                  border: 1.5px solid rgb(115, 76, 0);
+                "
+              ></span>
+              <span class="text-dark">Suitable</span>
+            </div>
+            <div class="d-flex align-items-center">
+              <span
+                class="d-inline-block rounded-circle me-2"
+                style="
+                  width: 12px;
+                  height: 12px;
+                  background-color: rgba(170, 102, 205, 0.7);
+                  border: 1.5px solid rgb(76, 0, 115);
+                "
+              ></span>
+              <span class="text-dark">Borderline Suitable</span>
             </div>
           </div>
         </div>

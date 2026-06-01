@@ -7,10 +7,8 @@ define([
   'esri/views/MapView',
   'esri/layers/FeatureLayer',
   'esri/layers/GraphicsLayer',
-  'esri/widgets/LayerList',
   'esri/widgets/Print',
   'esri/widgets/BasemapGallery',
-  'esri/widgets/Legend',
   'esri/widgets/DistanceMeasurement2D',
   'esri/widgets/AreaMeasurement2D',
   'esri/request',
@@ -22,10 +20,8 @@ define([
   MapView,
   FeatureLayer,
   GraphicsLayer,
-  LayerList,
   Print,
   BasemapGallery,
-  Legend,
   DistanceMeasurement2D,
   AreaMeasurement2D,
   request,
@@ -115,10 +111,8 @@ define([
 
       const _attributeEditing = document.getElementById('featureUpdateDiv')
 
-      addLayerList()
       addBasemapGallery()
       addPrintButton()
-      addLegend()
       addScalebar()
     })
   }
@@ -342,81 +336,6 @@ define([
     document.getElementById('homeButton').addEventListener('click', function () {
       fullExtent()
     })
-  }
-
-  function _addLayerListButton() {
-    layerButton = document.createElement('layerDiv')
-    layerButton.id = 'layerButton'
-    layerButton.className = 'esri-icon-layers esri-widget--button esri-component'
-    view.ui.add(layerButton, 'top-right')
-  }
-
-  function addLayerList() {
-    document.getElementById('layerButton').addEventListener('click', function () {
-      setActiveWidget(null)
-      if (!this.classList.contains('active')) {
-        layerList = new LayerList({
-          view: view,
-          listItemCreatedFunction: function (event) {
-            var item = event.item
-            item.actionsSections = [
-              [
-                {
-                  title: 'Increase opacity',
-                  className: 'esri-icon-up',
-                  id: 'increase-opacity',
-                },
-                {
-                  title: 'Decrease opacity',
-                  className: 'esri-icon-down',
-                  id: 'decrease-opacity',
-                },
-              ],
-            ]
-            item.panel = {
-              content: 'legend',
-              open: true,
-            }
-          },
-        })
-        layerList.on('trigger-action', function (event) {
-          var item = event.item
-          var id = event.action.id
-          if (id === 'increase-opacity') {
-            if (item.layer.opacity < 1) {
-              item.layer.opacity += 0.25
-            }
-          } else if (id === 'decrease-opacity') {
-            if (item.layer.opacity > 0) {
-              item.layer.opacity -= 0.25
-            }
-          }
-        })
-        view.ui.add(layerList, 'top-right')
-        setActiveWidget('layer')
-      } else {
-        setActiveButton(null)
-        layerList.destroy()
-      }
-    })
-  }
-
-  function addLegend() {
-    const legendButton = document.getElementById('legendButton')
-    if (legendButton) {
-      legendButton.addEventListener('click', function () {
-        setActiveWidget(null)
-        if (!this.classList.contains('active')) {
-          setActiveWidget('legend')
-        } else {
-          setActiveButton(null)
-        }
-      })
-    } else {
-      console.warn(
-        "Element with ID 'legendButton' not found. Legend widget will not be initialized.",
-      )
-    }
   }
 
   function addTracking() {
@@ -657,16 +576,6 @@ define([
 
   function setActiveWidget(type) {
     switch (type) {
-      case 'legend':
-        activeWidget = new Legend({
-          view: view,
-        })
-        view.ui.add(activeWidget, 'top-left')
-        setActiveButton(document.getElementById('legendButton'))
-        break
-      case 'layer':
-        setActiveButton(document.getElementById('layerButton'))
-        break
       case 'home':
         activeWidget = fullExtent()
         view.ui.add(activeWidget)
