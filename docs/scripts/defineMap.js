@@ -378,6 +378,9 @@ define([
 
   function addExpand() {
     var fileForm = document.getElementById('mainWindow')
+    if (fileForm) {
+      fileForm.style.display = 'block'
+    }
     uploadFormEl = document.getElementById('uploadForm')
     uploadStatusEl = document.getElementById('upload-status')
 
@@ -385,6 +388,13 @@ define([
     expand.view = view
     expand.setAttribute('expand-icon', 'upload')
     expand.appendChild(fileForm)
+
+    // Collapse the expand widget whenever the user clicks outside on the map view
+    view.on('click', function () {
+      if (expand) {
+        expand.expanded = false
+      }
+    })
 
     if (uploadFormEl) {
       uploadFormEl.addEventListener('change', function (event) {
