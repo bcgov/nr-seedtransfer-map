@@ -112,7 +112,7 @@ body {
 }
 
 #mainRow {
-  padding-top: 68px;
+  padding-top: 90px;
   height: 100%;
 }
 
@@ -128,7 +128,9 @@ body {
 }
 
 #titleRow {
-  height: 100px;
+  height: 90px;
+  border-bottom: 1px solid #dee2e6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 #mapDiv {
@@ -192,6 +194,19 @@ body {
 }
 
 @media (max-width: 767.98px) {
+  #titleRow {
+    height: 60px;
+  }
+
+  #mainRow {
+    padding-top: 60px;
+  }
+
+  #sidebarOffcanvas {
+    max-width: 85%;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+  }
+
   #mapDiv {
     min-height: 450px;
     height: 60vh;
