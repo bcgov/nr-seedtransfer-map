@@ -2,7 +2,7 @@ name: Merge Deployment
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'docs/**'
 
@@ -13,7 +13,23 @@ concurrency:
 permissions: {}
 
 jobs:
+  validate:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify syntax, formatting & run unit tests
+        run: npm run validate
+
   deploy:
+    needs: [validate]
     permissions:
       contents: write
     runs-on: ubuntu-slim
