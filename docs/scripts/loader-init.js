@@ -9,10 +9,7 @@ function isEsriTileError(args) {
     const arg = args[i]
     if (!arg) continue
     const str = String(arg)
-    if (
-      str.indexOf('Failed to load tile') !== -1 ||
-      str.indexOf('FeatureSourceEventLog') !== -1
-    ) {
+    if (str.indexOf('Failed to load tile') !== -1 || str.indexOf('FeatureSourceEventLog') !== -1) {
       return true
     }
     if (typeof arg === 'object') {
