@@ -390,6 +390,13 @@ define(function () {
 
   // create the paths and locations for the selected cutblock and species
   function addSuitabilityLayerCutblock(sp, bec) {
+    if (!sp || sp === '') {
+      return Promise.reject(new Error('Please select a Species.'))
+    }
+    if (!bec || bec.length === 0) {
+      return Promise.reject(new Error('Please select a BEC Variant.'))
+    }
+
     var spmin
     var outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019
     var output_suit, output_non_suit
@@ -656,6 +663,13 @@ define(function () {
   }
 
   function addSuitabilityLayerSeedlot(sp, bec) {
+    if (!sp || sp === '') {
+      return Promise.reject(new Error('Please select a Species.'))
+    }
+    if (!bec || bec === '') {
+      return Promise.reject(new Error('Please select a BEC Variant.'))
+    }
+
     var spmin
     var outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019
     var output_suit, output_non_suit
