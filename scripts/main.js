@@ -3,8 +3,6 @@
  */
 
 define(function () {
-  var jsontxt, jsonseedlot
-
   var speciesStore = [
     { name: 'AT', minsuit: 97.5 },
     { name: 'BA', minsuit: 97.5 },
@@ -30,12 +28,6 @@ define(function () {
     { name: 'SX', minsuit: 97.5 },
     { name: 'SXS', minsuit: 97.5 },
     { name: 'YC', minsuit: 96.0 },
-  ]
-
-  var _gensuitdata = [
-    { gensuit: '1', classA: '1 to 0.98', classB: '1 to 0.985' },
-    { gensuit: '2', classA: '0.98 to 0.965', classB: '0.985 to 0.975' },
-    { gensuit: '3', classA: '0.965 to 0.955', classB: '0.975 to 0.965' },
   ]
 
   var becStore = [
@@ -281,33 +273,18 @@ define(function () {
    *    as a standard promise rejection to be caught and displayed by the UI error banner.
    */
   function fetchJSON(url) {
-    return fetch(url).then(function (r) {
+    const isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
+    let targetUrl = url
+    if (
+      isDbPruned &&
+      url.startsWith('Version_7_0/') &&
+      window.location.pathname.includes('/deployments/pr-')
+    ) {
+      targetUrl = '../../' + url
+    }
+
+    return fetch(targetUrl).then(function (r) {
       if (!r.ok) {
-        // Fallback for PR Previews: if a local DB fetch fails (e.g. 404 because
-        // pr-open.yml pruned docs/Version_7_0/ when the PR didn't touch it),
-        // retry against the stable production database at the gh-pages root.
-        //
-        // Assumes:
-        //   1. Previews live exactly two path segments deep: /deployments/pr-N/
-        //      so '../../' resolves to the gh-pages site root.
-        //   2. Everything under Version_7_0/ is JSON and loaded via fetchJSON().
-        //      If you add non-JSON assets there, either widen this fallback or
-        //      disable the prune step in .github/workflows/pr-open.yml.
-        if (
-          url.startsWith('Version_7_0/') &&
-          window.location.pathname.includes('/deployments/pr-')
-        ) {
-          const fallbackUrl = '../../' + url
-          console.warn(
-            `Local database file not found at ${url}. Falling back to production database: ${fallbackUrl}`,
-          )
-          return fetch(fallbackUrl).then(function (fallbackR) {
-            if (!fallbackR.ok) {
-              throw new Error(fallbackR.statusText)
-            }
-            return fallbackR.json()
-          })
-        }
         throw new Error(r.statusText)
       }
       return r.json()
@@ -316,7 +293,7 @@ define(function () {
 
   // adds all the options to the Species and BEC Variant dropdowns
   function fillSelects() {
-    for (const i in becStore) {
+    for (let i = 0; i < becStore.length; i++) {
       const temp = document.createElement('option')
       temp.label = becStore[i].name
       temp.value = becStore[i].id
@@ -328,7 +305,7 @@ define(function () {
       document.getElementById('becInputCutblock').options.add(temp)
       document.getElementById('becInputSeedlot').options.add(temp3)
     }
-    for (const j in speciesStore) {
+    for (let j = 0; j < speciesStore.length; j++) {
       const temp2 = document.createElement('option')
       temp2.value = speciesStore[j].name
       temp2.label = speciesStore[j].name
@@ -380,31 +357,40 @@ define(function () {
 
   // create the paths and locations for the selected cutblock and species
   function addSuitabilityLayerCutblock(sp, bec) {
-    var spmin
-    var outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019
-    var output_suit, output_non_suit
+    if (!sp || sp === '') {
+      return Promise.reject(new Error('Please select a Species.'))
+    }
+    if (
+      !bec ||
+      bec.length === 0 ||
+      bec === '' ||
+      (Array.isArray(bec) && (bec.length === 0 || bec[0] === ''))
+    ) {
+      return Promise.reject(new Error('Please select a BEC Variant.'))
+    }
+
+    var outlist_suit, outlist_non_suit
+    var output_suit = [],
+      output_non_suit = []
     var bec_name
 
-    jsontxt =
+    var jsontxt =
       'Version_7_0/' +
       sp.charAt(0).toUpperCase() +
       sp.slice(1).toLowerCase() +
       '_migrated_height_list_5.json'
-    jsonseedlot =
+    var jsonseedlot =
       'Version_7_0/' + sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase() + '_Seedlots.json'
-    let suit = speciesStore.find((x) => x.name === sp).minsuit
+    let speciesEntry = speciesStore.find((x) => x.name === sp)
+    if (!speciesEntry) {
+      return Promise.reject(new Error('Unknown species: ' + sp))
+    }
+    let suit = speciesEntry.minsuit
 
     suit = suit / 100
-    spmin = 0
-    spmin = spmin / 100
-    window.dat = becStore
 
     outlist_suit = []
     outlist_non_suit = []
-    outlist_2019 = []
-    outlist_non_2019 = []
-    output_suit = []
-    output_non_suit = []
 
     let p1 = getSeedLot(bec, suit, 0, jsonseedlot)
 
@@ -413,16 +399,21 @@ define(function () {
         .then(function (data) {
           var results = []
 
-          let becPromise = new Promise((resolveInner) => {
+          let becPromise = new Promise((resolveInner, rejectInner) => {
             if (bec.length == 1) {
-              bec_name = becStore.find((x) => x.id == bec).name
+              var becEntry = becStore.find((x) => x.id == bec)
+              if (!becEntry) {
+                rejectInner(new Error('Unknown BEC variant ID: ' + bec))
+                return
+              }
+              bec_name = becEntry.name
               results = data.filter(function (x) {
-                return (
-                  x['BECvar_site'] == bec_name &&
-                  x['HTp_pred'] >= suit &&
-                  x['Sp_suit_site'] >= spmin
-                )
+                return x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit
               })
+              if (results.length == 0) {
+                rejectInner(new Error('No results available for those parameters'))
+                return
+              }
               output_suit = data.filter(function (x) {
                 return (
                   x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1
@@ -457,14 +448,15 @@ define(function () {
               resolveInner(outlist_suit)
             } else {
               for (let i = 0; i < bec.length; i++) {
-                bec_name = becStore.find((x) => x.id == bec[i]).name
+                var becEntryMulti = becStore.find((x) => x.id == bec[i])
+                if (!becEntryMulti) {
+                  rejectInner(new Error('Unknown BEC variant ID: ' + bec[i]))
+                  return
+                }
+                bec_name = becEntryMulti.name
                 results.push(
                   data.filter(function (x) {
-                    return (
-                      x['BECvar_site'] == bec_name &&
-                      x['HTp_pred'] >= suit &&
-                      x['Sp_suit_site'] >= spmin
-                    )
+                    return x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit
                   }),
                 )
                 output_suit.push(
@@ -489,7 +481,7 @@ define(function () {
 
               let t1 = getIntersection(results).then(function (intersection) {
                 if (intersection.length == 0) {
-                  alert('No results available for those parameters')
+                  throw new Error('No results available for those parameters')
                 }
                 return updateData(intersection).then(function (data2) {
                   populateCutblockTable(data2)
@@ -517,18 +509,26 @@ define(function () {
                 outlist_non_suit = outlist_non_suit.join(', ')
               })
 
-              Promise.all([t1, t2, t3]).then(() => {
-                resolveInner(results)
-              })
+              Promise.all([t1, t2, t3])
+                .then(() => {
+                  resolveInner(results)
+                })
+                .catch((err) => {
+                  rejectInner(err)
+                })
             }
           }).then(function () {
-            return [[outlist_suit], [outlist_non_suit], [outlist_2019], [outlist_non_2019]]
+            return [outlist_suit, outlist_non_suit]
           })
 
           resolve(becPromise)
         })
         .catch(function (errorThrown) {
-          reject(new Error('Failed to load Species database: ' + errorThrown.message))
+          if (errorThrown.message === 'No results available for those parameters') {
+            reject(errorThrown)
+          } else {
+            reject(new Error('Failed to load Species database: ' + errorThrown.message))
+          }
         })
     })
 
@@ -578,14 +578,24 @@ define(function () {
           let finalPromise
 
           if (bec.length == 1) {
-            bec_name = becStore.find((x) => x.id == bec).name
+            var becEntrySeed = becStore.find((x) => x.id == bec)
+            if (!becEntrySeed) {
+              reject(new Error('Unknown BEC variant ID: ' + bec))
+              return
+            }
+            bec_name = becEntrySeed.name
             results = data.filter(function (x) {
               return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
             })
             finalPromise = Promise.resolve(results)
           } else {
             for (let i = 0; i < bec.length; i++) {
-              bec_name = becStore.find((x) => x.id == bec[i]).name
+              var becEntrySeedMulti = becStore.find((x) => x.id == bec[i])
+              if (!becEntrySeedMulti) {
+                reject(new Error('Unknown BEC variant ID: ' + bec[i]))
+                return
+              }
+              bec_name = becEntrySeedMulti.name
               results.push(
                 data.filter(function (x) {
                   return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
@@ -625,14 +635,16 @@ define(function () {
 
   function updateData(data) {
     let new_res = new Promise(function (resolve) {
-      for (let i = 0; i < data.length; i++) {
-        if (data[i].Sp_suit_seed == '1') {
-          data[i].Sp_suit_seed = 'Suitable'
+      let clonedData = data.map((item) => {
+        let newItem = { ...item }
+        if (newItem.Sp_suit_seed == '1') {
+          newItem.Sp_suit_seed = 'Suitable'
         } else {
-          data[i].Sp_suit_seed = 'Not Suitable'
+          newItem.Sp_suit_seed = 'Not Suitable'
         }
-      }
-      resolve(data)
+        return newItem
+      })
+      resolve(clonedData)
     })
 
     return new_res
@@ -646,39 +658,43 @@ define(function () {
   }
 
   function addSuitabilityLayerSeedlot(sp, bec) {
-    var spmin
-    var outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019
+    if (!sp || sp === '') {
+      return Promise.reject(new Error('Please select a Species.'))
+    }
+    if (!bec || bec === '' || (Array.isArray(bec) && (bec.length === 0 || bec[0] === ''))) {
+      return Promise.reject(new Error('Please select a BEC Variant.'))
+    }
+
+    var outlist_suit, outlist_non_suit
     var output_suit, output_non_suit
 
-    jsontxt =
+    var jsontxt =
       'Version_7_0/' +
       sp.charAt(0).toUpperCase() +
       sp.slice(1).toLowerCase() +
       '_migrated_height_list_5.json'
-    jsonseedlot =
-      'Version_7_0/' + sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase() + '_Seedlots.json'
-    let suit = speciesStore.find((x) => x.name === sp).minsuit
+    let speciesEntry = speciesStore.find((x) => x.name === sp)
+    if (!speciesEntry) {
+      return Promise.reject(new Error('Unknown species: ' + sp))
+    }
+    let suit = speciesEntry.minsuit
 
     suit = suit / 100
-    spmin = 0
-    spmin = spmin / 100
-    window.dat = becStore
 
     outlist_suit = []
     outlist_non_suit = []
-    outlist_2019 = []
-    outlist_non_2019 = []
     return new Promise((resolve, reject) => {
       fetchJSON(jsontxt)
         .then(function (data) {
-          window.json_obj = data
-
           // find the name in becStore associated to the bec id chosen
-          var bec_name = becStore.find((x) => x.id == bec).name
+          var becEntryLot = becStore.find((x) => x.id == bec)
+          if (!becEntryLot) {
+            reject(new Error('Unknown BEC variant ID: ' + bec))
+            return
+          }
+          var bec_name = becEntryLot.name
           var results = data.filter(function (x) {
-            return (
-              x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] >= spmin
-            )
+            return x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit
           })
 
           updateData(results).then(function (data) {
@@ -694,29 +710,33 @@ define(function () {
           })
 
           if (results.length == 0) {
-            alert('No results available for those parameters')
+            throw new Error('No results available for those parameters')
           }
 
           // ========= SUITABLE OUTPUT ==========
           if (output_suit.length > 0) {
             for (let i = 0; i < output_suit.length; i++) {
-              outlist_suit += "'" + output_suit[i].BECvar_site + "'" + ', '
+              outlist_suit.push("'" + output_suit[i].BECvar_site + "'")
             }
           }
-          outlist_suit = outlist_suit.slice(0, -2)
+          outlist_suit = outlist_suit.join(', ')
 
           // ========= NON SUITABLE OUTPUT ==========
           if (output_non_suit.length > 0) {
             for (let i = 0; i < output_non_suit.length; i++) {
-              outlist_non_suit += "'" + output_non_suit[i].BECvar_site + "'" + ', '
+              outlist_non_suit.push("'" + output_non_suit[i].BECvar_site + "'")
             }
           }
-          outlist_non_suit = outlist_non_suit.slice(0, -2)
+          outlist_non_suit = outlist_non_suit.join(', ')
 
-          resolve([outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019])
+          resolve([outlist_suit, outlist_non_suit])
         })
         .catch(function (errorThrown) {
-          reject(new Error('Failed to load Species database: ' + errorThrown.message))
+          if (errorThrown.message === 'No results available for those parameters') {
+            reject(errorThrown)
+          } else {
+            reject(new Error('Failed to load Species database: ' + errorThrown.message))
+          }
         })
     })
   }
@@ -724,44 +744,47 @@ define(function () {
   function populateSeedlot(orch) {
     var jsonorch = 'Version_7_0/' + 'Orchard_list.json'
     var jsonseed = 'Version_7_0/' + 'Seedlot_list.json'
-    var results = ''
+    var results = []
 
     return new Promise((resolve, reject) => {
       fetchJSON(jsonorch)
         .then(function (orch_data) {
           var seedlot = orch_data.filter(function (x) {
-            return x['Orchard'] == orch
+            return x['Orchard'] == orch || parseFloat(x['Orchard']) == parseFloat(orch)
           })
           if (seedlot.length > 0) {
-            document.getElementById('seedlotNumber').value = parseInt(seedlot[0].Seedlot)
+            document.getElementById('seedlotNumber').value = seedlot[0].Seedlot.toString()
 
-            fetchJSON(jsonseed)
+            return fetchJSON(jsonseed)
               .then(function (seed_data) {
-                new Promise((resolveInner) => {
-                  results = seed_data.filter(function (x) {
-                    return x['Orchard'] == orch
-                  })
-                  resolveInner(results)
-                }).then(() => {
-                  window.res = results
-                  let becVar = becStore.find((x) => x.name == results[0].BECvar).id
+                results = seed_data.filter(function (x) {
+                  return x['Orchard'] == orch || parseFloat(x['Orchard']) == parseFloat(orch)
+                })
+                if (results && results.length > 0) {
+                  let becVarObj = results[0].BECvar
+                    ? becStore.find((x) => x.name == results[0].BECvar)
+                    : null
                   if (window.selectBecSeedlot) {
-                    window.selectBecSeedlot.setSelected(becVar.toString())
+                    if (becVarObj) {
+                      window.selectBecSeedlot.setSelected(becVarObj.id.toString())
+                    } else {
+                      window.selectBecSeedlot.setSelected([])
+                    }
                   }
 
-                  if (window.selectSpeciesSeedlot) {
+                  if (window.selectSpeciesSeedlot && results[0].Species) {
                     window.selectSpeciesSeedlot.setSelected(results[0].Species)
                   }
-
-                  resolve()
-                })
+                } else {
+                  console.warn(`No seedlots found in Seedlot_list.json for Orchard ${orch}`)
+                }
+                resolve()
               })
               .catch(function (errorThrown) {
                 reject(new Error('Failed to load Seedlot database: ' + errorThrown.message))
               })
           } else {
-            alert('Not a valid option')
-            resolve()
+            reject(new Error('Not a valid option'))
           }
         })
         .catch(function (errorThrown) {
@@ -780,18 +803,25 @@ define(function () {
             return x['Seedlot'] == lot
           })
           if (results && results.length > 0) {
-            let becVar = becStore.find((x) => x.name === results[0].BECvar).id
+            let becVarObj = results[0].BECvar
+              ? becStore.find((x) => x.name === results[0].BECvar)
+              : null
             document.getElementById('orchardNumber').value = results[0].Orchard
+              ? parseFloat(results[0].Orchard).toString()
+              : ''
             if (window.selectBecSeedlot) {
-              window.selectBecSeedlot.setSelected(becVar.toString())
+              if (becVarObj) {
+                window.selectBecSeedlot.setSelected(becVarObj.id.toString())
+              } else {
+                window.selectBecSeedlot.setSelected([])
+              }
             }
-            if (window.selectSpeciesSeedlot) {
+            if (window.selectSpeciesSeedlot && results[0].Species) {
               window.selectSpeciesSeedlot.setSelected(results[0].Species)
             }
             resolve()
           } else {
-            alert('Not a valid seedlot')
-            resolve()
+            reject(new Error('Not a valid seedlot'))
           }
         })
         .catch(function (errorThrown) {
