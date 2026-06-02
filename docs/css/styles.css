@@ -59,35 +59,8 @@ body {
   white-space: nowrap;
 }
 
-#formDiv {
-  width: 100%;
-}
-
 .esri-item-list__scroller {
   overflow-y: visible;
-}
-
-.list-heading {
-  text-align: center;
-  font-weight: normal;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  color: #323232;
-}
-
-.or-wrap {
-  background-color: #e0e0e0;
-  height: 1px;
-  margin: 2em 0;
-  overflow: visible;
-}
-
-.or-text {
-  background: #fff;
-  line-height: 0;
-  padding: 0 1em;
-  position: relative;
-  bottom: 0.75em;
 }
 
 /* override default styles */
@@ -120,17 +93,6 @@ body {
   height: 100%;
 }
 
-.no-gutters {
-  margin-right: 0;
-  margin-left: 0;
-
-  > .col,
-  > [class*='col-'] {
-    padding-right: 0;
-    padding-left: 0;
-  }
-}
-
 #titleRow {
   height: 90px;
   border-bottom: 1px solid #dee2e6;
@@ -147,11 +109,6 @@ body {
 #titleText {
   width: 100%;
   font-size: 1.5em;
-  font-weight: 500;
-}
-
-#titleTextsmall {
-  font-size: 1em;
   font-weight: 500;
 }
 
@@ -174,10 +131,6 @@ body {
   top: 20px;
   right: 20px;
   z-index: 999;
-}
-
-#scaleText {
-  font: bold 12px arial;
 }
 
 /*#grid {

@@ -50,5 +50,9 @@ test('Unit Tests for main.js helpers', async (t) => {
       { Sp_suit_seed: 'Not Suitable', name: 'unsuitable item' },
       { Sp_suit_seed: 'Not Suitable', name: 'other item' },
     ])
+    // Verify non-mutating behavior
+    assert.strictEqual(data[0].Sp_suit_seed, '1')
+    assert.strictEqual(data[1].Sp_suit_seed, '0')
+    assert.strictEqual(data[2].Sp_suit_seed, 'anything else')
   })
 })

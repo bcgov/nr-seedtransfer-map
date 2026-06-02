@@ -143,4 +143,71 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await seedRow.waitFor({ state: 'visible', timeout: 15 * 1000 })
     await expect(seedRow).not.toContainText('No matching records found')
   })
+
+  test('Seedlot Flow: Entering Orchard 109 with unassigned BEC variant handles empty data gracefully', async ({
+    page,
+  }) => {
+    // Click the "I Have A Seedlot" tab
+    await page.click('#seedlot-tab')
+
+    // Fill in Orchard Number 109
+    await page.fill('#orchardNumber', '109')
+
+    // Click "Set Representative Seedlot"
+    page.on('dialog', async (dialog) => {
+      await dialog.accept()
+    })
+    await page.click('#addSeedlotfromOrchard')
+
+    // Verify it set the seedlot number but gracefully left/cleared BEC variant selection
+    await expect(page.locator('#seedlotNumber')).toHaveValue('3377')
+    await expect(page.locator('#speciesInputSeedlot')).toHaveValue('FDC')
+
+    // Since BEC variant is empty/unassigned, the BEC dropdown should have no selected values
+    await expect(page.locator('#becInputSeedlot')).toHaveValues([])
+  })
+
+  test('Seedlot Flow: Entering Orchard 800 with float-serialized ID matches successfully', async ({
+    page,
+  }) => {
+    // Click the "I Have A Seedlot" tab
+    await page.click('#seedlot-tab')
+
+    // Fill in Orchard Number 800
+    await page.fill('#orchardNumber', '800')
+
+    // Click "Set Representative Seedlot"
+    page.on('dialog', async (dialog) => {
+      await dialog.accept()
+    })
+    await page.click('#addSeedlotfromOrchard')
+
+    // Verify it resolved Orchard "800.0", set species to YC, and handled empty BEC gracefully
+    await expect(page.locator('#seedlotNumber')).toHaveValue('V0932')
+    await expect(page.locator('#speciesInputSeedlot')).toHaveValue('YC')
+    await expect(page.locator('#becInputSeedlot')).toHaveValues([])
+  })
+
+  test('Seedlot Flow: Clicking GO with empty BEC variant triggers validation error', async ({
+    page,
+  }) => {
+    // Click the "I Have A Seedlot" tab
+    await page.click('#seedlot-tab')
+
+    // Fill in Orchard Number 800 (which populates species YC but leaves BEC empty)
+    await page.fill('#orchardNumber', '800')
+    page.on('dialog', async (dialog) => {
+      await dialog.accept()
+    })
+    await page.click('#addSeedlotfromOrchard')
+
+    // Click the GO button for Seedlot with no BEC selected
+    await page.click('#addButtonSeedlot')
+
+    // Verify it displays the custom error banner "Please select a BEC Variant."
+    const errorBanner = page.locator('.alert-error-banner .alert-message-text')
+    await expect(errorBanner).toBeVisible()
+    await expect(errorBanner).toHaveText('Please select a BEC Variant.')
+  })
 })
+
