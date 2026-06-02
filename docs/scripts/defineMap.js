@@ -125,8 +125,8 @@ define([
   }
 
   function updateLayer(outlist) {
-    // outlist: all 4 possible queries that reflect the users chosen species and bec variant
-    // outlist = [outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019]
+    // outlist: definition query strings that reflect the user's chosen species and BEC variant
+    // outlist = [outlist_suit, outlist_non_suit]
 
     if (outlist[1].length != 0) {
       nonsuitLayer.definitionExpression = 'MAP_LABEL in (' + outlist[1] + ')'
