@@ -393,7 +393,12 @@ define(function () {
     if (!sp || sp === '') {
       return Promise.reject(new Error('Please select a Species.'))
     }
-    if (!bec || bec.length === 0) {
+    if (
+      !bec ||
+      bec.length === 0 ||
+      bec === '' ||
+      (Array.isArray(bec) && (bec.length === 0 || bec[0] === ''))
+    ) {
       return Promise.reject(new Error('Please select a BEC Variant.'))
     }
 
@@ -666,7 +671,7 @@ define(function () {
     if (!sp || sp === '') {
       return Promise.reject(new Error('Please select a Species.'))
     }
-    if (!bec || bec === '') {
+    if (!bec || bec === '' || (Array.isArray(bec) && (bec.length === 0 || bec[0] === ''))) {
       return Promise.reject(new Error('Please select a BEC Variant.'))
     }
 
