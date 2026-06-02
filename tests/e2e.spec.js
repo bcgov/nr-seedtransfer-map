@@ -166,5 +166,25 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     // Since BEC variant is empty/unassigned, the BEC dropdown should have no selected values
     await expect(page.locator('#becInputSeedlot')).toHaveValues([])
   })
+
+  test('Seedlot Flow: Entering Orchard 800 with float-serialized ID matches successfully', async ({
+    page,
+  }) => {
+    // Click the "I Have A Seedlot" tab
+    await page.click('#seedlot-tab')
+
+    // Fill in Orchard Number 800
+    await page.fill('#orchardNumber', '800')
+
+    // Click "Set Representative Seedlot"
+    page.on('dialog', async (dialog) => {
+      await dialog.accept()
+    })
+    await page.click('#addSeedlotfromOrchard')
+
+    // Verify it resolved Orchard "800.0", set species to YC, and handled empty BEC gracefully
+    await expect(page.locator('#speciesInputSeedlot')).toHaveValue('YC')
+    await expect(page.locator('#becInputSeedlot')).toHaveValues([])
+  })
 })
 

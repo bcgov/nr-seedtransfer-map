@@ -730,7 +730,7 @@ define(function () {
       fetchJSON(jsonorch)
         .then(function (orch_data) {
           var seedlot = orch_data.filter(function (x) {
-            return x['Orchard'] == orch
+            return x['Orchard'] == orch || parseFloat(x['Orchard']) == parseFloat(orch)
           })
           if (seedlot.length > 0) {
             document.getElementById('seedlotNumber').value = parseInt(seedlot[0].Seedlot)
@@ -739,7 +739,7 @@ define(function () {
               .then(function (seed_data) {
                 new Promise((resolveInner) => {
                   results = seed_data.filter(function (x) {
-                    return x['Orchard'] == orch
+                    return x['Orchard'] == orch || parseFloat(x['Orchard']) == parseFloat(orch)
                   })
                   resolveInner(results)
                 }).then(() => {
@@ -794,6 +794,8 @@ define(function () {
               ? becStore.find((x) => x.name === results[0].BECvar)
               : null
             document.getElementById('orchardNumber').value = results[0].Orchard
+              ? parseFloat(results[0].Orchard).toString()
+              : ''
             if (window.selectBecSeedlot) {
               if (becVarObj) {
                 window.selectBecSeedlot.setSelected(becVarObj.id.toString())
