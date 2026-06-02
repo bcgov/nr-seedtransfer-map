@@ -12,6 +12,8 @@ define([
   'esri/request',
   'esri/layers/support/Field',
   'esri/Graphic',
+  'esri/renderers/SimpleRenderer',
+  'esri/symbols/SimpleFillSymbol',
 ], function (
   Map,
   MapView,
@@ -22,6 +24,8 @@ define([
   request,
   Field,
   Graphic,
+  SimpleRenderer,
+  SimpleFillSymbol,
 ) {
   var map, view, xy
   var _scaleBar
@@ -56,7 +60,7 @@ define([
     })
 
     // Create a new map view and add the map to it
-    xy = [-125.877, 54]
+    xy = [ -125.877, 54 ]
     view = new MapView({
       center: xy,
       zoom: 6,
@@ -97,18 +101,18 @@ define([
   function layerInit() {
     currentLayer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/5',
-      ['map_label', 'SHAPE_Area'],
+      [ '*' ],
       'CBST',
     )
     nonsuitLayer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/6',
-      ['map_label', 'SHAPE_Area'],
+      [ '*' ],
       'CBST Species May Not Be Suitable',
     )
 
     mguLayer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/0',
-      ['Management_Units'],
+      [ '*' ],
       'Management Unit',
     )
     mguLayer
@@ -126,31 +130,120 @@ define([
 
   function updateLayer(outlist) {
     // outlist: definition query strings that reflect the user's chosen species and BEC variant
-    // outlist = [outlist_suit, outlist_non_suit]
+    // Can be either:
+    // [outlist_suit, outlist_non_suit] - simple format
+    // or { yearLayers: [{year, suit, nonSuit}, ...] } - year-based format
 
-    if (outlist[1].length != 0) {
-      nonsuitLayer.definitionExpression = 'MAP_LABEL in (' + outlist[1] + ')'
-      nonsuitLayer.popupTemplate = template
-      map.add(nonsuitLayer)
-    } else {
-      nonsuitLayer.definitionExpression = '1=0'
-      nonsuitLayer.popupTemplate = ''
-      map.add(nonsuitLayer)
+    // Color scheme for years: 2043=Yellow, 2053=Green, 2063=Blue
+    const yearColors = {
+      '2043': { r: 255, g: 200, b: 0, a: 0.6 }, // Yellow
+      '2053': { r: 0, g: 170, b: 0, a: 0.6 }, // Green
+      '2063': { r: 0, g: 112, b: 255, a: 0.6 }, // Blue
     }
 
-    if (outlist[0].length != 0) {
-      currentLayer.definitionExpression = 'MAP_LABEL in (' + outlist[0] + ')'
-      currentLayer.popupTemplate = template
-      map.add(currentLayer)
+    // Check if this is year-based data (object) or simple format (array)
+    const isYearBased = outlist && typeof outlist === 'object' && !Array.isArray(outlist) && outlist.yearLayers
+
+    if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
+      // Year-based format - create separate layers for each year
+      outlist.yearLayers.forEach((yearData, index) => {
+        const year = String(yearData.year)
+        const suitBecList = Array.isArray(yearData.suit) ? yearData.suit : []
+        const nonSuitBecList = Array.isArray(yearData.nonSuit) ? yearData.nonSuit : []
+        const color = yearColors[ year ] || { r: 100, g: 100, b: 100, a: 0.6 }
+
+        // Create suitable layer for this year
+        if (suitBecList.length > 0) {
+          const definitionExpr = 'MAP_LABEL in (' + suitBecList.join(', ') + ')'
+          const yearLayerSuit = cloneLayerWithColor(
+            currentLayer,
+            definitionExpr,
+            color,
+            `Year ${year} - Suitable`,
+          )
+          map.add(yearLayerSuit)
+        }
+
+        // Create non-suitable layer for this year
+        if (nonSuitBecList.length > 0) {
+          const definitionExpr = 'MAP_LABEL in (' + nonSuitBecList.join(', ') + ')'
+          const yearLayerNonSuit = cloneLayerWithColor(
+            nonsuitLayer,
+            definitionExpr,
+            { r: color.r, g: color.g, b: color.b, a: 0.3 }, // Lighter shade for non-suitable
+            `Year ${year} - Not Suitable`,
+          )
+          map.add(yearLayerNonSuit)
+        }
+      })
     } else {
-      currentLayer.definitionExpression = '1=0'
-      currentLayer.popupTemplate = ''
-      map.add(currentLayer)
+      // Simple format (single year or fallback) - use original layers
+      const suitList = Array.isArray(outlist) ? outlist[ 0 ] : ''
+      const nonSuitList = Array.isArray(outlist) ? outlist[ 1 ] : ''
+
+      if (nonSuitList && nonSuitList.length > 0) {
+        nonsuitLayer.definitionExpression = 'MAP_LABEL in (' + nonSuitList + ')'
+        nonsuitLayer.popupTemplate = template
+        map.add(nonsuitLayer)
+      } else {
+        nonsuitLayer.definitionExpression = '1=0'
+        nonsuitLayer.popupTemplate = ''
+        map.add(nonsuitLayer)
+      }
+
+      if (suitList && suitList.length > 0) {
+        currentLayer.definitionExpression = 'MAP_LABEL in (' + suitList + ')'
+        currentLayer.popupTemplate = template
+        map.add(currentLayer)
+      } else {
+        currentLayer.definitionExpression = '1=0'
+        currentLayer.popupTemplate = ''
+        map.add(currentLayer)
+      }
     }
 
     if (mguLayer.loadStatus === 'loaded') {
       map.add(mguLayer)
     }
+  }
+
+  function cloneLayerWithColor(baseLayer, definitionExpression, colorObj, title) {
+    // Create color symbol and renderer
+    const fillSymbol = new SimpleFillSymbol({
+      color: [ colorObj.r, colorObj.g, colorObj.b, colorObj.a * 255 ],
+      outline: {
+        color: [ colorObj.r, colorObj.g, colorObj.b, 255 ],
+        width: 1.5,
+      },
+    })
+
+    const renderer = new SimpleRenderer({
+      symbol: fillSymbol,
+    })
+
+    // Create a new feature layer clone with custom styling and renderer
+    const clonedLayer = new FeatureLayer({
+      url: baseLayer.url,
+      title: title,
+      outFields: baseLayer.outFields,
+      opacity: 0.7,
+      visibilityMode: 'independent',
+      definitionExpression: definitionExpression,
+      popupTemplate: template,
+      renderer: renderer, // Apply renderer in constructor
+    })
+
+    // Monitor layer loading for any errors
+    clonedLayer.when(
+      function () {
+        // Layer loaded successfully
+      },
+      function (error) {
+        console.warn('Failed to load cloned feature layer: ' + title, error)
+      },
+    )
+
+    return clonedLayer
   }
 
   /*
@@ -200,14 +293,14 @@ define([
   function zoomToLocation() {
     function performZoom(inputId) {
       var coords = document.getElementById(inputId).value.split(',')
-      if (!Number(coords[0]) || !Number(coords[1])) {
+      if (!Number(coords[ 0 ]) || !Number(coords[ 1 ])) {
         alert('The coordinates you entered are invalid')
       } else {
-        if (coords[0] < -90 || coords[0] > 90 || coords[1] < -180 || coords[1] > 180) {
+        if (coords[ 0 ] < -90 || coords[ 0 ] > 90 || coords[ 1 ] < -180 || coords[ 1 ] > 180) {
           alert('One of those numbers is out of valid range')
           return
         } else {
-          view.center = [coords[1], coords[0]]
+          view.center = [ coords[ 1 ], coords[ 0 ] ]
           view.zoom = 12
         }
       }
@@ -269,7 +362,7 @@ define([
     var name = fileName.split('.')
     // Chrome and IE add c:\fakepath to the value - we need to remove it
     // see this link for more info: http://davidwalsh.name/fakepath
-    name = name[0].replace('c:\\fakepath\\', '')
+    name = name[ 0 ].replace('c:\\fakepath\\', '')
 
     if (uploadStatusEl) {
       uploadStatusEl.innerHTML = '<b>Loading </b>'
@@ -305,7 +398,7 @@ define([
       responseType: 'json',
     })
       .then(function (response) {
-        var layerName = response.data.featureCollection.layers[0].layerDefinition.name
+        var layerName = response.data.featureCollection.layers[ 0 ].layerDefinition.name
         if (uploadStatusEl) {
           uploadStatusEl.innerHTML = '<b>Loaded: </b>'
           uploadStatusEl.appendChild(document.createTextNode(layerName))
@@ -396,7 +489,7 @@ define([
   function setActiveButton(selectedButton) {
     var elements = document.getElementsByClassName('action-button')
     for (let i = 0; i < elements.length; i++) {
-      elements[i].classList.remove('active')
+      elements[ i ].classList.remove('active')
     }
     if (selectedButton) {
       selectedButton.classList.add('active')

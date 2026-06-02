@@ -1,4 +1,4 @@
-require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) {
+require([ 'scripts/defineMap.js', 'scripts/main.js' ], function (defineMap, main) {
   $(function () {
     const seedlotDate = document.body.getAttribute('data-seedlot-date')
     if (seedlotDate) {
@@ -93,6 +93,26 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       selected = Array.from(e.target.selectedOptions).map(function (opt) {
         return opt.value
       })
+    })
+  }
+
+  // Update time series year when changed (Cutblock tab)
+  const yearInputCutblock = document.getElementById('yearInputCutblock')
+  if (yearInputCutblock) {
+    yearInputCutblock.addEventListener('change', function (e) {
+      // Get all selected values from multi-select
+      const selectedYears = Array.from(e.target.selectedOptions).map((option) => option.value)
+      main.setTimeSeriesYear(selectedYears)
+    })
+  }
+
+  // Update time series year when changed (Seedlot tab)
+  const yearInputSeedlot = document.getElementById('yearInputSeedlot')
+  if (yearInputSeedlot) {
+    yearInputSeedlot.addEventListener('change', function (e) {
+      // Get all selected values from multi-select
+      const selectedYears = Array.from(e.target.selectedOptions).map((option) => option.value)
+      main.setTimeSeriesYear(selectedYears)
     })
   }
 
