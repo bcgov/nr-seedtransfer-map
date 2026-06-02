@@ -743,7 +743,7 @@ define(function () {
             return x['Orchard'] == orch || parseFloat(x['Orchard']) == parseFloat(orch)
           })
           if (seedlot.length > 0) {
-            document.getElementById('seedlotNumber').value = parseInt(seedlot[0].Seedlot)
+            document.getElementById('seedlotNumber').value = seedlot[0].Seedlot.toString()
 
             fetchJSON(jsonseed)
               .then(function (seed_data) {
