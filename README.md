@@ -1,6 +1,6 @@
 # CBST Seedlot Selection Tool (SST)
 
-[![CI](https://github.com/bcgov/nr-seedtransfer-map/actions/workflows/lint.yml/badge.svg)](https://github.com/bcgov/nr-seedtransfer-map/actions/workflows/lint.yml)
+[![Merge Deployment](https://github.com/bcgov/nr-seedtransfer-map/actions/workflows/merge.yml/badge.svg)](https://github.com/bcgov/nr-seedtransfer-map/actions/workflows/merge.yml)
 
 The **Seedlot Selection Tool (SST)** is an interactive GIS web application designed to assist forest
 managers and silviculture professionals in British Columbia. It enables users to match seedlots with
