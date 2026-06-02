@@ -143,4 +143,28 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await seedRow.waitFor({ state: 'visible', timeout: 15 * 1000 })
     await expect(seedRow).not.toContainText('No matching records found')
   })
+
+  test('Seedlot Flow: Entering Orchard 109 with unassigned BEC variant handles empty data gracefully', async ({
+    page,
+  }) => {
+    // Click the "I Have A Seedlot" tab
+    await page.click('#seedlot-tab')
+
+    // Fill in Orchard Number 109
+    await page.fill('#orchardNumber', '109')
+
+    // Click "Set Representative Seedlot"
+    page.on('dialog', async (dialog) => {
+      await dialog.accept()
+    })
+    await page.click('#addSeedlotfromOrchard')
+
+    // Verify it set the seedlot number but gracefully left/cleared BEC variant selection
+    await expect(page.locator('#seedlotNumber')).toHaveValue('3377')
+    await expect(page.locator('#speciesInputSeedlot')).toHaveValue('FDC')
+
+    // Since BEC variant is empty/unassigned, the BEC dropdown should have no selected values
+    await expect(page.locator('#becInputSeedlot')).toHaveValues([])
+  })
 })
+
