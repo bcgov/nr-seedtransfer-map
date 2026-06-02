@@ -370,7 +370,8 @@ define(function () {
     }
 
     var outlist_suit, outlist_non_suit
-    var output_suit, output_non_suit
+    var output_suit = [],
+      output_non_suit = []
     var bec_name
 
     var jsontxt =
@@ -398,17 +399,21 @@ define(function () {
         .then(function (data) {
           var results = []
 
-          let becPromise = new Promise((resolveInner) => {
+          let becPromise = new Promise((resolveInner, rejectInner) => {
             if (bec.length == 1) {
               var becEntry = becStore.find((x) => x.id == bec)
               if (!becEntry) {
-                reject(new Error('Unknown BEC variant ID: ' + bec))
+                rejectInner(new Error('Unknown BEC variant ID: ' + bec))
                 return
               }
               bec_name = becEntry.name
               results = data.filter(function (x) {
                 return x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit
               })
+              if (results.length == 0) {
+                rejectInner(new Error('No results available for those parameters'))
+                return
+              }
               output_suit = data.filter(function (x) {
                 return (
                   x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1
@@ -445,7 +450,7 @@ define(function () {
               for (let i = 0; i < bec.length; i++) {
                 var becEntryMulti = becStore.find((x) => x.id == bec[i])
                 if (!becEntryMulti) {
-                  reject(new Error('Unknown BEC variant ID: ' + bec[i]))
+                  rejectInner(new Error('Unknown BEC variant ID: ' + bec[i]))
                   return
                 }
                 bec_name = becEntryMulti.name
@@ -504,18 +509,26 @@ define(function () {
                 outlist_non_suit = outlist_non_suit.join(', ')
               })
 
-              Promise.all([t1, t2, t3]).then(() => {
-                resolveInner(results)
-              })
+              Promise.all([t1, t2, t3])
+                .then(() => {
+                  resolveInner(results)
+                })
+                .catch((err) => {
+                  rejectInner(err)
+                })
             }
           }).then(function () {
-            return [[outlist_suit], [outlist_non_suit]]
+            return [outlist_suit, outlist_non_suit]
           })
 
           resolve(becPromise)
         })
         .catch(function (errorThrown) {
-          reject(new Error('Failed to load Species database: ' + errorThrown.message))
+          if (errorThrown.message === 'No results available for those parameters') {
+            reject(errorThrown)
+          } else {
+            reject(new Error('Failed to load Species database: ' + errorThrown.message))
+          }
         })
     })
 
@@ -719,7 +732,11 @@ define(function () {
           resolve([outlist_suit, outlist_non_suit])
         })
         .catch(function (errorThrown) {
-          reject(new Error('Failed to load Species database: ' + errorThrown.message))
+          if (errorThrown.message === 'No results available for those parameters') {
+            reject(errorThrown)
+          } else {
+            reject(new Error('Failed to load Species database: ' + errorThrown.message))
+          }
         })
     })
   }
