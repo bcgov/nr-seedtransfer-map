@@ -12,7 +12,6 @@ define([
   'esri/request',
   'esri/layers/support/Field',
   'esri/Graphic',
-  'esri/layers/KMLLayer',
 ], function (
   Map,
   MapView,
@@ -23,7 +22,6 @@ define([
   request,
   Field,
   Graphic,
-  KMLLayer,
 ) {
   var map, view, xy
   var _scaleBar
@@ -36,22 +34,7 @@ define([
   var uploadFormEl, uploadStatusEl
 
   template = {
-    title: 'Selected {MAP_Label}',
-  }
-
-  _suitRenderer = {
-    type: 'simple-fill',
-    color: [217, 95, 2, 0.4],
-    outline: {
-      color: [115, 76, 0, 1],
-    },
-  }
-  _nonSuitRenderer = {
-    type: 'simple-fill',
-    color: [170, 102, 205, 0.4],
-    outline: {
-      color: [76, 0, 115, 1],
-    },
+    title: 'Selected {MAP_LABEL}',
   }
 
   return {
@@ -60,7 +43,6 @@ define([
     clearLyrs: clearLyrs,
     addLayers: addLayers,
     updateLayer: updateLayer,
-    updatePopup: updatePopup,
     clearCutBlock: clearCutBlock,
   }
 
@@ -91,7 +73,6 @@ define([
 
     // Make the layers
     layerInit()
-    updatePopup()
 
     addExpand()
     addTracking()
@@ -102,8 +83,6 @@ define([
       view.ui.add('topbar', 'top-left')
       view.ui.add(expand, 'top-left')
       view.ui.add(trackWidget, 'top-left')
-
-      const _attributeEditing = document.getElementById('featureUpdateDiv')
 
       addBasemapGallery()
       addPrintButton()
@@ -148,14 +127,13 @@ define([
   function updateLayer(outlist) {
     // outlist: all 4 possible queries that reflect the users chosen species and bec variant
     // outlist = [outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019]
-    window.outlist = outlist
 
     if (outlist[1].length != 0) {
       nonsuitLayer.definitionExpression = 'MAP_LABEL in (' + outlist[1] + ')'
       nonsuitLayer.popupTemplate = template
       map.add(nonsuitLayer)
     } else {
-      nonsuitLayer.definitionExpression = 'MAP_LABEL in ()'
+      nonsuitLayer.definitionExpression = '1=0'
       nonsuitLayer.popupTemplate = ''
       map.add(nonsuitLayer)
     }
@@ -165,7 +143,7 @@ define([
       currentLayer.popupTemplate = template
       map.add(currentLayer)
     } else {
-      currentLayer.definitionExpression = 'MAP_LABEL in ()'
+      currentLayer.definitionExpression = '1=0'
       currentLayer.popupTemplate = ''
       map.add(currentLayer)
     }
@@ -173,20 +151,6 @@ define([
     if (mguLayer.loadStatus === 'loaded') {
       map.add(mguLayer)
     }
-  }
-
-  function updatePopup() {
-    nonsuitLayer.on('selection-complete', (event) => {
-      // Round coordinates to 3 decimals
-      const lat = Math.round(event.mapPoint.latitude * 1000) / 1000
-      const lon = Math.round(event.mapPoint.longitude * 1000) / 1000
-
-      view.popup.open({
-        // Set the popup's title to the coordinates of the clicked location
-        title: 'Reverse geocode: [' + lon + ', ' + lat + ']',
-        location: event.mapPoint, // Set the location of the popup to the clicked location
-      })
-    })
   }
 
   /*
@@ -207,7 +171,7 @@ define([
     var layer = new FeatureLayer({
       url: src,
       title: name,
-      outfields: fields,
+      outFields: fields,
       opacity: 0.5,
       visibilityMode: 'independent',
     })
@@ -215,43 +179,6 @@ define([
       console.warn('Failed to load feature layer: ' + name, error)
     })
     return layer
-  }
-
-  function _kmlInit(src) {
-    return new KMLLayer({
-      url: src,
-      title: 'KML Sample',
-    })
-  }
-
-  // Initialize a feature layer with definition query and custom renderer
-  function _featureInit_complex(src, expression, name, renderer) {
-    return new FeatureLayer({
-      url: src,
-      definitionExpression: expression,
-      title: name,
-      renderer: renderer,
-      opacity: 0.5,
-      visibilityMode: 'independent',
-    })
-  }
-
-  /*
-   * Utility Functions
-   */
-  function _popupTable(lyr) {
-    lyr.load().then(function () {
-      lyr.popupTemplate = lyr.createPopupTemplate()
-    })
-  }
-
-  function _updateKey(list) {
-    var listLength = list.length
-    var newlist = new Array()
-    for (let i = 0; i < listLength; i++) {
-      newlist.push(list[i][1].replace(/ /g, '_'))
-    }
-    return newlist
   }
 
   function fullExtent() {
@@ -264,35 +191,6 @@ define([
   /*
    * Widgets and behaviour
    */
-
-  // Add the line and area measurement tools
-  function _addMeasurement() {
-    document.getElementById('distanceButton').addEventListener('click', function () {
-      setActiveWidget(null)
-      if (!this.classList.contains('active')) {
-        setActiveWidget('distance')
-        view.focus()
-      } else {
-        setActiveButton(null)
-      }
-    })
-    document.getElementById('areaButton').addEventListener('click', function () {
-      setActiveWidget(null)
-      if (!this.classList.contains('active')) {
-        setActiveWidget('area')
-        view.focus()
-      } else {
-        setActiveButton(null)
-      }
-    })
-  }
-
-  /*Create and add the extent button widget*/
-  function _addExtentButton() {
-    document.getElementById('homeButton').addEventListener('click', function () {
-      fullExtent()
-    })
-  }
 
   function addTracking() {
     trackWidget = document.createElement('arcgis-track')
@@ -462,48 +360,12 @@ define([
     }
   }
 
-  function _addMouseCoord() {
-    var coordsWidget = document.createElement('mouseDiv')
-    coordsWidget.id = 'coordsWidget'
-    coordsWidget.className = 'esri-widget esri-component'
-    view.ui.add(coordsWidget, 'bottom-right')
-    function showCoordinates(pt) {
-      var coords =
-        'Lat/Long ' +
-        pt.latitude.toFixed(3) +
-        ' ' +
-        pt.longitude.toFixed(3) +
-        ' | Scale 1:' +
-        Math.round(view.scale * 1) / 1
-      coordsWidget.innerHTML = coords
-    }
-
-    view.watch('stationary', function (_isStationary) {
-      showCoordinates(view.center)
-    })
-    view.on('pointer-move', function (evt) {
-      showCoordinates(view.toMap({ x: evt.x, y: evt.y }))
-    })
-  }
-
   // Add the basemap gallery
   function addBasemapGallery() {
     document.getElementById('basemapButton').addEventListener('click', function () {
       setActiveWidget(null)
       if (!this.classList.contains('active')) {
         setActiveWidget('basemap')
-      } else {
-        setActiveButton(null)
-      }
-    })
-  }
-
-  // Add the instructions button
-  function _addLogo() {
-    document.getElementById('instructionButton').addEventListener('click', function () {
-      setActiveWidget(null)
-      if (!this.classList.contains('active')) {
-        setActiveWidget('instruction')
       } else {
         setActiveButton(null)
       }
@@ -544,8 +406,7 @@ define([
   function setActiveWidget(type) {
     switch (type) {
       case 'home':
-        activeWidget = fullExtent()
-        view.ui.add(activeWidget)
+        fullExtent()
         setActiveButton(document.getElementById('homeButton'))
         break
       case 'basemap':

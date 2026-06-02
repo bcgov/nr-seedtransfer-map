@@ -154,10 +154,6 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       })
   })
 
-  document.getElementById('mapDiv').addEventListener('click', function () {
-    defineMap.updatePopup = 'This is a test'
-  })
-
   document.getElementById('clearButtonCutblock').addEventListener('click', function () {
     defineMap.clearCutBlock()
     $('#mapLegend').fadeOut(300)
