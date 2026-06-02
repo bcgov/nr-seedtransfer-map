@@ -281,7 +281,17 @@ define(function () {
    *    as a standard promise rejection to be caught and displayed by the UI error banner.
    */
   function fetchJSON(url) {
-    return fetch(url).then(function (r) {
+    const isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
+    let targetUrl = url
+    if (
+      isDbPruned &&
+      url.startsWith('Version_7_0/') &&
+      window.location.pathname.includes('/deployments/pr-')
+    ) {
+      targetUrl = '../../' + url
+    }
+
+    return fetch(targetUrl).then(function (r) {
       if (!r.ok) {
         // Fallback for PR Previews: if a local DB fetch fails (e.g. 404 because
         // pr-open.yml pruned docs/Version_7_0/ when the PR didn't touch it),
@@ -294,12 +304,12 @@ define(function () {
         //      If you add non-JSON assets there, either widen this fallback or
         //      disable the prune step in .github/workflows/pr-open.yml.
         if (
-          url.startsWith('Version_7_0/') &&
+          targetUrl.startsWith('Version_7_0/') &&
           window.location.pathname.includes('/deployments/pr-')
         ) {
-          const fallbackUrl = '../../' + url
+          const fallbackUrl = '../../' + targetUrl
           console.warn(
-            `Local database file not found at ${url}. Falling back to production database: ${fallbackUrl}`,
+            `Local database file not found at ${targetUrl}. Falling back to production database: ${fallbackUrl}`,
           )
           return fetch(fallbackUrl).then(function (fallbackR) {
             if (!fallbackR.ok) {
