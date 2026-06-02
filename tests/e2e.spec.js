@@ -187,5 +187,27 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await expect(page.locator('#speciesInputSeedlot')).toHaveValue('YC')
     await expect(page.locator('#becInputSeedlot')).toHaveValues([])
   })
+
+  test('Seedlot Flow: Clicking GO with empty BEC variant triggers validation error', async ({
+    page,
+  }) => {
+    // Click the "I Have A Seedlot" tab
+    await page.click('#seedlot-tab')
+
+    // Fill in Orchard Number 800 (which populates species YC but leaves BEC empty)
+    await page.fill('#orchardNumber', '800')
+    page.on('dialog', async (dialog) => {
+      await dialog.accept()
+    })
+    await page.click('#addSeedlotfromOrchard')
+
+    // Click the GO button for Seedlot with no BEC selected
+    await page.click('#addButtonSeedlot')
+
+    // Verify it displays the custom error banner "Please select a BEC Variant."
+    const errorBanner = page.locator('.alert-error-banner .alert-message-text')
+    await expect(errorBanner).toBeVisible()
+    await expect(errorBanner).toHaveText('Please select a BEC Variant.')
+  })
 })
 
