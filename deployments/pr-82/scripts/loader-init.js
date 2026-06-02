@@ -12,7 +12,7 @@ if (typeof HTMLElement.prototype.reposition !== 'function') {
   var locationPath = pathname.substring(0, pathname.lastIndexOf('/'))
   window.dojoConfig = {
     async: true,
-    cacheBust: 'v=7.0.6',
+    cacheBust: 'v=7.0.7',
     packages: [
       {
         name: 'scripts',
