@@ -744,13 +744,23 @@ define(function () {
                   resolveInner(results)
                 }).then(() => {
                   window.res = results
-                  let becVar = becStore.find((x) => x.name == results[0].BECvar).id
-                  if (window.selectBecSeedlot) {
-                    window.selectBecSeedlot.setSelected(becVar.toString())
-                  }
+                  if (results && results.length > 0) {
+                    let becVarObj = results[0].BECvar
+                      ? becStore.find((x) => x.name == results[0].BECvar)
+                      : null
+                    if (window.selectBecSeedlot) {
+                      if (becVarObj) {
+                        window.selectBecSeedlot.setSelected(becVarObj.id.toString())
+                      } else {
+                        window.selectBecSeedlot.setSelected([])
+                      }
+                    }
 
-                  if (window.selectSpeciesSeedlot) {
-                    window.selectSpeciesSeedlot.setSelected(results[0].Species)
+                    if (window.selectSpeciesSeedlot && results[0].Species) {
+                      window.selectSpeciesSeedlot.setSelected(results[0].Species)
+                    }
+                  } else {
+                    console.warn(`No seedlots found in Seedlot_list.json for Orchard ${orch}`)
                   }
 
                   resolve()
@@ -780,12 +790,18 @@ define(function () {
             return x['Seedlot'] == lot
           })
           if (results && results.length > 0) {
-            let becVar = becStore.find((x) => x.name === results[0].BECvar).id
+            let becVarObj = results[0].BECvar
+              ? becStore.find((x) => x.name === results[0].BECvar)
+              : null
             document.getElementById('orchardNumber').value = results[0].Orchard
             if (window.selectBecSeedlot) {
-              window.selectBecSeedlot.setSelected(becVar.toString())
+              if (becVarObj) {
+                window.selectBecSeedlot.setSelected(becVarObj.id.toString())
+              } else {
+                window.selectBecSeedlot.setSelected([])
+              }
             }
-            if (window.selectSpeciesSeedlot) {
+            if (window.selectSpeciesSeedlot && results[0].Species) {
               window.selectSpeciesSeedlot.setSelected(results[0].Species)
             }
             resolve()
