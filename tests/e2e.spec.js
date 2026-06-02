@@ -183,6 +183,7 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await page.click('#addSeedlotfromOrchard')
 
     // Verify it resolved Orchard "800.0", set species to YC, and handled empty BEC gracefully
+    await expect(page.locator('#seedlotNumber')).toHaveValue('V0932')
     await expect(page.locator('#speciesInputSeedlot')).toHaveValue('YC')
     await expect(page.locator('#becInputSeedlot')).toHaveValues([])
   })
