@@ -86,14 +86,14 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await expect(seedlotRow).not.toContainText('No matching records found')
   })
 
-  test('Seedlot Flow: Entering Orchard 121 populates representative seedlot and table', async ({
+  test('Seedlot Flow: Entering Orchard 101 populates representative seedlot and table', async ({
     page,
   }) => {
     // Click the "I Have A Seedlot" tab
     await page.click('#seedlot-tab')
 
     // Fill in Orchard Number
-    await page.fill('#orchardNumber', '121')
+    await page.fill('#orchardNumber', '101')
 
     // Click "Set Representative Seedlot"
     // Mock the alert popup to prevent test blockage just in case
@@ -102,11 +102,12 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     })
     await page.click('#addSeedlotfromOrchard')
 
-    // It should automatically retrieve Seedlot 4372, set the inputs, and refresh the UI dropdowns
-    await expect(page.locator('#seedlotNumber')).toHaveValue('4372')
+    // It should automatically retrieve Seedlot 3226, set the inputs, and refresh the UI dropdowns
+    await expect(page.locator('#seedlotNumber')).toHaveValue('3226')
 
     // Wait for the inputs to get set via the AJAX response
     await expect(page.locator('#speciesInputSeedlot')).toHaveValue('FDC')
+    await expect(page.locator('#becInputSeedlot')).toHaveValues(['227'])
 
     // Click the Seedlot tab GO button
     await page.click('#addButtonSeedlot')
@@ -134,6 +135,7 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
 
     // Verify it automatically sets Species to SX and BEC Variant to ESSFwc2 (ID: 83)
     await expect(page.locator('#speciesInputSeedlot')).toHaveValue('SX')
+    await expect(page.locator('#becInputSeedlot')).toHaveValues(['83'])
 
     // Click the Seedlot tab GO button
     await page.click('#addButtonSeedlot')
