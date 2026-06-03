@@ -116,6 +116,7 @@ body {
   overflow: auto;
   max-height: 100%;
 }
+
 /* 
 #coords {
     font: bold 12px arial;
@@ -148,6 +149,87 @@ body {
 
 .card-text {
   font-size: 14px;
+}
+
+/* Climate Year Legend */
+.climate-legend {
+  position: fixed;
+  top: 110px;
+  right: 15px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  font-family: Calibri, sans-serif;
+  font-size: 13px;
+}
+
+.climate-legend.esri-widget {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.legend-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ddd;
+  color: #333;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.legend-item:last-child {
+  margin-bottom: 0;
+}
+
+.legend-color {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  margin-right: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+.legend-label {
+  color: #333;
+}
+
+/* CBST Suitability Legend */
+#mapLegend {
+  position: fixed !important;
+  bottom: auto !important;
+  right: 15px !important;
+  top: 210px !important;
+  z-index: 999 !important;
+  border-radius: 4px !important;
+  border: 1px solid #ccc !important;
+}
+
+@media (max-width: 767.98px) {
+  .climate-legend {
+    top: 75px;
+    right: 10px;
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .legend-color {
+    width: 14px;
+    height: 14px;
+  }
+
+  #mapLegend {
+    top: 155px !important;
+    right: 10px !important;
+    font-size: 12px !important;
+  }
 }
 
 @media (max-width: 767.98px) {

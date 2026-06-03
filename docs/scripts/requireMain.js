@@ -10,6 +10,23 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
     setTimeout(function () {
       defineMap.mapInit()
     }, 0)
+
+    // Fix close button for offcanvas on all devices
+    const closeBtn = document.querySelector('.offcanvas-header .btn-close')
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function (e) {
+        e.preventDefault()
+        e.stopPropagation()
+        const offcanvas = document.getElementById('sidebarOffcanvas')
+        if (offcanvas) {
+          offcanvas.classList.remove('show')
+          const backdrop = document.querySelector('.offcanvas-backdrop')
+          if (backdrop) {
+            backdrop.remove()
+          }
+        }
+      })
+    }
   })
   var errorTimeoutId = null
   var selected = []
@@ -96,6 +113,81 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
     })
   }
 
+  // Update climate legend visibility based on selected years
+  function updateClimateLegendsVis() {
+    const yearInputCutblock = document.getElementById('yearInputCutblock')
+    const yearInputSeedlot = document.getElementById('yearInputSeedlot')
+    const climateLegend = document.getElementById('climate-legend')
+    const mapLegend = document.getElementById('mapLegend')
+
+    if (!climateLegend) return
+
+    // Check if either tab has multiple years selected
+    const cutblockYears = Array.from(yearInputCutblock?.selectedOptions || []).length
+    const seedlotYears = Array.from(yearInputSeedlot?.selectedOptions || []).length
+    const totalYears = Math.max(cutblockYears, seedlotYears)
+
+    // Show legend only when multiple years are selected
+    if (totalYears > 1) {
+      $(climateLegend).fadeIn(300)
+      if (mapLegend) {
+        $(mapLegend).fadeOut(300)
+      }
+    } else {
+      $(climateLegend).fadeOut(300)
+      if (mapLegend) {
+        $(mapLegend).fadeIn(300)
+      }
+    }
+  }
+
+  // Update time series year when changed (Cutblock tab)
+  const yearInputCutblock = document.getElementById('yearInputCutblock')
+  const yearInputSeedlot = document.getElementById('yearInputSeedlot')
+
+  if (yearInputCutblock) {
+    yearInputCutblock.addEventListener('change', function (e) {
+      // Get all selected values from multi-select
+      const selectedYears = Array.from(e.target.selectedOptions).map((option) => option.value)
+      main.setTimeSeriesYear(selectedYears)
+
+      // Sync the Seedlot tab year selector to match (prevent infinite recursion)
+      if (yearInputSeedlot && window.selectYearSeedlot) {
+        const currentSeedlotYears = Array.from(yearInputSeedlot.selectedOptions).map(
+          (option) => option.value,
+        )
+        const isSame =
+          selectedYears.length === currentSeedlotYears.length &&
+          selectedYears.every((val) => currentSeedlotYears.includes(val))
+        if (!isSame) {
+          window.selectYearSeedlot.setSelected(selectedYears)
+        }
+      }
+    })
+  }
+
+  // Update time series year when changed (Seedlot tab)
+  if (yearInputSeedlot) {
+    yearInputSeedlot.addEventListener('change', function (e) {
+      // Get all selected values from multi-select
+      const selectedYears = Array.from(e.target.selectedOptions).map((option) => option.value)
+      main.setTimeSeriesYear(selectedYears)
+
+      // Sync the Cutblock tab year selector to match (prevent infinite recursion)
+      if (yearInputCutblock && window.selectYearCutblock) {
+        const currentCutblockYears = Array.from(yearInputCutblock.selectedOptions).map(
+          (option) => option.value,
+        )
+        const isSame =
+          selectedYears.length === currentCutblockYears.length &&
+          selectedYears.every((val) => currentCutblockYears.includes(val))
+        if (!isSame) {
+          window.selectYearCutblock.setSelected(selectedYears)
+        }
+      }
+    })
+  }
+
   // clicking Go button on "I have a cutblock tab"
   document.getElementById('addButtonCutblock').addEventListener('click', function () {
     showLoader('Calculating suitability map and retrieving seedlot data...')
@@ -105,7 +197,7 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       .then((layers) => {
         defineMap.updateLayer(layers)
         hideLoader()
-        $('#mapLegend').fadeIn(300)
+        updateClimateLegendsVis()
       })
       .catch((error) => {
         showError(error.message)
@@ -124,7 +216,7 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       .then((layers) => {
         defineMap.updateLayer(layers)
         hideLoader()
-        $('#mapLegend').fadeIn(300)
+        updateClimateLegendsVis()
       })
       .catch((error) => {
         showError(error.message)
@@ -157,5 +249,6 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
   document.getElementById('clearButtonCutblock').addEventListener('click', function () {
     defineMap.clearCutBlock()
     $('#mapLegend').fadeOut(300)
+    $('#climate-legend').fadeOut(300)
   })
 })

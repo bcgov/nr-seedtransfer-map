@@ -12,6 +12,8 @@ define([
   'esri/request',
   'esri/layers/support/Field',
   'esri/Graphic',
+  'esri/renderers/SimpleRenderer',
+  'esri/symbols/SimpleFillSymbol',
 ], function (
   Map,
   MapView,
@@ -22,6 +24,8 @@ define([
   request,
   Field,
   Graphic,
+  SimpleRenderer,
+  SimpleFillSymbol,
 ) {
   var map, view, xy
   var _scaleBar
@@ -97,18 +101,18 @@ define([
   function layerInit() {
     currentLayer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/5',
-      ['map_label', 'SHAPE_Area'],
+      ['*'],
       'CBST',
     )
     nonsuitLayer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/6',
-      ['map_label', 'SHAPE_Area'],
+      ['*'],
       'CBST Species May Not Be Suitable',
     )
 
     mguLayer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/0',
-      ['Management_Units'],
+      ['*'],
       'Management Unit',
     )
     mguLayer
@@ -126,31 +130,125 @@ define([
 
   function updateLayer(outlist) {
     // outlist: definition query strings that reflect the user's chosen species and BEC variant
-    // outlist = [outlist_suit, outlist_non_suit]
+    // Can be either:
+    // [outlist_suit, outlist_non_suit] - simple format
+    // or { yearLayers: [{year, suit, nonSuit}, ...] } - year-based format
 
-    if (outlist[1].length != 0) {
-      nonsuitLayer.definitionExpression = 'MAP_LABEL in (' + outlist[1] + ')'
-      nonsuitLayer.popupTemplate = template
-      map.add(nonsuitLayer)
-    } else {
-      nonsuitLayer.definitionExpression = '1=0'
-      nonsuitLayer.popupTemplate = ''
-      map.add(nonsuitLayer)
+    // Color scheme for years: 2043=Yellow, 2053=Green, 2063=Blue
+    const yearColors = {
+      2043: { r: 255, g: 200, b: 0, a: 0.6 }, // Yellow
+      2053: { r: 0, g: 170, b: 0, a: 0.6 }, // Green
+      2063: { r: 0, g: 112, b: 255, a: 0.6 }, // Blue
     }
 
-    if (outlist[0].length != 0) {
-      currentLayer.definitionExpression = 'MAP_LABEL in (' + outlist[0] + ')'
-      currentLayer.popupTemplate = template
-      map.add(currentLayer)
+    // Check if this is year-based data (object) or simple format (array)
+    const isYearBased =
+      outlist && typeof outlist === 'object' && !Array.isArray(outlist) && outlist.yearLayers
+
+    if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
+      // Year-based format - create separate layers for each year
+      outlist.yearLayers.forEach((yearData, _index) => {
+        const year = String(yearData.year)
+        const suitBecList = Array.isArray(yearData.suit) ? yearData.suit : []
+        const nonSuitBecList = Array.isArray(yearData.nonSuit) ? yearData.nonSuit : []
+        const color = yearColors[year] || { r: 100, g: 100, b: 100, a: 0.6 }
+
+        // Create suitable layer for this year
+        if (suitBecList.length > 0) {
+          const definitionExpr = 'MAP_LABEL in (' + suitBecList.join(', ') + ')'
+          const yearLayerSuit = cloneLayerWithColor(
+            currentLayer,
+            definitionExpr,
+            color,
+            `Year ${year} - Suitable`,
+          )
+          map.add(yearLayerSuit)
+        }
+
+        // Create non-suitable layer for this year
+        if (nonSuitBecList.length > 0) {
+          const definitionExpr = 'MAP_LABEL in (' + nonSuitBecList.join(', ') + ')'
+          const yearLayerNonSuit = cloneLayerWithColor(
+            nonsuitLayer,
+            definitionExpr,
+            { r: color.r, g: color.g, b: color.b, a: 0.3 }, // Lighter shade for non-suitable
+            `Year ${year} - Not Suitable`,
+          )
+          map.add(yearLayerNonSuit)
+        }
+      })
     } else {
-      currentLayer.definitionExpression = '1=0'
-      currentLayer.popupTemplate = ''
-      map.add(currentLayer)
+      // Simple format (single year or fallback) - use original layers
+      const suitList = Array.isArray(outlist) ? outlist[0] : ''
+      const nonSuitList = Array.isArray(outlist) ? outlist[1] : ''
+
+      if (nonSuitList && nonSuitList.length > 0) {
+        nonsuitLayer.definitionExpression = 'MAP_LABEL in (' + nonSuitList + ')'
+        nonsuitLayer.popupTemplate = template
+        map.add(nonsuitLayer)
+      } else {
+        nonsuitLayer.definitionExpression = '1=0'
+        nonsuitLayer.popupTemplate = ''
+        map.add(nonsuitLayer)
+      }
+
+      if (suitList && suitList.length > 0) {
+        currentLayer.definitionExpression = 'MAP_LABEL in (' + suitList + ')'
+        currentLayer.popupTemplate = template
+        map.add(currentLayer)
+      } else {
+        currentLayer.definitionExpression = '1=0'
+        currentLayer.popupTemplate = ''
+        map.add(currentLayer)
+      }
     }
 
     if (mguLayer.loadStatus === 'loaded') {
       map.add(mguLayer)
     }
+  }
+
+  function cloneLayerWithColor(baseLayer, definitionExpression, colorObj, title) {
+    // Create color symbol and renderer
+    const fillSymbol = new SimpleFillSymbol({
+      color: [colorObj.r, colorObj.g, colorObj.b, colorObj.a],
+      outline: {
+        color: [colorObj.r, colorObj.g, colorObj.b, 1],
+        width: 1.5,
+      },
+    })
+
+    const renderer = new SimpleRenderer({
+      symbol: fillSymbol,
+    })
+
+    // Build full URL including layer ID. baseLayer.url returns only the service URL,
+    // so we must append layerId to point to the correct sublayer.
+    const fullUrl = baseLayer.url.replace(/\/$/, '') + '/' + baseLayer.layerId
+
+    // Create a new feature layer clone with custom styling and renderer
+    const clonedLayer = new FeatureLayer({
+      url: fullUrl,
+      title: title,
+      outFields: ['*'],
+      opacity: colorObj.a,
+      visibilityMode: 'independent',
+      definitionExpression: definitionExpression,
+      popupTemplate: template,
+      renderer: renderer,
+    })
+
+    // Monitor layer loading for any errors
+    clonedLayer.when(
+      function () {
+        // Layer loaded successfully
+      },
+      function (error) {
+        console.warn('Failed to load cloned feature layer: ' + title, error)
+      },
+    )
+
+    return clonedLayer
   }
 
   /*

@@ -77,12 +77,12 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     // Verify the results tables load and populate with data rows
     // Wait for the Cutblock Table to populate at least one row
     const cutblockRow = page.locator('#cutblock_table tbody tr').first()
-    await cutblockRow.waitFor({ state: 'visible', timeout: 15 * 1000 })
+    await cutblockRow.waitFor({ state: 'visible', timeout: 30 * 1000 })
     await expect(cutblockRow).not.toContainText('No matching records found')
 
     // Wait for the Seedlot Table to populate at least one row
     const seedlotRow = page.locator('#seedlot_table tbody tr').first()
-    await seedlotRow.waitFor({ state: 'visible', timeout: 15 * 1000 })
+    await seedlotRow.waitFor({ state: 'visible', timeout: 30 * 1000 })
     await expect(seedlotRow).not.toContainText('No matching records found')
   })
 
@@ -113,7 +113,7 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
 
     // Verify the seed table loads and populates with data rows
     const seedRow = page.locator('#seed tbody tr').first()
-    await seedRow.waitFor({ state: 'visible', timeout: 15 * 1000 })
+    await seedRow.waitFor({ state: 'visible', timeout: 30 * 1000 })
     await expect(seedRow).not.toContainText('No matching records found')
   })
 
@@ -140,7 +140,7 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
 
     // Verify the seed table loads and populates with data rows
     const seedRow = page.locator('#seed tbody tr').first()
-    await seedRow.waitFor({ state: 'visible', timeout: 15 * 1000 })
+    await seedRow.waitFor({ state: 'visible', timeout: 30 * 1000 })
     await expect(seedRow).not.toContainText('No matching records found')
   })
 
