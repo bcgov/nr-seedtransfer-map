@@ -230,7 +230,7 @@ define([
       url: fullUrl,
       title: title,
       outFields: [ '*' ],
-      opacity: 1.0,
+      opacity: colorObj.a,
       visibilityMode: 'independent',
       definitionExpression: definitionExpression,
       popupTemplate: template,

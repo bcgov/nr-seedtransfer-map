@@ -10,6 +10,23 @@ require([ 'scripts/defineMap.js', 'scripts/main.js' ], function (defineMap, main
     setTimeout(function () {
       defineMap.mapInit()
     }, 0)
+
+    // Fix close button for offcanvas on all devices
+    const closeBtn = document.querySelector('.offcanvas-header .btn-close')
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function (e) {
+        e.preventDefault()
+        e.stopPropagation()
+        const offcanvas = document.getElementById('sidebarOffcanvas')
+        if (offcanvas) {
+          offcanvas.classList.remove('show')
+          const backdrop = document.querySelector('.offcanvas-backdrop')
+          if (backdrop) {
+            backdrop.remove()
+          }
+        }
+      })
+    }
   })
   var errorTimeoutId = null
   var selected = []
@@ -96,6 +113,27 @@ require([ 'scripts/defineMap.js', 'scripts/main.js' ], function (defineMap, main
     })
   }
 
+  // Update climate legend visibility based on selected years
+  function updateClimateLegendsVis() {
+    const yearInputCutblock = document.getElementById('yearInputCutblock')
+    const yearInputSeedlot = document.getElementById('yearInputSeedlot')
+    const climateLegend = document.getElementById('climate-legend')
+    
+    if (!climateLegend) return
+    
+    // Check if either tab has multiple years selected
+    const cutblockYears = Array.from(yearInputCutblock?.selectedOptions || []).length
+    const seedlotYears = Array.from(yearInputSeedlot?.selectedOptions || []).length
+    const totalYears = Math.max(cutblockYears, seedlotYears)
+    
+    // Show legend only when multiple years are selected
+    if (totalYears > 1) {
+      climateLegend.style.display = 'block'
+    } else {
+      climateLegend.style.display = 'none'
+    }
+  }
+
   // Update time series year when changed (Cutblock tab)
   const yearInputCutblock = document.getElementById('yearInputCutblock')
   if (yearInputCutblock) {
@@ -103,6 +141,7 @@ require([ 'scripts/defineMap.js', 'scripts/main.js' ], function (defineMap, main
       // Get all selected values from multi-select
       const selectedYears = Array.from(e.target.selectedOptions).map((option) => option.value)
       main.setTimeSeriesYear(selectedYears)
+      updateClimateLegendsVis()
     })
   }
 
@@ -113,6 +152,7 @@ require([ 'scripts/defineMap.js', 'scripts/main.js' ], function (defineMap, main
       // Get all selected values from multi-select
       const selectedYears = Array.from(e.target.selectedOptions).map((option) => option.value)
       main.setTimeSeriesYear(selectedYears)
+      updateClimateLegendsVis()
     })
   }
 
@@ -125,6 +165,7 @@ require([ 'scripts/defineMap.js', 'scripts/main.js' ], function (defineMap, main
       .then((layers) => {
         defineMap.updateLayer(layers)
         hideLoader()
+        updateClimateLegendsVis()
         $('#mapLegend').fadeIn(300)
       })
       .catch((error) => {
@@ -144,6 +185,7 @@ require([ 'scripts/defineMap.js', 'scripts/main.js' ], function (defineMap, main
       .then((layers) => {
         defineMap.updateLayer(layers)
         hideLoader()
+        updateClimateLegendsVis()
         $('#mapLegend').fadeIn(300)
       })
       .catch((error) => {
