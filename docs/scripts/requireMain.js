@@ -118,14 +118,14 @@ require([ 'scripts/defineMap.js', 'scripts/main.js' ], function (defineMap, main
     const yearInputCutblock = document.getElementById('yearInputCutblock')
     const yearInputSeedlot = document.getElementById('yearInputSeedlot')
     const climateLegend = document.getElementById('climate-legend')
-    
+
     if (!climateLegend) return
-    
+
     // Check if either tab has multiple years selected
     const cutblockYears = Array.from(yearInputCutblock?.selectedOptions || []).length
     const seedlotYears = Array.from(yearInputSeedlot?.selectedOptions || []).length
     const totalYears = Math.max(cutblockYears, seedlotYears)
-    
+
     // Show legend only when multiple years are selected
     if (totalYears > 1) {
       climateLegend.style.display = 'block'
