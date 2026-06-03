@@ -118,6 +118,7 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
     const yearInputCutblock = document.getElementById('yearInputCutblock')
     const yearInputSeedlot = document.getElementById('yearInputSeedlot')
     const climateLegend = document.getElementById('climate-legend')
+    const mapLegend = document.getElementById('mapLegend')
 
     if (!climateLegend) return
 
@@ -128,9 +129,15 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
 
     // Show legend only when multiple years are selected
     if (totalYears > 1) {
-      climateLegend.style.display = 'block'
+      $(climateLegend).fadeIn(300)
+      if (mapLegend) {
+        $(mapLegend).fadeOut(300)
+      }
     } else {
-      climateLegend.style.display = 'none'
+      $(climateLegend).fadeOut(300)
+      if (mapLegend) {
+        $(mapLegend).fadeIn(300)
+      }
     }
   }
 
@@ -143,7 +150,6 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       // Get all selected values from multi-select
       const selectedYears = Array.from(e.target.selectedOptions).map((option) => option.value)
       main.setTimeSeriesYear(selectedYears)
-      updateClimateLegendsVis()
 
       // Sync the Seedlot tab year selector to match (prevent infinite recursion)
       if (yearInputSeedlot && window.selectYearSeedlot) {
@@ -166,7 +172,6 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       // Get all selected values from multi-select
       const selectedYears = Array.from(e.target.selectedOptions).map((option) => option.value)
       main.setTimeSeriesYear(selectedYears)
-      updateClimateLegendsVis()
 
       // Sync the Cutblock tab year selector to match (prevent infinite recursion)
       if (yearInputCutblock && window.selectYearCutblock) {
@@ -193,7 +198,6 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
         defineMap.updateLayer(layers)
         hideLoader()
         updateClimateLegendsVis()
-        $('#mapLegend').fadeIn(300)
       })
       .catch((error) => {
         showError(error.message)
@@ -213,7 +217,6 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
         defineMap.updateLayer(layers)
         hideLoader()
         updateClimateLegendsVis()
-        $('#mapLegend').fadeIn(300)
       })
       .catch((error) => {
         showError(error.message)
@@ -246,5 +249,6 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
   document.getElementById('clearButtonCutblock').addEventListener('click', function () {
     defineMap.clearCutBlock()
     $('#mapLegend').fadeOut(300)
+    $('#climate-legend').fadeOut(300)
   })
 })
