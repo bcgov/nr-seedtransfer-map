@@ -3,6 +3,8 @@
  */
 
 define(function () {
+  var timeSeriesYears = ['2053']
+
   var speciesStore = [
     { name: 'AT', minsuit: 97.5 },
     { name: 'BA', minsuit: 97.5 },
@@ -251,6 +253,83 @@ define(function () {
     { name: 'SWBvks', id: 218 },
   ]
 
+  // Helper function to build year-based layer data when multiple years are selected
+  function buildYearBasedLayers(sp, bec, yearsArray, mode = 'cutblock') {
+    // mode: 'cutblock' (BECvar_site) or 'seedlot' (BECvar_seed)
+    // Returns: { yearLayers: [{year, suit, nonSuit}, ...] }
+    return new Promise((resolve, reject) => {
+      let speciesEntry = speciesStore.find((x) => x.name === sp)
+      if (!speciesEntry) {
+        reject(new Error('Unknown species: ' + sp))
+        return
+      }
+      let suit = speciesEntry.minsuit / 100
+
+      // Fetch data for each year separately
+      const yearPromises = yearsArray.map((year) =>
+        fetchMigratedHeightList(sp, [year])
+          .then((data) => ({ year, data }))
+          .catch(() => ({ year, data: [] })),
+      )
+
+      Promise.all(yearPromises)
+        .then((results) => {
+          const yearLayers = results.map((result) => {
+            const { year, data } = result
+            const suitList = []
+            const nonSuitList = []
+
+            // Determine which field to use based on mode
+            const becField = mode === 'seedlot' ? 'BECvar_seed' : 'BECvar_site'
+            const outputField = mode === 'seedlot' ? 'BECvar_site' : 'BECvar_seed'
+
+            if (Array.isArray(bec) && bec.length > 1) {
+              // Multiple BEC variants
+              for (let i = 0; i < bec.length; i++) {
+                const becEntry = becStore.find((x) => x.id == bec[i])
+                if (becEntry) {
+                  const becName = becEntry.name
+                  data.forEach((item) => {
+                    if (item[becField] == becName && item['HTp_pred'] >= suit) {
+                      if (item['Sp_suit_site'] == 1) {
+                        suitList.push("'" + item[outputField] + "'")
+                      } else {
+                        nonSuitList.push("'" + item[outputField] + "'")
+                      }
+                    }
+                  })
+                }
+              }
+            } else {
+              // Single BEC variant
+              const becEntry = becStore.find((x) => x.id == bec[0] || x.id == bec)
+              if (becEntry) {
+                const becName = becEntry.name
+                data.forEach((item) => {
+                  if (item[becField] == becName && item['HTp_pred'] >= suit) {
+                    if (item['Sp_suit_site'] == 1) {
+                      suitList.push("'" + item[outputField] + "'")
+                    } else {
+                      nonSuitList.push("'" + item[outputField] + "'")
+                    }
+                  }
+                })
+              }
+            }
+
+            return {
+              year: year,
+              suit: suitList,
+              nonSuit: nonSuitList,
+            }
+          })
+
+          resolve({ yearLayers })
+        })
+        .catch(reject)
+    })
+  }
+
   return {
     fillSelects: fillSelects,
     addSuitabilityLayerCutblock: addSuitabilityLayerCutblock,
@@ -259,6 +338,92 @@ define(function () {
     populateSpeciesBEC: populateSpeciesBEC,
     getIntersection: getIntersection,
     updateData: updateData,
+    setTimeSeriesYear: setTimeSeriesYear,
+  }
+
+  function setTimeSeriesYear(years) {
+    // Accept array of years or single year
+    if (Array.isArray(years)) {
+      // Filter to only valid years for PL/SX species
+      timeSeriesYears = years.filter((y) => ['2043', '2053', '2063'].includes(String(y)))
+      // Ensure at least one year is selected
+      if (timeSeriesYears.length === 0) {
+        timeSeriesYears = ['2053']
+      }
+    } else if (years) {
+      timeSeriesYears = [String(years)]
+    } else {
+      timeSeriesYears = ['2053']
+    }
+  }
+
+  /**
+   * Fetch migrated height list files with multi-year support.
+   * Only PL and SX species have time series variants (2043, 2053, 2063).
+   * All other species use the base file (_5.json).
+   * When multiple years are selected, combines results from all years.
+   */
+  function fetchMigratedHeightList(sp, yearsArray) {
+    // Determine the base file fallback path using capitalized species code (e.g. Fdi, Plc, Pli, Sx, Sxs)
+    const basePrefix = sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase()
+    const fallbackPath = 'Version_7_0/' + basePrefix + '_migrated_height_list_5.json'
+
+    // Determine if the species supports time series variants (2043, 2053, 2063)
+    let filePrefix = ''
+    let hasTimeSeries = false
+
+    if (sp === 'PLC' || sp === 'PLI') {
+      filePrefix = 'Pl'
+      hasTimeSeries = true
+    } else if (sp === 'SX') {
+      filePrefix = 'Sx'
+      hasTimeSeries = true
+    }
+
+    if (!hasTimeSeries) {
+      // Species without time series variants - use base file directly
+      return fetchJSON(fallbackPath)
+    }
+
+    // For species with time series variants, fetch and combine results
+    const yearsToFetch = Array.isArray(yearsArray) ? yearsArray : [yearsArray]
+
+    if (yearsToFetch.length === 1) {
+      // Single year - use simple fetch with fallback
+      const timeSeriesPath =
+        'Version_7_0/' + filePrefix + '_migrated_height_list_' + yearsToFetch[0] + '.json'
+
+      return fetchJSON(timeSeriesPath).catch(() => {
+        return fetchJSON(fallbackPath)
+      })
+    }
+
+    // Multiple years - fetch all and combine
+    const fetchPromises = yearsToFetch.map((year) => {
+      const timeSeriesPath = 'Version_7_0/' + filePrefix + '_migrated_height_list_' + year + '.json'
+
+      return fetchJSON(timeSeriesPath).catch(() => {
+        return fetchJSON(fallbackPath)
+      })
+    })
+
+    return Promise.all(fetchPromises).then((results) => {
+      // Combine results from all years, removing duplicates based on BECvar_site
+      const combined = []
+      const seen = new Set()
+
+      results.forEach((yearData) => {
+        yearData.forEach((record) => {
+          const key = `${record.BECvar_site}|${record.BECvar_seed}`
+          if (!seen.has(key)) {
+            seen.add(key)
+            combined.push(record)
+          }
+        })
+      })
+
+      return combined
+    })
   }
 
   /**
@@ -353,6 +518,26 @@ define(function () {
         searchPlaceholder: 'Search BEC Variants...',
       },
     })
+
+    if (window.selectYearCutblock) {
+      window.selectYearCutblock.destroy()
+    }
+    window.selectYearCutblock = new SlimSelect({
+      select: '#yearInputCutblock',
+      settings: {
+        searchEnabled: false,
+      },
+    })
+
+    if (window.selectYearSeedlot) {
+      window.selectYearSeedlot.destroy()
+    }
+    window.selectYearSeedlot = new SlimSelect({
+      select: '#yearInputSeedlot',
+      settings: {
+        searchEnabled: false,
+      },
+    })
   }
 
   // create the paths and locations for the selected cutblock and species
@@ -374,11 +559,6 @@ define(function () {
       output_non_suit = []
     var bec_name
 
-    var jsontxt =
-      'Version_7_0/' +
-      sp.charAt(0).toUpperCase() +
-      sp.slice(1).toLowerCase() +
-      '_migrated_height_list_5.json'
     var jsonseedlot =
       'Version_7_0/' + sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase() + '_Seedlots.json'
     let speciesEntry = speciesStore.find((x) => x.name === sp)
@@ -392,10 +572,10 @@ define(function () {
     outlist_suit = []
     outlist_non_suit = []
 
-    let p1 = getSeedLot(bec, suit, 0, jsonseedlot)
+    let p1 = getSeedLot(bec, suit, 0, jsonseedlot, sp, timeSeriesYears)
 
     let p2 = new Promise((resolve, reject) => {
-      fetchJSON(jsontxt)
+      fetchMigratedHeightList(sp, timeSeriesYears)
         .then(function (data) {
           var results = []
 
@@ -533,6 +713,10 @@ define(function () {
     })
 
     return Promise.all([p1, p2]).then((values) => {
+      // Check if multiple years selected - if so, use year-based layers with colors
+      if (timeSeriesYears.length > 1) {
+        return buildYearBasedLayers(sp, bec, timeSeriesYears)
+      }
       return values[1]
     })
   }
@@ -569,60 +753,99 @@ define(function () {
     return gettingIntersection
   }
 
-  function getSeedLot(bec, spmin, min, jsonseedlot) {
+  function getSeedLot(bec, spmin, min, jsonseedlot, sp, yearsArray) {
     return new Promise((resolve, reject) => {
-      fetchJSON(jsonseedlot)
-        .then(function (data) {
-          var bec_name = ''
-          var results = []
-          let finalPromise
+      // Try to load time series variant first if available for PL or SX species
+      const yearsToFetch = Array.isArray(yearsArray) ? yearsArray : [yearsArray]
+      const isTimeSeriesSpecies = sp === 'PL' || sp === 'SX'
 
-          if (bec.length == 1) {
-            var becEntrySeed = becStore.find((x) => x.id == bec)
-            if (!becEntrySeed) {
-              reject(new Error('Unknown BEC variant ID: ' + bec))
+      // For multiple years, we'll fetch each year's seedlot file if available
+      const seedlotFiles = isTimeSeriesSpecies
+        ? yearsToFetch.map(
+            (year) =>
+              'Version_7_0/' +
+              sp.charAt(0).toUpperCase() +
+              sp.slice(1).toLowerCase() +
+              '_Seedlots_' +
+              year +
+              '.json',
+          )
+        : [jsonseedlot]
+
+      const loadSeedLots = (filePaths, index = 0) => {
+        if (index >= filePaths.length) {
+          reject(new Error('Failed to load any Seedlot files'))
+          return
+        }
+
+        const currentFile = filePaths[index]
+        fetchJSON(currentFile)
+          .then((data) => {
+            processAndDisplaySeedLot(data, resolve, reject)
+          })
+          .catch(() => {
+            // Try fallback to base file if this is a time series variant
+            if (isTimeSeriesSpecies && index < filePaths.length - 1) {
+              loadSeedLots(filePaths, index + 1)
+            } else if (currentFile !== jsonseedlot) {
+              // Try base file as final fallback
+              loadSeedLots([jsonseedlot], 0)
+            } else {
+              reject(new Error('Failed to load Seedlot database'))
+            }
+          })
+      }
+
+      const processAndDisplaySeedLot = (data, resolve, reject) => {
+        var bec_name = ''
+        var results = []
+        let finalPromise
+
+        if (bec.length == 1) {
+          var becEntrySeed = becStore.find((x) => x.id == bec)
+          if (!becEntrySeed) {
+            reject(new Error('Unknown BEC variant ID: ' + bec))
+            return
+          }
+          bec_name = becEntrySeed.name
+          results = data.filter(function (x) {
+            return x['BECvar_site'] == bec_name && parseFloat(x['MigrationDistance']) >= spmin
+          })
+          finalPromise = Promise.resolve(results)
+        } else {
+          for (let i = 0; i < bec.length; i++) {
+            var becEntrySeedMulti = becStore.find((x) => x.id == bec[i])
+            if (!becEntrySeedMulti) {
+              reject(new Error('Unknown BEC variant ID: ' + bec[i]))
               return
             }
-            bec_name = becEntrySeed.name
-            results = data.filter(function (x) {
-              return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
-            })
-            finalPromise = Promise.resolve(results)
-          } else {
-            for (let i = 0; i < bec.length; i++) {
-              var becEntrySeedMulti = becStore.find((x) => x.id == bec[i])
-              if (!becEntrySeedMulti) {
-                reject(new Error('Unknown BEC variant ID: ' + bec[i]))
-                return
-              }
-              bec_name = becEntrySeedMulti.name
-              results.push(
-                data.filter(function (x) {
-                  return x['BECvar_site'] == bec_name && x['MigrationDistance'] >= spmin
-                }),
-              )
-            }
-            finalPromise = getIntersection(results)
+            bec_name = becEntrySeedMulti.name
+            results.push(
+              data.filter(function (x) {
+                return x['BECvar_site'] == bec_name && parseFloat(x['MigrationDistance']) >= spmin
+              }),
+            )
           }
+          finalPromise = getIntersection(results)
+        }
 
-          finalPromise.then((finalarray) => {
-            for (let i = 0; i < finalarray.length; i++) {
-              if (finalarray[i].Seedlot == '') {
-                finalarray[i].Seedlot = 0
-              }
-              if (finalarray[i].GW == '') {
-                finalarray[i].GW = 0
-              }
+        finalPromise.then((finalarray) => {
+          for (let i = 0; i < finalarray.length; i++) {
+            if (finalarray[i].Seedlot == '') {
+              finalarray[i].Seedlot = 0
             }
-            var $table = $('#seedlot_table')
-            $table.bootstrapTable('destroy')
-            $table.bootstrapTable({ data: finalarray })
-            resolve()
-          })
+            if (finalarray[i].GW == '') {
+              finalarray[i].GW = 0
+            }
+          }
+          var $table = $('#seedlot_table')
+          $table.bootstrapTable('destroy')
+          $table.bootstrapTable({ data: finalarray })
+          resolve()
         })
-        .catch(function (errorThrown) {
-          reject(new Error('Failed to load Seedlot database: ' + errorThrown.message))
-        })
+      }
+
+      loadSeedLots(seedlotFiles)
     })
   }
 
@@ -668,11 +891,6 @@ define(function () {
     var outlist_suit, outlist_non_suit
     var output_suit, output_non_suit
 
-    var jsontxt =
-      'Version_7_0/' +
-      sp.charAt(0).toUpperCase() +
-      sp.slice(1).toLowerCase() +
-      '_migrated_height_list_5.json'
     let speciesEntry = speciesStore.find((x) => x.name === sp)
     if (!speciesEntry) {
       return Promise.reject(new Error('Unknown species: ' + sp))
@@ -684,7 +902,7 @@ define(function () {
     outlist_suit = []
     outlist_non_suit = []
     return new Promise((resolve, reject) => {
-      fetchJSON(jsontxt)
+      fetchMigratedHeightList(sp, timeSeriesYears)
         .then(function (data) {
           // find the name in becStore associated to the bec id chosen
           var becEntryLot = becStore.find((x) => x.id == bec)
@@ -729,7 +947,14 @@ define(function () {
           }
           outlist_non_suit = outlist_non_suit.join(', ')
 
-          resolve([outlist_suit, outlist_non_suit])
+          // Check if multiple years selected - if so, use year-based layers
+          if (timeSeriesYears.length > 1) {
+            buildYearBasedLayers(sp, bec, timeSeriesYears, 'seedlot').then((yearLayers) => {
+              resolve(yearLayers)
+            })
+          } else {
+            resolve([outlist_suit, outlist_non_suit])
+          }
         })
         .catch(function (errorThrown) {
           if (errorThrown.message === 'No results available for those parameters') {
