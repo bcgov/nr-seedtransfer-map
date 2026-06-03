@@ -364,32 +364,33 @@ define(function () {
    * When multiple years are selected, combines results from all years.
    */
   function fetchMigratedHeightList(sp, yearsArray) {
-    // Only exact 'PL' and 'SX' species have time series variants
-    const hasTimeSeries = sp === 'PL' || sp === 'SX'
+    // Determine which species code to use for file lookup
+    // PLC and PLI both use Pl_* files for time series
+    // SXS uses Sx_* files for time series
+    let filePrefix = sp
+    let hasTimeSeries = false
 
-    const fallbackPath =
-      'Version_7_0/' +
-      sp.charAt(0).toUpperCase() +
-      sp.slice(1).toLowerCase() +
-      '_migrated_height_list_5.json'
+    if (sp === 'PLC' || sp === 'PLI') {
+      filePrefix = 'Pl'
+      hasTimeSeries = true
+    } else if (sp === 'SX' || sp === 'SXS') {
+      filePrefix = 'Sx'
+      hasTimeSeries = sp === 'SX' // Only SX has time series, not SXS
+    }
+
+    const fallbackPath = 'Version_7_0/' + filePrefix + '_migrated_height_list_5.json'
 
     if (!hasTimeSeries) {
       // Species without time series variants - use base file directly
       return fetchJSON(fallbackPath)
     }
 
-    // For PL/SX with multiple years, fetch and combine results
+    // For species with time series variants, fetch and combine results
     const yearsToFetch = Array.isArray(yearsArray) ? yearsArray : [ yearsArray ]
 
     if (yearsToFetch.length === 1) {
       // Single year - use simple fetch with fallback
-      const timeSeriesPath =
-        'Version_7_0/' +
-        sp.charAt(0).toUpperCase() +
-        sp.slice(1).toLowerCase() +
-        '_migrated_height_list_' +
-        yearsToFetch[ 0 ] +
-        '.json'
+      const timeSeriesPath = 'Version_7_0/' + filePrefix + '_migrated_height_list_' + yearsToFetch[ 0 ] + '.json'
 
       return fetchJSON(timeSeriesPath).catch(() => {
         return fetchJSON(fallbackPath)
@@ -398,13 +399,7 @@ define(function () {
 
     // Multiple years - fetch all and combine
     const fetchPromises = yearsToFetch.map((year) => {
-      const timeSeriesPath =
-        'Version_7_0/' +
-        sp.charAt(0).toUpperCase() +
-        sp.slice(1).toLowerCase() +
-        '_migrated_height_list_' +
-        year +
-        '.json'
+      const timeSeriesPath = 'Version_7_0/' + filePrefix + '_migrated_height_list_' + year + '.json'
 
       return fetchJSON(timeSeriesPath).catch(() => {
         return fetchJSON(fallbackPath)
