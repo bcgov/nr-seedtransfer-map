@@ -712,7 +712,7 @@ define(function () {
     })
 
     return Promise.all([ p1, p2 ]).then((values) => {
-      // Check if multiple years selected - if so, use year-based layers
+      // Check if multiple years selected - if so, use year-based layers with colors
       if (timeSeriesYears.length > 1) {
         return buildYearBasedLayers(sp, bec, timeSeriesYears)
       }
