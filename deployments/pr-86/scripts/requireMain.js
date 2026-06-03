@@ -145,9 +145,17 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       main.setTimeSeriesYear(selectedYears)
       updateClimateLegendsVis()
 
-      // Sync the Seedlot tab year selector to match
+      // Sync the Seedlot tab year selector to match (prevent infinite recursion)
       if (yearInputSeedlot && window.selectYearSeedlot) {
-        window.selectYearSeedlot.setSelected(selectedYears)
+        const currentSeedlotYears = Array.from(yearInputSeedlot.selectedOptions).map(
+          (option) => option.value,
+        )
+        const isSame =
+          selectedYears.length === currentSeedlotYears.length &&
+          selectedYears.every((val) => currentSeedlotYears.includes(val))
+        if (!isSame) {
+          window.selectYearSeedlot.setSelected(selectedYears)
+        }
       }
     })
   }
@@ -160,9 +168,17 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
       main.setTimeSeriesYear(selectedYears)
       updateClimateLegendsVis()
 
-      // Sync the Cutblock tab year selector to match
+      // Sync the Cutblock tab year selector to match (prevent infinite recursion)
       if (yearInputCutblock && window.selectYearCutblock) {
-        window.selectYearCutblock.setSelected(selectedYears)
+        const currentCutblockYears = Array.from(yearInputCutblock.selectedOptions).map(
+          (option) => option.value,
+        )
+        const isSame =
+          selectedYears.length === currentCutblockYears.length &&
+          selectedYears.every((val) => currentCutblockYears.includes(val))
+        if (!isSame) {
+          window.selectYearCutblock.setSelected(selectedYears)
+        }
       }
     })
   }
