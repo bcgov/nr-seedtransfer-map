@@ -209,11 +209,10 @@ define([
 
   function cloneLayerWithColor(baseLayer, definitionExpression, colorObj, title) {
     // Create color symbol and renderer
-    // Alpha channel should be 0-255. colorObj.a is 0-1, so multiply by 255
     const fillSymbol = new SimpleFillSymbol({
-      color: [ colorObj.r, colorObj.g, colorObj.b, Math.round(colorObj.a * 255) ],
+      color: [ colorObj.r, colorObj.g, colorObj.b, colorObj.a ],
       outline: {
-        color: [ colorObj.r, colorObj.g, colorObj.b, 255 ],
+        color: [ colorObj.r, colorObj.g, colorObj.b, 1 ],
         width: 1.5,
       },
     })
@@ -222,16 +221,20 @@ define([
       symbol: fillSymbol,
     })
 
+    // Build full URL including layer ID. baseLayer.url returns only the service URL,
+    // so we must append layerId to point to the correct sublayer.
+    const fullUrl = baseLayer.url.replace(/\/$/, '') + '/' + baseLayer.layerId
+
     // Create a new feature layer clone with custom styling and renderer
     const clonedLayer = new FeatureLayer({
-      url: baseLayer.url,
+      url: fullUrl,
       title: title,
-      outFields: baseLayer.outFields,
-      opacity: 1.0,  // Use 1.0 since we're handling transparency in the color alpha
+      outFields: [ '*' ],
+      opacity: 1.0,
       visibilityMode: 'independent',
       definitionExpression: definitionExpression,
       popupTemplate: template,
-      renderer: renderer, // Apply renderer in constructor
+      renderer: renderer,
     })
 
     // Monitor layer loading for any errors
