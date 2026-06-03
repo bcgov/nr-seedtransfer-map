@@ -146,7 +146,7 @@ define([
 
     if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
       // Year-based format - create separate layers for each year
-      outlist.yearLayers.forEach((yearData, index) => {
+      outlist.yearLayers.forEach((yearData, _index) => {
         const year = String(yearData.year)
         const suitBecList = Array.isArray(yearData.suit) ? yearData.suit : []
         const nonSuitBecList = Array.isArray(yearData.nonSuit) ? yearData.nonSuit : []
@@ -209,8 +209,9 @@ define([
 
   function cloneLayerWithColor(baseLayer, definitionExpression, colorObj, title) {
     // Create color symbol and renderer
+    // Alpha channel should be 0-255. colorObj.a is 0-1, so multiply by 255
     const fillSymbol = new SimpleFillSymbol({
-      color: [ colorObj.r, colorObj.g, colorObj.b, colorObj.a * 255 ],
+      color: [ colorObj.r, colorObj.g, colorObj.b, Math.round(colorObj.a * 255) ],
       outline: {
         color: [ colorObj.r, colorObj.g, colorObj.b, 255 ],
         width: 1.5,
@@ -226,7 +227,7 @@ define([
       url: baseLayer.url,
       title: title,
       outFields: baseLayer.outFields,
-      opacity: 0.7,
+      opacity: 1.0,  // Use 1.0 since we're handling transparency in the color alpha
       visibilityMode: 'independent',
       definitionExpression: definitionExpression,
       popupTemplate: template,
