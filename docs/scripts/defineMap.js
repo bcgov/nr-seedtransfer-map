@@ -146,19 +146,15 @@ define([
 
     if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
       // Year-based format - create separate layers for each year
-      console.log('DEBUG: Processing year-based layers:', outlist.yearLayers.length)
       outlist.yearLayers.forEach((yearData, _index) => {
         const year = String(yearData.year)
         const suitBecList = Array.isArray(yearData.suit) ? yearData.suit : []
         const nonSuitBecList = Array.isArray(yearData.nonSuit) ? yearData.nonSuit : []
         const color = yearColors[ year ] || { r: 100, g: 100, b: 100, a: 0.6 }
 
-        console.log(`DEBUG: Year ${year} color:`, color)
-
         // Create suitable layer for this year
         if (suitBecList.length > 0) {
           const definitionExpr = 'MAP_LABEL in (' + suitBecList.join(', ') + ')'
-          console.log(`DEBUG: Creating layer for year ${year} with color [${color.r}, ${color.g}, ${color.b}]`)
           const yearLayerSuit = cloneLayerWithColor(
             currentLayer,
             definitionExpr,
