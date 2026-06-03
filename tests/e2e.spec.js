@@ -69,7 +69,7 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
 
     // Assert selections are set on the underlying select elements
     await expect(page.locator('#speciesInputCutblock')).toHaveValue('FDI')
-    await expect(page.locator('#becInputCutblock')).toHaveValues(['136'])
+    await expect(page.locator('#becInputCutblock')).toHaveValues(['143'])
 
     // Click the GO button for Cutblock
     await page.click('#addButtonCutblock')
@@ -86,14 +86,14 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await expect(seedlotRow).not.toContainText('No matching records found')
   })
 
-  test('Seedlot Flow: Entering Orchard 101 populates representative seedlot and table', async ({
+  test('Seedlot Flow: Entering Orchard 121 populates representative seedlot and table', async ({
     page,
   }) => {
     // Click the "I Have A Seedlot" tab
     await page.click('#seedlot-tab')
 
     // Fill in Orchard Number
-    await page.fill('#orchardNumber', '101')
+    await page.fill('#orchardNumber', '121')
 
     // Click "Set Representative Seedlot"
     // Mock the alert popup to prevent test blockage just in case
@@ -102,8 +102,8 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     })
     await page.click('#addSeedlotfromOrchard')
 
-    // It should automatically retrieve Seedlot 3226, set the inputs, and refresh the UI dropdowns
-    await expect(page.locator('#seedlotNumber')).toHaveValue('3226')
+    // It should automatically retrieve Seedlot 4372, set the inputs, and refresh the UI dropdowns
+    await expect(page.locator('#seedlotNumber')).toHaveValue('4372')
 
     // Wait for the inputs to get set via the AJAX response
     await expect(page.locator('#speciesInputSeedlot')).toHaveValue('FDC')
@@ -132,7 +132,7 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     })
     await page.click('#addSpeciesBecSeedlot')
 
-    // Verify it automatically sets Species to SX and BEC Variant to ESSFwc2 (ID: 77)
+    // Verify it automatically sets Species to SX and BEC Variant to ESSFwc2 (ID: 83)
     await expect(page.locator('#speciesInputSeedlot')).toHaveValue('SX')
 
     // Click the Seedlot tab GO button
