@@ -212,24 +212,6 @@ body {
   border: 1px solid #ccc !important;
 }
 
-/* Slim-Select search box mobile accessibility */
-.ss-search input {
-  min-height: 44px;
-  padding: 10px 12px;
-  font-size: 16px;
-}
-
-.ss-search input::placeholder {
-  color: #999;
-}
-
-.ss-list .ss-option {
-  min-height: 44px;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-}
-
 @media (max-width: 767.98px) {
   .climate-legend {
     top: 75px;
@@ -247,18 +229,6 @@ body {
     top: 155px !important;
     right: 10px !important;
     font-size: 12px !important;
-  }
-
-  /* Ensure search input is easily tappable on mobile */
-  .ss-search input {
-    min-height: 48px;
-    padding: 12px;
-    font-size: 16px;
-  }
-
-  .ss-list .ss-option {
-    min-height: 48px;
-    padding: 12px;
   }
 }
 

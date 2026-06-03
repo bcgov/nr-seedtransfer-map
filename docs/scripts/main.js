@@ -487,10 +487,6 @@ define(function () {
     }
     window.selectSpeciesCutblock = new SlimSelect({
       select: '#speciesInputCutblock',
-      settings: {
-        searchEnabled: true,
-        searchPlaceholder: 'Search Species...',
-      },
     })
 
     if (window.selectBecCutblock) {
@@ -500,7 +496,6 @@ define(function () {
       select: '#becInputCutblock',
       settings: {
         maxSelected: 3,
-        searchEnabled: true,
         searchPlaceholder: 'Search BEC Variants...',
       },
     })
@@ -510,10 +505,6 @@ define(function () {
     }
     window.selectSpeciesSeedlot = new SlimSelect({
       select: '#speciesInputSeedlot',
-      settings: {
-        searchEnabled: true,
-        searchPlaceholder: 'Search Species...',
-      },
     })
 
     if (window.selectBecSeedlot) {
@@ -523,7 +514,6 @@ define(function () {
       select: '#becInputSeedlot',
       settings: {
         maxSelected: 1,
-        searchEnabled: true,
         searchPlaceholder: 'Search BEC Variants...',
       },
     })
