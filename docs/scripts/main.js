@@ -364,21 +364,21 @@ define(function () {
    * When multiple years are selected, combines results from all years.
    */
   function fetchMigratedHeightList(sp, yearsArray) {
-    // Determine which species code to use for file lookup
-    // PLC and PLI both use Pl_* files for time series
-    // SXS uses Sx_* files for time series
-    let filePrefix = sp
+    // Determine the base file fallback path using capitalized species code (e.g. Fdi, Plc, Pli, Sx, Sxs)
+    const basePrefix = sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase()
+    const fallbackPath = 'Version_7_0/' + basePrefix + '_migrated_height_list_5.json'
+
+    // Determine if the species supports time series variants (2043, 2053, 2063)
+    let filePrefix = ''
     let hasTimeSeries = false
 
     if (sp === 'PLC' || sp === 'PLI') {
       filePrefix = 'Pl'
       hasTimeSeries = true
-    } else if (sp === 'SX' || sp === 'SXS') {
+    } else if (sp === 'SX') {
       filePrefix = 'Sx'
-      hasTimeSeries = sp === 'SX' // Only SX has time series, not SXS
+      hasTimeSeries = true
     }
-
-    const fallbackPath = 'Version_7_0/' + filePrefix + '_migrated_height_list_5.json'
 
     if (!hasTimeSeries) {
       // Species without time series variants - use base file directly
