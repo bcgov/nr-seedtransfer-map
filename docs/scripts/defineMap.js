@@ -31,8 +31,8 @@ define([
   var _scaleBar
   var activeWidget
   var expand, trackWidget
-  var currentLayer, nonsuitLayer, mguLayer
-  var _suitRenderer, _nonSuitRenderer
+  var currentLayer, mguLayer
+  var _suitRenderer
   var portalUrl = 'https://www.arcgis.com'
   var template
   var uploadFormEl, uploadStatusEl
@@ -104,11 +104,6 @@ define([
       ['*'],
       'CBST',
     )
-    nonsuitLayer = featureInit(
-      'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/6',
-      ['*'],
-      'CBST Species May Not Be Suitable',
-    )
 
     mguLayer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/0',
@@ -150,7 +145,6 @@ define([
       outlist.yearLayers.forEach((yearData, _index) => {
         const year = String(yearData.year)
         const suitBecList = Array.isArray(yearData.suit) ? yearData.suit : []
-        const nonSuitBecList = Array.isArray(yearData.nonSuit) ? yearData.nonSuit : []
         const color = yearColors[year] || { r: 100, g: 100, b: 100, a: 0.6 }
 
         // Create suitable layer for this year
@@ -164,33 +158,10 @@ define([
           )
           map.add(yearLayerSuit)
         }
-
-        // Create non-suitable layer for this year
-        if (nonSuitBecList.length > 0) {
-          const definitionExpr = 'MAP_LABEL in (' + nonSuitBecList.join(', ') + ')'
-          const yearLayerNonSuit = cloneLayerWithColor(
-            nonsuitLayer,
-            definitionExpr,
-            { r: color.r, g: color.g, b: color.b, a: 0.3 }, // Lighter shade for non-suitable
-            `Year ${year} - Not Suitable`,
-          )
-          map.add(yearLayerNonSuit)
-        }
       })
     } else {
       // Simple format (single year or fallback) - use original layers
       const suitList = Array.isArray(outlist) ? outlist[0] : ''
-      const nonSuitList = Array.isArray(outlist) ? outlist[1] : ''
-
-      if (nonSuitList && nonSuitList.length > 0) {
-        nonsuitLayer.definitionExpression = 'MAP_LABEL in (' + nonSuitList + ')'
-        nonsuitLayer.popupTemplate = template
-        map.add(nonsuitLayer)
-      } else {
-        nonsuitLayer.definitionExpression = '1=0'
-        nonsuitLayer.popupTemplate = ''
-        map.add(nonsuitLayer)
-      }
 
       if (suitList && suitList.length > 0) {
         currentLayer.definitionExpression = 'MAP_LABEL in (' + suitList + ')'
