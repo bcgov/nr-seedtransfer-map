@@ -69,7 +69,7 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
 
     // Assert selections are set on the underlying select elements
     await expect(page.locator('#speciesInputCutblock')).toHaveValue('FDI')
-    await expect(page.locator('#becInputCutblock')).toHaveValues(['136'])
+    await expect(page.locator('#becInputCutblock')).toHaveValues(['143'])
 
     // Click the GO button for Cutblock
     await page.click('#addButtonCutblock')
@@ -107,6 +107,7 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
 
     // Wait for the inputs to get set via the AJAX response
     await expect(page.locator('#speciesInputSeedlot')).toHaveValue('FDC')
+    await expect(page.locator('#becInputSeedlot')).toHaveValues(['227'])
 
     // Click the Seedlot tab GO button
     await page.click('#addButtonSeedlot')
@@ -132,8 +133,9 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     })
     await page.click('#addSpeciesBecSeedlot')
 
-    // Verify it automatically sets Species to SX and BEC Variant to ESSFwc2 (ID: 77)
+    // Verify it automatically sets Species to SX and BEC Variant to ESSFwc2 (ID: 83)
     await expect(page.locator('#speciesInputSeedlot')).toHaveValue('SX')
+    await expect(page.locator('#becInputSeedlot')).toHaveValues(['83'])
 
     // Click the Seedlot tab GO button
     await page.click('#addButtonSeedlot')
