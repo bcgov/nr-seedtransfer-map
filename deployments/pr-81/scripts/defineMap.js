@@ -12,7 +12,8 @@ define([
   'esri/request',
   'esri/layers/support/Field',
   'esri/Graphic',
-  'esri/layers/KMLLayer',
+  'esri/renderers/SimpleRenderer',
+  'esri/symbols/SimpleFillSymbol',
 ], function (
   Map,
   MapView,
@@ -23,7 +24,8 @@ define([
   request,
   Field,
   Graphic,
-  KMLLayer,
+  SimpleRenderer,
+  SimpleFillSymbol,
 ) {
   var map, view, xy
   var _scaleBar
@@ -36,22 +38,7 @@ define([
   var uploadFormEl, uploadStatusEl
 
   template = {
-    title: 'Selected {MAP_Label}',
-  }
-
-  _suitRenderer = {
-    type: 'simple-fill',
-    color: [217, 95, 2, 0.4],
-    outline: {
-      color: [115, 76, 0, 1],
-    },
-  }
-  _nonSuitRenderer = {
-    type: 'simple-fill',
-    color: [170, 102, 205, 0.4],
-    outline: {
-      color: [76, 0, 115, 1],
-    },
+    title: 'Selected {MAP_LABEL}',
   }
 
   return {
@@ -60,7 +47,6 @@ define([
     clearLyrs: clearLyrs,
     addLayers: addLayers,
     updateLayer: updateLayer,
-    updatePopup: updatePopup,
     clearCutBlock: clearCutBlock,
   }
 
@@ -91,7 +77,6 @@ define([
 
     // Make the layers
     layerInit()
-    updatePopup()
 
     addExpand()
     addTracking()
@@ -102,8 +87,6 @@ define([
       view.ui.add('topbar', 'top-left')
       view.ui.add(expand, 'top-left')
       view.ui.add(trackWidget, 'top-left')
-
-      const _attributeEditing = document.getElementById('featureUpdateDiv')
 
       addBasemapGallery()
       addPrintButton()
@@ -118,18 +101,18 @@ define([
   function layerInit() {
     currentLayer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/5',
-      ['map_label', 'SHAPE_Area'],
+      ['*'],
       'CBST',
     )
     nonsuitLayer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/6',
-      ['map_label', 'SHAPE_Area'],
+      ['*'],
       'CBST Species May Not Be Suitable',
     )
 
     mguLayer = featureInit(
       'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/0',
-      ['Management_Units'],
+      ['*'],
       'Management Unit',
     )
     mguLayer
@@ -146,28 +129,78 @@ define([
   }
 
   function updateLayer(outlist) {
-    // outlist: all 4 possible queries that reflect the users chosen species and bec variant
-    // outlist = [outlist_suit, outlist_non_suit, outlist_2019, outlist_non_2019]
-    window.outlist = outlist
+    // outlist: definition query strings that reflect the user's chosen species and BEC variant
+    // Can be either:
+    // [outlist_suit, outlist_non_suit] - simple format
+    // or { yearLayers: [{year, suit, nonSuit}, ...] } - year-based format
 
-    if (outlist[1].length != 0) {
-      nonsuitLayer.definitionExpression = 'MAP_LABEL in (' + outlist[1] + ')'
-      nonsuitLayer.popupTemplate = template
-      map.add(nonsuitLayer)
-    } else {
-      nonsuitLayer.definitionExpression = 'MAP_LABEL in ()'
-      nonsuitLayer.popupTemplate = ''
-      map.add(nonsuitLayer)
+    // Color scheme for years: 2043=Yellow, 2053=Green, 2063=Blue
+    const yearColors = {
+      2043: { r: 255, g: 200, b: 0, a: 0.6 }, // Yellow
+      2053: { r: 0, g: 170, b: 0, a: 0.6 }, // Green
+      2063: { r: 0, g: 112, b: 255, a: 0.6 }, // Blue
     }
 
-    if (outlist[0].length != 0) {
-      currentLayer.definitionExpression = 'MAP_LABEL in (' + outlist[0] + ')'
-      currentLayer.popupTemplate = template
-      map.add(currentLayer)
+    // Check if this is year-based data (object) or simple format (array)
+    const isYearBased =
+      outlist && typeof outlist === 'object' && !Array.isArray(outlist) && outlist.yearLayers
+
+    if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
+      // Year-based format - create separate layers for each year
+      outlist.yearLayers.forEach((yearData, _index) => {
+        const year = String(yearData.year)
+        const suitBecList = Array.isArray(yearData.suit) ? yearData.suit : []
+        const nonSuitBecList = Array.isArray(yearData.nonSuit) ? yearData.nonSuit : []
+        const color = yearColors[year] || { r: 100, g: 100, b: 100, a: 0.6 }
+
+        // Create suitable layer for this year
+        if (suitBecList.length > 0) {
+          const definitionExpr = 'MAP_LABEL in (' + suitBecList.join(', ') + ')'
+          const yearLayerSuit = cloneLayerWithColor(
+            currentLayer,
+            definitionExpr,
+            color,
+            `Year ${year} - Suitable`,
+          )
+          map.add(yearLayerSuit)
+        }
+
+        // Create non-suitable layer for this year
+        if (nonSuitBecList.length > 0) {
+          const definitionExpr = 'MAP_LABEL in (' + nonSuitBecList.join(', ') + ')'
+          const yearLayerNonSuit = cloneLayerWithColor(
+            nonsuitLayer,
+            definitionExpr,
+            { r: color.r, g: color.g, b: color.b, a: 0.3 }, // Lighter shade for non-suitable
+            `Year ${year} - Not Suitable`,
+          )
+          map.add(yearLayerNonSuit)
+        }
+      })
     } else {
-      currentLayer.definitionExpression = 'MAP_LABEL in ()'
-      currentLayer.popupTemplate = ''
-      map.add(currentLayer)
+      // Simple format (single year or fallback) - use original layers
+      const suitList = Array.isArray(outlist) ? outlist[0] : ''
+      const nonSuitList = Array.isArray(outlist) ? outlist[1] : ''
+
+      if (nonSuitList && nonSuitList.length > 0) {
+        nonsuitLayer.definitionExpression = 'MAP_LABEL in (' + nonSuitList + ')'
+        nonsuitLayer.popupTemplate = template
+        map.add(nonsuitLayer)
+      } else {
+        nonsuitLayer.definitionExpression = '1=0'
+        nonsuitLayer.popupTemplate = ''
+        map.add(nonsuitLayer)
+      }
+
+      if (suitList && suitList.length > 0) {
+        currentLayer.definitionExpression = 'MAP_LABEL in (' + suitList + ')'
+        currentLayer.popupTemplate = template
+        map.add(currentLayer)
+      } else {
+        currentLayer.definitionExpression = '1=0'
+        currentLayer.popupTemplate = ''
+        map.add(currentLayer)
+      }
     }
 
     if (mguLayer.loadStatus === 'loaded') {
@@ -175,18 +208,47 @@ define([
     }
   }
 
-  function updatePopup() {
-    nonsuitLayer.on('selection-complete', (event) => {
-      // Round coordinates to 3 decimals
-      const lat = Math.round(event.mapPoint.latitude * 1000) / 1000
-      const lon = Math.round(event.mapPoint.longitude * 1000) / 1000
-
-      view.popup.open({
-        // Set the popup's title to the coordinates of the clicked location
-        title: 'Reverse geocode: [' + lon + ', ' + lat + ']',
-        location: event.mapPoint, // Set the location of the popup to the clicked location
-      })
+  function cloneLayerWithColor(baseLayer, definitionExpression, colorObj, title) {
+    // Create color symbol and renderer
+    const fillSymbol = new SimpleFillSymbol({
+      color: [colorObj.r, colorObj.g, colorObj.b, colorObj.a],
+      outline: {
+        color: [colorObj.r, colorObj.g, colorObj.b, 1],
+        width: 1.5,
+      },
     })
+
+    const renderer = new SimpleRenderer({
+      symbol: fillSymbol,
+    })
+
+    // Build full URL including layer ID. baseLayer.url returns only the service URL,
+    // so we must append layerId to point to the correct sublayer.
+    const fullUrl = baseLayer.url.replace(/\/$/, '') + '/' + baseLayer.layerId
+
+    // Create a new feature layer clone with custom styling and renderer
+    const clonedLayer = new FeatureLayer({
+      url: fullUrl,
+      title: title,
+      outFields: ['*'],
+      opacity: colorObj.a,
+      visibilityMode: 'independent',
+      definitionExpression: definitionExpression,
+      popupTemplate: template,
+      renderer: renderer,
+    })
+
+    // Monitor layer loading for any errors
+    clonedLayer.when(
+      function () {
+        // Layer loaded successfully
+      },
+      function (error) {
+        console.warn('Failed to load cloned feature layer: ' + title, error)
+      },
+    )
+
+    return clonedLayer
   }
 
   /*
@@ -207,7 +269,7 @@ define([
     var layer = new FeatureLayer({
       url: src,
       title: name,
-      outfields: fields,
+      outFields: fields,
       opacity: 0.5,
       visibilityMode: 'independent',
     })
@@ -215,43 +277,6 @@ define([
       console.warn('Failed to load feature layer: ' + name, error)
     })
     return layer
-  }
-
-  function _kmlInit(src) {
-    return new KMLLayer({
-      url: src,
-      title: 'KML Sample',
-    })
-  }
-
-  // Initialize a feature layer with definition query and custom renderer
-  function _featureInit_complex(src, expression, name, renderer) {
-    return new FeatureLayer({
-      url: src,
-      definitionExpression: expression,
-      title: name,
-      renderer: renderer,
-      opacity: 0.5,
-      visibilityMode: 'independent',
-    })
-  }
-
-  /*
-   * Utility Functions
-   */
-  function _popupTable(lyr) {
-    lyr.load().then(function () {
-      lyr.popupTemplate = lyr.createPopupTemplate()
-    })
-  }
-
-  function _updateKey(list) {
-    var listLength = list.length
-    var newlist = new Array()
-    for (let i = 0; i < listLength; i++) {
-      newlist.push(list[i][1].replace(/ /g, '_'))
-    }
-    return newlist
   }
 
   function fullExtent() {
@@ -264,35 +289,6 @@ define([
   /*
    * Widgets and behaviour
    */
-
-  // Add the line and area measurement tools
-  function _addMeasurement() {
-    document.getElementById('distanceButton').addEventListener('click', function () {
-      setActiveWidget(null)
-      if (!this.classList.contains('active')) {
-        setActiveWidget('distance')
-        view.focus()
-      } else {
-        setActiveButton(null)
-      }
-    })
-    document.getElementById('areaButton').addEventListener('click', function () {
-      setActiveWidget(null)
-      if (!this.classList.contains('active')) {
-        setActiveWidget('area')
-        view.focus()
-      } else {
-        setActiveButton(null)
-      }
-    })
-  }
-
-  /*Create and add the extent button widget*/
-  function _addExtentButton() {
-    document.getElementById('homeButton').addEventListener('click', function () {
-      fullExtent()
-    })
-  }
 
   function addTracking() {
     trackWidget = document.createElement('arcgis-track')
@@ -462,48 +458,12 @@ define([
     }
   }
 
-  function _addMouseCoord() {
-    var coordsWidget = document.createElement('mouseDiv')
-    coordsWidget.id = 'coordsWidget'
-    coordsWidget.className = 'esri-widget esri-component'
-    view.ui.add(coordsWidget, 'bottom-right')
-    function showCoordinates(pt) {
-      var coords =
-        'Lat/Long ' +
-        pt.latitude.toFixed(3) +
-        ' ' +
-        pt.longitude.toFixed(3) +
-        ' | Scale 1:' +
-        Math.round(view.scale * 1) / 1
-      coordsWidget.innerHTML = coords
-    }
-
-    view.watch('stationary', function (_isStationary) {
-      showCoordinates(view.center)
-    })
-    view.on('pointer-move', function (evt) {
-      showCoordinates(view.toMap({ x: evt.x, y: evt.y }))
-    })
-  }
-
   // Add the basemap gallery
   function addBasemapGallery() {
     document.getElementById('basemapButton').addEventListener('click', function () {
       setActiveWidget(null)
       if (!this.classList.contains('active')) {
         setActiveWidget('basemap')
-      } else {
-        setActiveButton(null)
-      }
-    })
-  }
-
-  // Add the instructions button
-  function _addLogo() {
-    document.getElementById('instructionButton').addEventListener('click', function () {
-      setActiveWidget(null)
-      if (!this.classList.contains('active')) {
-        setActiveWidget('instruction')
       } else {
         setActiveButton(null)
       }
@@ -544,8 +504,7 @@ define([
   function setActiveWidget(type) {
     switch (type) {
       case 'home':
-        activeWidget = fullExtent()
-        view.ui.add(activeWidget)
+        fullExtent()
         setActiveButton(document.getElementById('homeButton'))
         break
       case 'basemap':

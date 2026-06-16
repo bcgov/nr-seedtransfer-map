@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <title>CBST Seedlot Selection Tool Version 7.0</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -26,26 +26,26 @@
     <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
     <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css" />
     <link rel="stylesheet" href="lib/slim-select/slimselect.css" />
-    <link href="css/styles.css?v=7.0.6" rel="stylesheet" type="text/css" />
+    <link href="css/styles.css?v=7.0.8" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="lib/bootstrap-table/css/bootstrap-table.min.css" />
 
     <script src="lib/jquery/jquery.min.js"></script>
     <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="lib/slim-select/slimselect.min.js"></script>
-    <link rel="stylesheet" href="lib/bootstrap-table/css/bootstrap-table.min.css" />
     <script src="lib/bootstrap-table/js/bootstrap-table.min.js"></script>
 
     <!-- ArcGIS Maps SDK JS runtime loader remains on the Esri CDN due to dynamic lazy-loading Dojo modules -->
-    <script src="scripts/loader-init.js?v=7.0.6" type="text/javascript"></script>
+    <script src="scripts/loader-init.js?v=7.0.8" type="text/javascript"></script>
     <script src="https://js.arcgis.com/4.34/"></script>
     <script type="module" src="https://js.arcgis.com/4.34/map-components/"></script>
     <script
       type="module"
       src="https://js.arcgis.com/calcite-components/3.3.2/calcite.esm.js"
     ></script>
-    <script src="scripts/requireMain.js?v=7.0.6" type="text/javascript"></script>
+    <script src="scripts/requireMain.js?v=7.0.8" type="text/javascript"></script>
   </head>
 
-  <body data-seedlot-date="August 18th, 2025">
+  <body data-database-pruned="true" data-seedlot-date="August 18th, 2025">
     <div id="ctn" class="container-fluid g-0">
       <div class="row g-0 bg-light fixed-top" id="titleRow">
         <nav class="col-12 h-100">
@@ -73,7 +73,7 @@
                   <span class="d-none d-md-inline">CBST Seedlot Selection Tool Version 7.0</span>
                   <span class="d-md-none">CBST Seedlot Tool</span>
                 </span>
-                <span id="titleTextsmall" class="d-none d-md-inline-block ms-2 text-muted fs-6">
+                <span class="titleTextsmall d-none d-md-inline-block ms-2 text-muted fs-6">
                   CBST Areas of Use as per the April 2022 Amendments to the Chief Forester’s
                   Standards for Seed Use, [BEC 10]
                 </span>
@@ -279,7 +279,7 @@
                   role="tabpanel"
                   aria-labelledby="cutblock-tab"
                 >
-                  <form>
+                  <form aria-label="Cutblock species and BEC variant selection">
                     <div class="mb-3">
                       <label for="speciesInputCutblock">Species: </label><br />
                       <select class="form-select" id="speciesInputCutblock"></select>
@@ -291,39 +291,23 @@
                       <select class="form-select" multiple id="becInputCutblock"></select>
                     </div>
 
-                    <button
-                      id="addButtonCutblock"
-                      type="submit"
-                      class="btn btn-secondary"
-                      onclick="return false"
-                    >
+                    <div class="mb-3">
+                      <label for="yearInputCutblock">Climate Year: </label><br />
+                      <select class="form-select" id="yearInputCutblock" multiple>
+                        <option value="2043">2043 (Near-term)</option>
+                        <option value="2053" selected>2053 (Mid-term)</option>
+                        <option value="2063">2063 (Long-term)</option>
+                      </select>
+                    </div>
+
+                    <button id="addButtonCutblock" type="submit" class="btn btn-secondary">
                       GO
                     </button>
-                    <button
-                      id="clearButtonCutblock"
-                      type="submit"
-                      class="btn btn-secondary"
-                      onclick="return false"
-                    >
+                    <button id="clearButtonCutblock" type="button" class="btn btn-secondary">
                       Clear
                     </button>
                   </form>
-                  <hr class="my-4" />
-                  <div class="mb-3">
-                    <label for="coordsforlocation_cutblock" class="form-label font-weight-bold"
-                      >Zoom to Location (Lat,Long):</label
-                    >
-                    <input
-                      id="coordsforlocation_cutblock"
-                      type="text"
-                      class="form-control"
-                      placeholder="e.g. 54.123, -125.456"
-                    />
-                  </div>
-                  <button id="btnUpdate_cutblock" type="button" class="btn btn-secondary w-100">
-                    Zoom to Location
-                  </button>
-                  <p></p>
+
                   <div id="grid"></div>
                   <br />
                   <div id="seedlotgrid"></div>
@@ -355,6 +339,21 @@
                       </thead>
                     </table>
                   </div>
+                  <hr class="my-4" />
+                  <div class="mb-3">
+                    <label for="coordsforlocation_cutblock" class="form-label fw-bold"
+                      >Zoom to Location (Lat,Long):</label
+                    >
+                    <input
+                      id="coordsforlocation_cutblock"
+                      type="text"
+                      class="form-control"
+                      placeholder="e.g. 54.123, -125.456"
+                    />
+                  </div>
+                  <button id="btnUpdate_cutblock" type="button" class="btn btn-secondary w-100">
+                    Zoom to Location
+                  </button>
                 </div>
                 <div
                   title="I Have a Seedlot"
@@ -363,10 +362,10 @@
                   role="tabpanel"
                   aria-labelledby="seedlot-tab"
                 >
-                  <form>
+                  <form aria-label="Seedlot species and BEC variant selection">
                     <div class="mb-3">
                       <label for="orchardNumber">Orchard Number: </label><br />
-                      <input id="orchardNumber" type="number" class="form-control" />
+                      <input id="orchardNumber" type="number" class="form-control" min="0" />
                     </div>
                     <button id="addSeedlotfromOrchard" type="button" class="btn btn-secondary mb-3">
                       Set Representative Seedlot</button
@@ -375,7 +374,7 @@
                     <b>OR</b>
                     <div class="mb-3">
                       <label for="seedlotNumber">Seedlot Number: </label><br />
-                      <input id="seedlotNumber" type="number" class="form-control" /><br />
+                      <input id="seedlotNumber" type="text" class="form-control" /><br />
                     </div>
                     <button id="addSpeciesBecSeedlot" type="button" class="btn btn-secondary mb-3">
                       Set Species & BEC</button
@@ -389,14 +388,17 @@
                       <label for="becInputSeedlot">BEC Variant: </label><br />
                       <select class="form-select" multiple id="becInputSeedlot"></select>
                     </div>
+
+                    <div class="mb-3">
+                      <label for="yearInputSeedlot">Climate Year: </label><br />
+                      <select class="form-select" id="yearInputSeedlot" multiple>
+                        <option value="2043">2043 (Near-term)</option>
+                        <option value="2053" selected>2053 (Mid-term)</option>
+                        <option value="2063">2063 (Long-term)</option>
+                      </select>
+                    </div>
                     <br />
-                    <button
-                      id="addButtonSeedlot"
-                      type="submit"
-                      class="btn btn-secondary"
-                      onclick="return false"
-                    >
-                      GO</button
+                    <button id="addButtonSeedlot" type="button" class="btn btn-secondary">GO</button
                     ><br />
                     <br />
                   </form>
@@ -406,8 +408,8 @@
                         <tr>
                           <th data-field="BECvar_site" data-sortable="true">Plantation BEC</th>
                           <th data-field="BECvar_seed" data-sortable="true">Seed BEC</th>
-                          <th data-field="Sp_suit_seed">Suitability</th>
-                          <th data-field="Limit">Limit</th>
+                          <th data-field="Sp_suit_seed" data-sortable="true">Suitability</th>
+                          <th data-field="Limit" data-sortable="true">Limit</th>
                           <!-- <th data-field="override">OverRide</th> -->
                         </tr>
                       </thead>
@@ -419,7 +421,7 @@
                   <div id="messages"></div>
                   <hr class="my-4" />
                   <div class="mb-3">
-                    <label for="coordsforlocation_seedlot" class="form-label font-weight-bold"
+                    <label for="coordsforlocation_seedlot" class="form-label fw-bold"
                       >Zoom to Location (Lat,Long):</label
                     >
                     <input
@@ -454,7 +456,13 @@
                 <div class="field">
                   <label class="file-upload">
                     <span><strong>Add File</strong></span>
-                    <input class="inputupload" type="file" name="file" id="inFile" />
+                    <input
+                      class="inputupload"
+                      type="file"
+                      name="file"
+                      id="inFile"
+                      aria-label="Upload KML or GeoJSON file"
+                    />
                   </label>
                 </div>
               </form>
@@ -543,6 +551,24 @@
         </div>
       </div>
     </div>
+
+    <!-- Climate Year Legend -->
+    <div id="climate-legend" class="climate-legend" style="display: none">
+      <div class="legend-title">Climate Scenarios</div>
+      <div class="legend-item">
+        <span class="legend-color" style="background-color: #ffc800"></span>
+        <span class="legend-label">2043 (Near-term)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background-color: #00aa00"></span>
+        <span class="legend-label">2053 (Mid-term)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background-color: #0070ff"></span>
+        <span class="legend-label">2063 (Long-term)</span>
+      </div>
+    </div>
+
     <!-- Fullscreen loader spinner overlay -->
     <div
       id="loading-overlay"
