@@ -13,14 +13,8 @@ const path = require('path');
   const { Column } = await import('flatgeobuf/lib/mjs/flat-geobuf/column.js');
   const { Crs } = await import('flatgeobuf/lib/mjs/flat-geobuf/crs.js');
 
-  // Read becStore from docs/scripts/main.js dynamically to maintain single source of truth
-  const mainJsPath = path.join(__dirname, '../docs/scripts/main.js');
-  const mainJsContent = fs.readFileSync(mainJsPath, 'utf8');
-  const becStoreMatch = mainJsContent.match(/var becStore\s*=\s*(\[[\s\S]*?\])/);
-  if (!becStoreMatch) {
-    throw new Error("Could not parse becStore from main.js");
-  }
-  const becStore = eval(becStoreMatch[1]);
+  // Read becStore directly from docs/scripts/becStore.js
+  const becStore = require('../docs/scripts/becStore.js');
 
   const versionDir = path.join(__dirname, '../docs/Version_7_0');
   const files = fs.readdirSync(versionDir);

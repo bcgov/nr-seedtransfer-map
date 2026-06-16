@@ -22,6 +22,7 @@ export default [
         esri: "readonly",
         SlimSelect: "readonly",
         bootstrap: "readonly",
+        module: "readonly",
       },
     },
     rules: {
