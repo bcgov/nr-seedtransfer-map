@@ -465,7 +465,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
     })
   }
 
-  function fetchFGB(url, becName, type) {
+  async function fetchFGB(url, becName, type) {
     let fgbUrl = url
     if (url.endsWith('.json')) {
       if (url.includes('_migrated_height_list_')) {
@@ -477,7 +477,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
 
     const idx = becStore.findIndex((b) => b.name === becName)
     if (idx === -1) {
-      return Promise.reject(new Error('BEC Variant ' + becName + ' not found in becStore'))
+      throw new Error('BEC Variant ' + becName + ' not found in becStore')
     }
 
     const rect = {
@@ -497,22 +497,12 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
       targetUrl = '../../' + fgbUrl
     }
 
-    return new Promise((resolve, reject) => {
-      const features = []
-      try {
-        const iterator = flatgeobuf.deserialize(targetUrl, rect)
-        ;(async () => {
-          for await (const feature of iterator) {
-            features.push(feature.properties)
-          }
-          resolve(features)
-        })().catch((err) => {
-          reject(err)
-        })
-      } catch (e) {
-        reject(e)
-      }
-    })
+    const features = []
+    const iterator = flatgeobuf.deserialize(targetUrl, rect)
+    for await (const feature of iterator) {
+      features.push(feature.properties)
+    }
+    return features
   }
 
   /**
