@@ -143,3 +143,6 @@ blob-report/
 
 # Unignore docs/lib/ to override global .gitignore rules (e.g. lib/ rules)
 !docs/lib/
+
+# Ignore compiled FlatGeobuf databases
+docs/Version_7_0/*.fgb

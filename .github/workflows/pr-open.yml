@@ -64,6 +64,8 @@ jobs:
           else
             npx playwright install --with-deps chromium
           fi
+      - name: Compile JSON to FlatGeobuf
+        run: npm run db:convert
       - name: Run E2E Integration tests
         run: npm run test:e2e
 
@@ -80,13 +82,21 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
-      - name: Prune database if unchanged
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Prune database if unchanged or compile to FlatGeobuf
         run: |
           git fetch --depth=1 origin main
           # Two-dot diff: HEAD is the PR merge commit, so origin/main..HEAD is the PR's delta.
           # Avoids needing a deep history for a merge-base (triple-dot).
           if git diff --name-only origin/main HEAD | grep -q "^docs/Version_7_0/"; then
-            echo "📂 Database changes detected. Keeping full database in deployment."
+            echo "📂 Database changes detected. Keeping full database and compiling to FlatGeobuf."
+            npm run db:convert
           else
             echo "⚡ Database is unchanged. Pruning for speed."
             rm -rf docs/Version_7_0

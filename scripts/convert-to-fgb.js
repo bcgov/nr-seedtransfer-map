@@ -138,12 +138,7 @@ const path = require('path');
       const byteOffset = nodeIdx * 40;
 
       const f = geojson.features[j];
-      const becName = f.properties.BECvar_site || f.properties.BECvarfut_plantation || f.properties.BECvar_seed;
-      const idx = becStore.findIndex(b => b.name === becName);
-      if (idx === -1) {
-        throw new Error(`BEC Variant ${becName} not found in becStore`);
-      }
-      const x = idx * 10;
+      const x = f.geometry.coordinates[0];
 
       indexView.setFloat64(byteOffset + 0, x, true);      // minX
       indexView.setFloat64(byteOffset + 8, 0, true);      // minY
@@ -246,12 +241,12 @@ const path = require('path');
       const fc = { type: 'FeatureCollection', features };
       const serialized = serializeWithIndex(fc, becStore);
       fs.writeFileSync(fgbPath, Buffer.from(serialized));
-    } else if (file.endsWith('_migrated_height_list_5.json')) {
-      const species = file.replace('_migrated_height_list_5.json', '');
+    } else if (file.includes('_migrated_height_list_') && file.endsWith('.json')) {
+      const baseName = file.replace('.json', '');
       const jsonPath = path.join(versionDir, file);
 
-      const fgbPathSite = path.join(versionDir, `${species}_migrated_height_list_5_site.fgb`);
-      const fgbPathSeed = path.join(versionDir, `${species}_migrated_height_list_5_seed.fgb`);
+      const fgbPathSite = path.join(versionDir, `${baseName}_site.fgb`);
+      const fgbPathSeed = path.join(versionDir, `${baseName}_seed.fgb`);
 
       console.log(`Converting ${file} to FlatGeobuf (site and seed versions)...`);
       const records = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));

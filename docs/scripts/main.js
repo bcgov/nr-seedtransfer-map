@@ -4,7 +4,6 @@
 
 define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
   var timeSeriesYears = ['2053']
-  var jsontxt, jsonseedlot
 
   var speciesStore = [
     { name: 'AT', minsuit: 97.5 },
@@ -299,21 +298,23 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
       const outputField = mode === 'seedlot' ? 'BECvar_site' : 'BECvar_seed'
 
       const yearPromises = yearsArray.map((year) => {
-        let becNames = []
+        let becNames
         if (Array.isArray(bec)) {
-          becNames = bec.map(id => becStore.find(x => x.id == id).name)
+          becNames = bec.map((id) => becStore.find((x) => x.id == id).name)
         } else {
-          becNames = [becStore.find(x => x.id == bec).name]
+          becNames = [becStore.find((x) => x.id == bec).name]
         }
 
-        const becPromises = becNames.map(name => fetchMigratedHeightList(sp, [year], name, type))
+        const becPromises = becNames.map((name) => fetchMigratedHeightList(sp, [year], name, type))
 
-        return Promise.all(becPromises).then((results) => {
-          const dataForYear = results.flat()
-          return { year, data: dataForYear }
-        }).catch(() => {
-          return { year, data: [] }
-        })
+        return Promise.all(becPromises)
+          .then((results) => {
+            const dataForYear = results.flat()
+            return { year, data: dataForYear }
+          })
+          .catch(() => {
+            return { year, data: [] }
+          })
       })
 
       Promise.all(yearPromises)
@@ -663,12 +664,14 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
     let p2 = new Promise((resolve, reject) => {
       let becNames = []
       if (Array.isArray(bec)) {
-        becNames = bec.map(id => becStore.find(x => x.id == id).name)
+        becNames = bec.map((id) => becStore.find((x) => x.id == id).name)
       } else {
-        becNames = [becStore.find(x => x.id == bec).name]
+        becNames = [becStore.find((x) => x.id == bec).name]
       }
 
-      const becPromises = becNames.map(name => fetchMigratedHeightList(sp, timeSeriesYears, name, 'site'))
+      const becPromises = becNames.map((name) =>
+        fetchMigratedHeightList(sp, timeSeriesYears, name, 'site'),
+      )
 
       Promise.all(becPromises)
         .then(function (resultsArray) {
@@ -683,14 +686,10 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
               return
             }
             output_suit = data.filter(function (x) {
-              return (
-                x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1
-              )
+              return x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1
             })
             output_non_suit = data.filter(function (x) {
-              return (
-                x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0
-              )
+              return x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0
             })
 
             updateData(results).then(function (data) {
@@ -715,17 +714,21 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
           } else {
             let results_intersection_arrays = resultsArray.map((data, i) => {
               const name = becNames[i]
-              return data.filter(x => x['BECvar_site'] == name && x['HTp_pred'] >= suit)
+              return data.filter((x) => x['BECvar_site'] == name && x['HTp_pred'] >= suit)
             })
 
             let output_suit_arrays = resultsArray.map((data, i) => {
               const name = becNames[i]
-              return data.filter(x => x['BECvar_site'] == name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1)
+              return data.filter(
+                (x) => x['BECvar_site'] == name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1,
+              )
             })
 
             let output_non_suit_arrays = resultsArray.map((data, i) => {
               const name = becNames[i]
-              return data.filter(x => x['BECvar_site'] == name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0)
+              return data.filter(
+                (x) => x['BECvar_site'] == name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0,
+              )
             })
 
             let t1 = getIntersection(results_intersection_arrays).then(function (intersection) {
@@ -828,11 +831,11 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
           )
         : [jsonseedlot]
 
-      let becNames = []
+      let becNames
       if (Array.isArray(bec)) {
-        becNames = bec.map(id => becStore.find(x => x.id == id).name)
+        becNames = bec.map((id) => becStore.find((x) => x.id == id).name)
       } else {
-        becNames = [becStore.find(x => x.id == bec).name]
+        becNames = [becStore.find((x) => x.id == bec).name]
       }
 
       const fetchPromises = seedlotFiles.map((file) => {
@@ -842,7 +845,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
               return fetchFGB(jsonseedlot, name)
             }
             throw new Error('Failed to load Seedlot database')
-          })
+          }),
         )
         return Promise.all(becPromises).then((results) => results.flat())
       })
@@ -850,7 +853,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
       Promise.all(fetchPromises)
         .then((resultsArray) => {
           const data = resultsArray.flat()
-          let results = []
+          let results
           if (bec.length == 1) {
             const bec_name = becNames[0]
             results = data.filter(function (x) {
@@ -860,7 +863,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
             const filteredByBec = becNames.map((name) =>
               data.filter(function (x) {
                 return x['BECvar_site'] == name && parseFloat(x['MigrationDistance']) >= spmin
-              })
+              }),
             )
             results = getIntersection(filteredByBec)
           }
