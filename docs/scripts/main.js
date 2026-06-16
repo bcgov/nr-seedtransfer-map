@@ -2,6 +2,8 @@
  seedlot selector functionality and data
  */
 
+// Load locally vendored FlatGeobuf library for client-side spatial index parsing (RequireJS/AMD loading).
+// Vendored locally to prevent CDN dependency failure and satisfy BC Gov Content Security Policies (CSP).
 define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
   var timeSeriesYears = ['2053']
 
