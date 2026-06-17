@@ -20,6 +20,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
     if (isDbPruned && window.location.pathname.includes('/deployments/pr-')) {
       boundsUrl = '../../' + boundsUrl
     }
+    boundsUrl += '?v=7.0.8'
 
     return fetch(boundsUrl)
       .then(function (r) {
@@ -168,7 +169,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
       if (isDbPruned && window.location.pathname.includes('/deployments/pr-')) {
         mguUrl = '../../' + mguUrl
       }
-
+      mguUrl += '?v=7.0.8'
       ;(async function () {
         try {
           const features = []
@@ -377,7 +378,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
       if (isDbPruned && window.location.pathname.includes('/deployments/pr-')) {
         targetUrl = '../../' + baseUrl
       }
-
+      targetUrl += '?v=7.0.8'
       ;(async function () {
         try {
           const iterator = flatgeobuf.deserialize(targetUrl, rect)

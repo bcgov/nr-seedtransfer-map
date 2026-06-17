@@ -232,6 +232,7 @@ define([
     ) {
       targetUrl = '../../' + fgbUrl
     }
+    targetUrl += '?v=7.0.8'
 
     const features = []
     const iterator = flatgeobuf.deserialize(targetUrl, rect)
@@ -262,6 +263,7 @@ define([
     ) {
       targetUrl = '../../' + url
     }
+    targetUrl += '?v=7.0.8'
 
     return fetch(targetUrl).then(function (r) {
       if (!r.ok) {
