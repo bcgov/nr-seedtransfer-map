@@ -30,9 +30,15 @@ define([
       const yearPromises = yearsArray.map((year) => {
         let becNames
         if (Array.isArray(bec)) {
-          becNames = bec.map((id) => becStore.find((x) => x.id == id).name)
+          becNames = bec.map((id) => {
+            const entry = becStore.find((x) => x.id == id)
+            if (!entry) throw new Error('Unknown BEC variant ID: ' + id)
+            return entry.name
+          })
         } else {
-          becNames = [becStore.find((x) => x.id == bec).name]
+          const entry = becStore.find((x) => x.id == bec)
+          if (!entry) throw new Error('Unknown BEC variant ID: ' + bec)
+          becNames = [entry.name]
         }
 
         const becPromises = becNames.map((name) => fetchMigratedHeightList(sp, [year], name, type))
@@ -384,9 +390,15 @@ define([
     let p2 = new Promise((resolve, reject) => {
       let becNames = []
       if (Array.isArray(bec)) {
-        becNames = bec.map((id) => becStore.find((x) => x.id == id).name)
+        becNames = bec.map((id) => {
+          const entry = becStore.find((x) => x.id == id)
+          if (!entry) throw new Error('Unknown BEC variant ID: ' + id)
+          return entry.name
+        })
       } else {
-        becNames = [becStore.find((x) => x.id == bec).name]
+        const entry = becStore.find((x) => x.id == bec)
+        if (!entry) throw new Error('Unknown BEC variant ID: ' + bec)
+        becNames = [entry.name]
       }
 
       const becPromises = becNames.map((name) =>
@@ -553,9 +565,15 @@ define([
 
       let becNames
       if (Array.isArray(bec)) {
-        becNames = bec.map((id) => becStore.find((x) => x.id == id).name)
+        becNames = bec.map((id) => {
+          const entry = becStore.find((x) => x.id == id)
+          if (!entry) throw new Error('Unknown BEC variant ID: ' + id)
+          return entry.name
+        })
       } else {
-        becNames = [becStore.find((x) => x.id == bec).name]
+        const entry = becStore.find((x) => x.id == bec)
+        if (!entry) throw new Error('Unknown BEC variant ID: ' + bec)
+        becNames = [entry.name]
       }
 
       const fetchPromises = seedlotFiles.map((file) => {
