@@ -48,6 +48,16 @@ define([
     addLayers: addLayers,
     updateLayer: updateLayer,
     clearCutBlock: clearCutBlock,
+    // Expose internal layers for E2E testing
+    _map: function () {
+      return map
+    },
+    _currentLayer: function () {
+      return currentLayer
+    },
+    _nonsuitLayer: function () {
+      return nonsuitLayer
+    },
   }
 
   /*
