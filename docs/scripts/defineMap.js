@@ -704,3 +704,4 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
     }
   }
 })
+// Eviction of ArcGIS Feature Server complete. Serving static FlatGeobuf files.
