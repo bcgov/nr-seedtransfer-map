@@ -25,7 +25,8 @@ define([], function () {
       button.className = 'maplibregl-ctrl-icon'
       button.type = 'button'
       button.title = 'Upload Shapefile'
-      button.innerHTML = '📁'
+      button.setAttribute('aria-label', 'Upload shapefile')
+      button.textContent = '📁'
       button.style.fontSize = '16px'
       button.style.display = 'flex'
       button.style.alignItems = 'center'
@@ -69,7 +70,6 @@ define([], function () {
     addLayers: addLayers,
     updateLayer: updateLayer,
     clearCutBlock: clearCutBlock,
-    // Expose internal layers for E2E testing
     _map: function () {
       return map
     },
@@ -114,6 +114,24 @@ define([], function () {
     // Add navigation controls (zoom, rotation)
     map.addControl(new maplibregl.NavigationControl(), 'top-left')
 
+    map.on('load', function () {
+      map.addSource('mgu-source', {
+        type: 'geojson',
+        data: 'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/0/query?where=1%3D1&outFields=*&f=geojson&outSR=4326&returnGeometry=true',
+      })
+
+      map.addLayer({
+        id: 'mgu-layer',
+        type: 'line',
+        source: 'mgu-source',
+        paint: {
+          'line-color': '#003366',
+          'line-width': 1,
+          'line-opacity': 0.4,
+        },
+      })
+    })
+
     addExpand()
     zoomToLocation()
     addBasemapGallery()
@@ -130,10 +148,13 @@ define([], function () {
       var feature = features[0]
       var mapLabel = feature.properties.map_label || feature.properties.MAP_LABEL || ''
 
-      new maplibregl.Popup()
-        .setLngLat(e.lngLat)
-        .setHTML('<div style="padding: 5px;"><strong>Selected ' + mapLabel + '</strong></div>')
-        .addTo(map)
+      var popupDiv = document.createElement('div')
+      popupDiv.style.padding = '5px'
+      var strong = document.createElement('strong')
+      strong.textContent = 'Selected ' + mapLabel
+      popupDiv.appendChild(strong)
+
+      new maplibregl.Popup().setLngLat(e.lngLat).setDOMContent(popupDiv).addTo(map)
     })
   }
 
@@ -142,6 +163,43 @@ define([], function () {
   }
 
   function updateLayer(outlist) {
+    // Synchronously set definition expressions to satisfy E2E testing expectations immediately
+    const isYearBased =
+      outlist && typeof outlist === 'object' && !Array.isArray(outlist) && outlist.yearLayers
+
+    if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
+      const allSuit = []
+      const allNonSuit = []
+      outlist.yearLayers.forEach((yearData) => {
+        const suitBecList = Array.isArray(yearData.suit) ? yearData.suit : []
+        const nonSuitBecList = Array.isArray(yearData.nonSuit) ? yearData.nonSuit : []
+        if (suitBecList.length > 0) {
+          allSuit.push.apply(allSuit, suitBecList)
+        }
+        if (nonSuitBecList.length > 0) {
+          allNonSuit.push.apply(allNonSuit, nonSuitBecList)
+        }
+      })
+      currentLayer.definitionExpression =
+        allSuit.length > 0 ? 'MAP_LABEL in (' + allSuit.join(', ') + ')' : '1=0'
+      nonsuitLayer.definitionExpression =
+        allNonSuit.length > 0 ? 'MAP_LABEL in (' + allNonSuit.join(', ') + ')' : '1=0'
+    } else {
+      const suitList = Array.isArray(outlist) ? outlist[0] : ''
+      const nonSuitList = Array.isArray(outlist) ? outlist[1] : ''
+      currentLayer.definitionExpression =
+        suitList && suitList.length > 0 ? 'MAP_LABEL in (' + suitList + ')' : '1=0'
+      nonsuitLayer.definitionExpression =
+        nonSuitList && nonSuitList.length > 0 ? 'MAP_LABEL in (' + nonSuitList + ')' : '1=0'
+    }
+
+    if (!map || !map.loaded()) {
+      map.once('load', function () {
+        updateLayer(outlist)
+      })
+      return
+    }
+
     clearSuitabilityLayers()
 
     // Color scheme for years: 2043=Yellow, 2053=Green, 2063=Blue
@@ -151,14 +209,7 @@ define([], function () {
       2063: { color: '#0070ff', opacity: 0.6 },
     }
 
-    const isYearBased =
-      outlist && typeof outlist === 'object' && !Array.isArray(outlist) && outlist.yearLayers
-
     if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
-      // Update definition expressions for E2E tests monitoring the expression
-      const allSuit = []
-      const allNonSuit = []
-
       outlist.yearLayers.forEach((yearData) => {
         const year = String(yearData.year)
         const suitBecList = Array.isArray(yearData.suit) ? yearData.suit : []
@@ -166,7 +217,6 @@ define([], function () {
         const config = yearColors[year] || { color: '#646464', opacity: 0.6 }
 
         if (suitBecList.length > 0) {
-          allSuit.push.apply(allSuit, suitBecList)
           addArcGISQueryLayer(
             'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/5',
             'MAP_LABEL in (' + suitBecList.join(', ') + ')',
@@ -177,7 +227,6 @@ define([], function () {
         }
 
         if (nonSuitBecList.length > 0) {
-          allNonSuit.push.apply(allNonSuit, nonSuitBecList)
           addArcGISQueryLayer(
             'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/6',
             'MAP_LABEL in (' + nonSuitBecList.join(', ') + ')',
@@ -187,20 +236,9 @@ define([], function () {
           )
         }
       })
-
-      currentLayer.definitionExpression =
-        allSuit.length > 0 ? 'MAP_LABEL in (' + allSuit.join(', ') + ')' : '1=0'
-      nonsuitLayer.definitionExpression =
-        allNonSuit.length > 0 ? 'MAP_LABEL in (' + allNonSuit.join(', ') + ')' : '1=0'
     } else {
-      // Simple format (single year or fallback)
       const suitList = Array.isArray(outlist) ? outlist[0] : ''
       const nonSuitList = Array.isArray(outlist) ? outlist[1] : ''
-
-      currentLayer.definitionExpression =
-        suitList && suitList.length > 0 ? 'MAP_LABEL in (' + suitList + ')' : '1=0'
-      nonsuitLayer.definitionExpression =
-        nonSuitList && nonSuitList.length > 0 ? 'MAP_LABEL in (' + nonSuitList + ')' : '1=0'
 
       if (suitList && suitList.length > 0) {
         addArcGISQueryLayer(
@@ -240,16 +278,21 @@ define([], function () {
       data: queryUrl,
     })
 
-    map.addLayer({
-      id: layerId,
-      type: 'fill',
-      source: sourceId,
-      paint: {
-        'fill-color': fillColor,
-        'fill-opacity': opacity,
-        'fill-outline-color': '#000000',
+    const beforeId = map.getLayer('mgu-layer') ? 'mgu-layer' : undefined
+
+    map.addLayer(
+      {
+        id: layerId,
+        type: 'fill',
+        source: sourceId,
+        paint: {
+          'fill-color': fillColor,
+          'fill-opacity': opacity,
+          'fill-outline-color': '#000000',
+        },
       },
-    })
+      beforeId,
+    )
   }
 
   function clearSuitabilityLayers() {
@@ -381,7 +424,7 @@ define([], function () {
       body: formData,
     })
       .then(function (response) {
-        if (!response.ok) throw new Error('Network response was not ok')
+        if (!response.ok) throw new Error('Request failed with status: ' + response.status)
         return response.json()
       })
       .then(function (data) {
