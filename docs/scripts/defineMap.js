@@ -2,13 +2,42 @@
  * Define the JavaScript functions used to create the structure and widgets
  */
 
-define([], function () {
+define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
   var map
+  var becBounds = null
   var currentLayer = {
     definitionExpression: '1=0',
   }
   var nonsuitLayer = {
     definitionExpression: '1=0',
+  }
+
+  function loadBecBounds() {
+    if (becBounds) return Promise.resolve(becBounds)
+
+    let boundsUrl = 'Version_7_0/bec_bounds.json'
+    const isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
+    if (isDbPruned && window.location.pathname.includes('/deployments/pr-')) {
+      boundsUrl = '../../' + boundsUrl
+    }
+
+    return fetch(boundsUrl)
+      .then(function (r) {
+        if (!r.ok) throw new Error('Failed to load BEC bounds: ' + r.statusText)
+        return r.json()
+      })
+      .then(function (data) {
+        becBounds = data
+        return becBounds
+      })
+  }
+
+  function parseBecNamesFromWhere(whereClause) {
+    if (!whereClause) return []
+    const matches = whereClause.match(/'[^']+'/g) || []
+    return matches.map(function (m) {
+      return m.replace(/'/g, '')
+    })
   }
 
   var addedLayerIds = []
@@ -117,7 +146,10 @@ define([], function () {
     map.on('load', function () {
       map.addSource('mgu-source', {
         type: 'geojson',
-        data: 'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/0/query?where=1%3D1&outFields=*&f=geojson&outSR=4326&returnGeometry=true',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
       })
 
       map.addLayer({
@@ -130,6 +162,31 @@ define([], function () {
           'line-opacity': 0.4,
         },
       })
+
+      let mguUrl = 'Version_7_0/Management_Units.fgb'
+      const isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
+      if (isDbPruned && window.location.pathname.includes('/deployments/pr-')) {
+        mguUrl = '../../' + mguUrl
+      }
+
+      ;(async function () {
+        try {
+          const features = []
+          const iterator = flatgeobuf.deserialize(mguUrl)
+          for await (const feature of iterator) {
+            features.push(feature)
+          }
+          const source = map.getSource('mgu-source')
+          if (source) {
+            source.setData({
+              type: 'FeatureCollection',
+              features: features,
+            })
+          }
+        } catch (err) {
+          console.error('Error loading local Management Units FlatGeobuf:', err)
+        }
+      })()
     })
 
     addExpand()
@@ -218,7 +275,7 @@ define([], function () {
 
         if (suitBecList.length > 0) {
           addArcGISQueryLayer(
-            'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/5',
+            'Version_7_0/Suitable_BEC.fgb',
             'MAP_LABEL in (' + suitBecList.join(', ') + ')',
             `suit-layer-${year}`,
             config.color,
@@ -228,7 +285,7 @@ define([], function () {
 
         if (nonSuitBecList.length > 0) {
           addArcGISQueryLayer(
-            'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/6',
+            'Version_7_0/Nonsuitable_BEC.fgb',
             'MAP_LABEL in (' + nonSuitBecList.join(', ') + ')',
             `nonsuit-layer-${year}`,
             config.color,
@@ -242,7 +299,7 @@ define([], function () {
 
       if (suitList && suitList.length > 0) {
         addArcGISQueryLayer(
-          'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/5',
+          'Version_7_0/Suitable_BEC.fgb',
           'MAP_LABEL in (' + suitList + ')',
           'suitable-layer',
           '#d95f02', // Orange
@@ -252,7 +309,7 @@ define([], function () {
 
       if (nonSuitList && nonSuitList.length > 0) {
         addArcGISQueryLayer(
-          'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/6',
+          'Version_7_0/Nonsuitable_BEC.fgb',
           'MAP_LABEL in (' + nonSuitList + ')',
           'nonsuitable-layer',
           '#aa66cd', // Purple
@@ -263,11 +320,6 @@ define([], function () {
   }
 
   function addArcGISQueryLayer(baseUrl, whereClause, layerId, fillColor, opacity) {
-    const queryUrl =
-      baseUrl +
-      '/query?where=' +
-      encodeURIComponent(whereClause) +
-      '&outFields=map_label&f=geojson&outSR=4326&returnGeometry=true'
     const sourceId = layerId + '-source'
 
     addedSourceIds.push(sourceId)
@@ -275,7 +327,10 @@ define([], function () {
 
     map.addSource(sourceId, {
       type: 'geojson',
-      data: queryUrl,
+      data: {
+        type: 'FeatureCollection',
+        features: [],
+      },
     })
 
     const beforeId = map.getLayer('mgu-layer') ? 'mgu-layer' : undefined
@@ -293,6 +348,57 @@ define([], function () {
       },
       beforeId,
     )
+
+    const becNames = parseBecNamesFromWhere(whereClause)
+    if (becNames.length === 0) return
+
+    loadBecBounds().then(function (bounds) {
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity
+      for (let i = 0; i < becNames.length; i++) {
+        const b = bounds[becNames[i]]
+        if (b) {
+          if (b.minX < minX) minX = b.minX
+          if (b.minY < minY) minY = b.minY
+          if (b.maxX > maxX) maxX = b.maxX
+          if (b.maxY > maxY) maxY = b.maxY
+        }
+      }
+
+      if (minX === Infinity) return
+
+      const rect = { minX: minX, minY: minY, maxX: maxX, maxY: maxY }
+      const features = []
+
+      let targetUrl = baseUrl
+      const isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
+      if (isDbPruned && window.location.pathname.includes('/deployments/pr-')) {
+        targetUrl = '../../' + baseUrl
+      }
+
+      ;(async function () {
+        try {
+          const iterator = flatgeobuf.deserialize(targetUrl, rect)
+          for await (const feature of iterator) {
+            const label = feature.properties.map_label || feature.properties.MAP_LABEL
+            if (becNames.includes(label)) {
+              features.push(feature)
+            }
+          }
+          const source = map.getSource(sourceId)
+          if (source) {
+            source.setData({
+              type: 'FeatureCollection',
+              features: features,
+            })
+          }
+        } catch (err) {
+          console.error('Error loading local suitability FlatGeobuf:', err)
+        }
+      })()
+    })
   }
 
   function clearSuitabilityLayers() {

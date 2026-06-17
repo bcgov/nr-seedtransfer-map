@@ -146,3 +146,6 @@ blob-report/
 
 # Ignore compiled FlatGeobuf databases
 docs/Version_7_0/*.fgb
+!docs/Version_7_0/Management_Units.fgb
+!docs/Version_7_0/Suitable_BEC.fgb
+!docs/Version_7_0/Nonsuitable_BEC.fgb
