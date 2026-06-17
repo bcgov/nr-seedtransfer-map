@@ -23,6 +23,7 @@ export default [
         SlimSelect: "readonly",
         bootstrap: "readonly",
         module: "readonly",
+        maplibregl: "readonly",
       },
     },
     rules: {

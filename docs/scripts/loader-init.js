@@ -57,14 +57,12 @@ if (typeof HTMLElement.prototype.reposition !== 'function') {
 ;(function () {
   var pathname = window.location.pathname
   var locationPath = pathname.substring(0, pathname.lastIndexOf('/'))
-  window.dojoConfig = {
-    async: true,
-    cacheBust: 'v=7.0.8',
-    packages: [
-      {
-        name: 'scripts',
-        location: locationPath + '/scripts',
-      },
-    ],
-  }
+  require.config({
+    urlArgs: 'v=7.0.8',
+    baseUrl: locationPath,
+    paths: {
+      scripts: 'scripts',
+      lib: 'lib',
+    },
+  })
 })()
