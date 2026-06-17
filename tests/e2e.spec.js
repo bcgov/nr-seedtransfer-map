@@ -211,5 +211,90 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await expect(errorBanner).toBeVisible()
     await expect(errorBanner).toHaveText('Please select a BEC Variant.')
   })
+
+  test.describe('Shapefile Upload Integration', () => {
+    test.beforeEach(async ({ page }) => {
+      // Mock the ArcGIS Rest API portal shapefile generate endpoint
+      await page.route('**/sharing/rest/content/features/generate*', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            featureCollection: {
+              layers: [
+                {
+                  layerDefinition: {
+                    name: 'Mock Layer',
+                    fields: [
+                      { name: 'FID', type: 'esriFieldTypeOID', alias: 'FID' },
+                      { name: 'MAP_LABEL', type: 'esriFieldTypeString', alias: 'MAP_LABEL' }
+                    ]
+                  },
+                  featureSet: {
+                    features: [
+                      {
+                        geometry: {
+                          rings: [[[-125.0, 54.0], [-126.0, 54.0], [-126.0, 55.0], [-125.0, 55.0], [-125.0, 54.0]]]
+                        },
+                        attributes: { FID: 1, MAP_LABEL: 'SBSdw3' }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          })
+        })
+      })
+    })
+
+    test('should upload shapefile zip, parse features, and add the feature layer to the map', async ({
+      page,
+    }) => {
+      // Upload mock zip file directly to input without clicking UI expand
+      await page.setInputFiles('#inFile', {
+        name: 'test_shapefile.zip',
+        mimeType: 'application/zip',
+        buffer: Buffer.from('mock zip data'),
+      })
+
+      // Wait for the upload status message to clear (indicating completion)
+      const uploadStatus = page.locator('#upload-status')
+      await expect(uploadStatus).toHaveText('')
+
+      // Verify that the graphics/layers are added to the ArcGIS map view
+      const hasLayers = await page.evaluate(() => {
+        if (!window.defineMap || typeof window.defineMap._map !== 'function') return false
+        const map = window.defineMap._map()
+        return !!(map && map.layers && map.layers.length > 0)
+      })
+
+      expect(hasLayers).toBe(true)
+    })
+
+    test('should handle upload and API errors gracefully', async ({ page }) => {
+      // Override routing to mock failure by unrouting existing first
+      await page.unroute('**/sharing/rest/content/features/generate*')
+      await page.route('**/sharing/rest/content/features/generate*', async (route) => {
+        await route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            message: 'Invalid shapefile format or empty zip.'
+          })
+        })
+      })
+
+      await page.setInputFiles('#inFile', {
+        name: 'bad_shapefile.zip',
+        mimeType: 'application/zip',
+        buffer: Buffer.from('corrupted zip data'),
+      })
+
+      // Status should display the error message
+      const uploadStatus = page.locator('#upload-status')
+      await expect(uploadStatus).toContainText('status: 500')
+    })
+  })
 })
 
