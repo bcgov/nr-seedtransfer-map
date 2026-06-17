@@ -48,6 +48,12 @@ define([
     addLayers: addLayers,
     updateLayer: updateLayer,
     clearCutBlock: clearCutBlock,
+    _map: function () {
+      return map
+    },
+    _view: function () {
+      return view
+    },
   }
 
   /*

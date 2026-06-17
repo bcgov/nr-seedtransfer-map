@@ -1,4 +1,6 @@
 require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) {
+  window.defineMap = defineMap
+  window.main = main
   $(function () {
     const seedlotDate = document.body.getAttribute('data-seedlot-date')
     if (seedlotDate) {
