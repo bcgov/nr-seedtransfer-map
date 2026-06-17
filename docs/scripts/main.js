@@ -430,7 +430,7 @@ define([
             }
             outlist_non_suit = outlist_non_suit.join(', ')
 
-            resolve(outlist_suit)
+            resolve([outlist_suit, outlist_non_suit])
           } else {
             let results_intersection_arrays = resultsArray.map((data, i) => {
               const name = becNames[i]
