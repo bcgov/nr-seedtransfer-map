@@ -173,7 +173,8 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
       ;(async function () {
         try {
           const features = []
-          const iterator = flatgeobuf.deserialize(mguUrl)
+          const rect = { minX: -180, minY: -90, maxX: 180, maxY: 90 }
+          const iterator = flatgeobuf.deserialize(mguUrl, rect)
           for await (const feature of iterator) {
             features.push(feature)
           }
