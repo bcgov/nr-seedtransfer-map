@@ -130,7 +130,7 @@ define([], function () {
       if (!features.length) return
 
       var feature = features[0]
-      var mapLabel = feature.properties.MAP_LABEL || ''
+      var mapLabel = feature.properties.map_label || feature.properties.MAP_LABEL || ''
 
       new maplibregl.Popup()
         .setLngLat(e.lngLat)
@@ -231,7 +231,7 @@ define([], function () {
       baseUrl +
       '/query?where=' +
       encodeURIComponent(whereClause) +
-      '&outFields=MAP_LABEL&f=geojson&outSR=4326'
+      '&outFields=map_label&f=geojson&outSR=4326&returnGeometry=true'
     const sourceId = layerId + '-source'
 
     addedSourceIds.push(sourceId)
