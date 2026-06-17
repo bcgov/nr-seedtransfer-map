@@ -113,6 +113,24 @@ define([], function () {
     // Add navigation controls (zoom, rotation)
     map.addControl(new maplibregl.NavigationControl(), 'top-left')
 
+    map.on('load', function () {
+      map.addSource('mgu-source', {
+        type: 'geojson',
+        data: 'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/0/query?where=1%3D1&outFields=*&f=geojson&outSR=4326&returnGeometry=true',
+      })
+
+      map.addLayer({
+        id: 'mgu-layer',
+        type: 'line',
+        source: 'mgu-source',
+        paint: {
+          'line-color': '#003366',
+          'line-width': 1,
+          'line-opacity': 0.4,
+        },
+      })
+    })
+
     addExpand()
     zoomToLocation()
     addBasemapGallery()
@@ -239,16 +257,21 @@ define([], function () {
       data: queryUrl,
     })
 
-    map.addLayer({
-      id: layerId,
-      type: 'fill',
-      source: sourceId,
-      paint: {
-        'fill-color': fillColor,
-        'fill-opacity': opacity,
-        'fill-outline-color': '#000000',
+    const beforeId = map.getLayer('mgu-layer') ? 'mgu-layer' : undefined
+
+    map.addLayer(
+      {
+        id: layerId,
+        type: 'fill',
+        source: sourceId,
+        paint: {
+          'fill-color': fillColor,
+          'fill-opacity': opacity,
+          'fill-outline-color': '#000000',
+        },
       },
-    })
+      beforeId,
+    )
   }
 
   function clearSuitabilityLayers() {
