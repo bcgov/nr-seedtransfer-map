@@ -54,6 +54,12 @@ define([
     _view: function () {
       return view
     },
+    _currentLayer: function () {
+      return currentLayer
+    },
+    _nonsuitLayer: function () {
+      return nonsuitLayer
+    },
   }
 
   /*

@@ -86,6 +86,48 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await expect(seedlotRow).not.toContainText('No matching records found')
   })
 
+  test('Cutblock Flow: Selecting PLI species, IDFdk1 BEC, and 2053 year draws suitability regions on map', async ({
+    page,
+  }) => {
+    // Click the "I Have A Cutblock" tab
+    await page.click('#cutblock-tab')
+
+    // Click the Species SlimSelect dropdown to open it
+    await page.locator('#speciesInputCutblock + .ss-main').click()
+
+    // Click the "PLI" option inside the visible dropdown
+    await page.getByRole('option', { name: 'PLI', exact: true }).first().click()
+
+    // Click the BEC Variant SlimSelect dropdown to open it
+    await page.locator('#becInputCutblock + .ss-main').click()
+
+    // Click the "IDFdk1" option inside the visible dropdown
+    await page.getByRole('option', { name: 'IDFdk1', exact: true }).first().click()
+
+    // Close the dropdown by pressing Escape
+    await page.keyboard.press('Escape')
+
+    // Click the GO button for Cutblock
+    await page.click('#addButtonCutblock')
+
+    // Verify the results tables load and populate with data rows
+    const cutblockRow = page.locator('#cutblock_table tbody tr').first()
+    await cutblockRow.waitFor({ state: 'visible', timeout: 30 * 1000 })
+    await expect(cutblockRow).not.toContainText('No matching records found')
+
+    // Verify the map layer's definition expression is updated (not empty/1=0)
+    await expect.poll(async () => {
+      return await page.evaluate(() => {
+        if (!window.defineMap || typeof window.defineMap._currentLayer !== 'function') return null
+        const currentLayer = window.defineMap._currentLayer()
+        return currentLayer ? currentLayer.definitionExpression : null
+      })
+    }, {
+      message: 'Expected currentLayer.definitionExpression to be updated with MAP_LABEL list',
+      timeout: 10000,
+    }).toContain('MAP_LABEL in')
+  })
+
   test('Seedlot Flow: Entering Orchard 101 populates representative seedlot and table', async ({
     page,
   }) => {
