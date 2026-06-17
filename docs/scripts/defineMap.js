@@ -448,7 +448,9 @@ define([], function () {
     var geojson = esriToGeoJSON(featureCollection)
     var sourceId = 'uploaded-shapefile'
 
-    if (map.getLayer(sourceId)) map.removeLayer(sourceId)
+    if (map.getLayer(sourceId + '-fill')) map.removeLayer(sourceId + '-fill')
+    if (map.getLayer(sourceId + '-line')) map.removeLayer(sourceId + '-line')
+    if (map.getLayer(sourceId + '-circle')) map.removeLayer(sourceId + '-circle')
     if (map.getSource(sourceId)) map.removeSource(sourceId)
 
     map.addSource(sourceId, {
@@ -456,14 +458,50 @@ define([], function () {
       data: geojson,
     })
 
+    // 1. Polygon/Fill layer
     map.addLayer({
-      id: sourceId,
+      id: sourceId + '-fill',
       type: 'fill',
       source: sourceId,
+      filter: [
+        'any',
+        ['==', ['geometry-type'], 'Polygon'],
+        ['==', ['geometry-type'], 'MultiPolygon'],
+      ],
       paint: {
         'fill-color': '#0080ff',
         'fill-opacity': 0.4,
         'fill-outline-color': '#004080',
+      },
+    })
+
+    // 2. Line layer
+    map.addLayer({
+      id: sourceId + '-line',
+      type: 'line',
+      source: sourceId,
+      filter: [
+        'any',
+        ['==', ['geometry-type'], 'LineString'],
+        ['==', ['geometry-type'], 'MultiLineString'],
+      ],
+      paint: {
+        'line-color': '#004080',
+        'line-width': 2,
+      },
+    })
+
+    // 3. Point/Circle layer
+    map.addLayer({
+      id: sourceId + '-circle',
+      type: 'circle',
+      source: sourceId,
+      filter: ['any', ['==', ['geometry-type'], 'Point'], ['==', ['geometry-type'], 'MultiPoint']],
+      paint: {
+        'circle-color': '#ff0000',
+        'circle-radius': 6,
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1.5,
       },
     })
 
