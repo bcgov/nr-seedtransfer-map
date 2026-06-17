@@ -304,11 +304,13 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
       const uploadStatus = page.locator('#upload-status')
       await expect(uploadStatus).toHaveText('')
 
-      // Verify that the graphics/layers are added to the ArcGIS map view
+      // Verify that the graphics/layers are added to the MapLibre map
       const hasLayers = await page.evaluate(() => {
         if (!window.defineMap || typeof window.defineMap._map !== 'function') return false
         const map = window.defineMap._map()
-        return !!(map && map.layers && map.layers.length > 0)
+        if (!map) return false
+        const style = map.getStyle()
+        return !!(style && style.layers && style.layers.some(l => l.id.startsWith('uploaded-shapefile')))
       })
 
       expect(hasLayers).toBe(true)
