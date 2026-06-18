@@ -44,6 +44,40 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
   var addedLayerIds = []
   var addedSourceIds = []
 
+  // Basemap definitions — all free, zero API keys required
+  var BASEMAPS = [
+    {
+      id: 'osm',
+      label: 'OpenStreetMap',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      attribution:
+        '\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+    },
+    {
+      id: 'carto-light',
+      label: 'Carto Light',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      ],
+      attribution:
+        '\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors \u00a9 <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
+    },
+    {
+      id: 'carto-dark',
+      label: 'Carto Dark',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      ],
+      attribution:
+        '\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors \u00a9 <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
+    },
+  ]
+  var currentBasemapIndex = 0
+
   // Uploading shapefiles custom control integration
   class UploadControl {
     onAdd(mapInstance) {
@@ -276,7 +310,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
         const config = yearColors[year] || { color: '#646464', opacity: 0.6 }
 
         if (suitBecList.length > 0) {
-          addArcGISQueryLayer(
+          addFlatGeobufLayer(
             'Version_7_0/Suitable_BEC.fgb',
             'MAP_LABEL in (' + suitBecList.join(', ') + ')',
             `suit-layer-${year}`,
@@ -286,7 +320,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
         }
 
         if (nonSuitBecList.length > 0) {
-          addArcGISQueryLayer(
+          addFlatGeobufLayer(
             'Version_7_0/Nonsuitable_BEC.fgb',
             'MAP_LABEL in (' + nonSuitBecList.join(', ') + ')',
             `nonsuit-layer-${year}`,
@@ -300,7 +334,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
       const nonSuitList = Array.isArray(outlist) ? outlist[1] : ''
 
       if (suitList && suitList.length > 0) {
-        addArcGISQueryLayer(
+        addFlatGeobufLayer(
           'Version_7_0/Suitable_BEC.fgb',
           'MAP_LABEL in (' + suitList + ')',
           'suitable-layer',
@@ -310,7 +344,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
       }
 
       if (nonSuitList && nonSuitList.length > 0) {
-        addArcGISQueryLayer(
+        addFlatGeobufLayer(
           'Version_7_0/Nonsuitable_BEC.fgb',
           'MAP_LABEL in (' + nonSuitList + ')',
           'nonsuitable-layer',
@@ -321,7 +355,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
     }
   }
 
-  function addArcGISQueryLayer(baseUrl, whereClause, layerId, fillColor, opacity) {
+  function addFlatGeobufLayer(baseUrl, whereClause, layerId, fillColor, opacity) {
     const sourceId = layerId + '-source'
 
     addedSourceIds.push(sourceId)
@@ -686,13 +720,34 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
     }
   }
 
-  // Add the basemap gallery placeholder
+  // Add basemap switcher: cycles through OSM → Carto Light → Carto Dark on each click
   function addBasemapGallery() {
     var basemapBtn = document.getElementById('basemapButton')
-    if (basemapBtn) {
-      basemapBtn.onclick = function () {
-        alert('Basemap switcher is not supported in the MapLibre engine migration preview.')
+    if (!basemapBtn) return
+
+    function applyBasemap(index) {
+      var bm = BASEMAPS[index]
+      var source = map.getSource('osm')
+      if (!source) return
+      // MapLibre raster sources are immutable once added — swap via style update
+      var style = map.getStyle()
+      style.sources['osm'].tiles = bm.tiles
+      // Update attribution control text
+      var attribution = map.getAttributionControl ? map.getAttributionControl() : null
+      if (attribution && typeof attribution.setHTML === 'function') {
+        attribution.setHTML(bm.attribution)
       }
+      map.setStyle(style)
+      basemapBtn.title = 'Basemap: ' + bm.label
+      basemapBtn.setAttribute('aria-label', 'Switch basemap (current: ' + bm.label + ')')
+    }
+
+    basemapBtn.title = 'Basemap: ' + BASEMAPS[0].label
+    basemapBtn.setAttribute('aria-label', 'Switch basemap (current: ' + BASEMAPS[0].label + ')')
+
+    basemapBtn.onclick = function () {
+      currentBasemapIndex = (currentBasemapIndex + 1) % BASEMAPS.length
+      applyBasemap(currentBasemapIndex)
     }
   }
 

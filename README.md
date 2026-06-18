@@ -147,7 +147,7 @@ nr-seedtransfer-map/
 │   └── pr-validate.yml     # Automated PR metadata validation
 ├── docs/                   # Main application payload (GitHub Pages)
 │   ├── css/                # Application stylesheets
-│   ├── scripts/            # Core JavaScript files (Leaflet/ArcGIS logic)
+│   ├── scripts/            # Core JavaScript files (MapLibre GL JS logic)
 │   │   ├── main.js         # Business & suitability logic
 │   │   ├── defineMap.js    # Map rendering & widgets
 │   │   └── requireMain.js  # RequireJS entry point
@@ -156,25 +156,6 @@ nr-seedtransfer-map/
 ├── eslint.config.mjs       # ESLint 10+ flat config rules
 └── README.md               # You are here!
 ```
-
----
-
-## Expected Console Warnings & Suppressions
-
-To ensure a clean, distraction-free developer experience, our client-side runtime contains a console
-interceptor in `loader-init.js` that intercepts and silences expected external CDN/map-service
-errors.
-
-### Suppressed Errors:
-
-1. **Esri CDN Tile Load Failures**:
-   - **Signature**:
-     `[esri.views.2d.layers.features.FeatureSourceEventLog] Failed to load tile <coords>.`
-   - **Reason**: The map layers loaded from `maps.forsite.ca` are hosted feature services. Under
-     high zoom levels or in certain bounds, some query tiles return 5xx errors from the server. The
-     ArcGIS Maps SDK self-heals these failures automatically (by falling back or retrying), so these
-     warnings are safe to silence.
-   - **Impact**: Purely cosmetic; silenced to avoid red console spam.
 
 ---
 

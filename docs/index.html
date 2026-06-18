@@ -10,18 +10,14 @@
         default-src 'self';
         script-src 'self' 'unsafe-eval';
         style-src 'self' 'unsafe-inline';
-        img-src 'self' data: blob: https://maps.forsite.ca https://*.openstreetmap.org https://tile.openstreetmap.org;
-        connect-src 'self' https://maps.forsite.ca https://*.openstreetmap.org https://tile.openstreetmap.org https://www.arcgis.com;
+        img-src 'self' data: blob: https://*.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com;
+        connect-src 'self' https://*.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com https://www.arcgis.com;
         font-src 'self';
         worker-src 'self' blob:;
         child-src 'self' blob:;
       "
     />
-    <link
-      rel="shortcut icon"
-      type="image/png"
-      href="https://maps.forsite.ca/favicon/favicon-32x32.png"
-    />
+    <link rel="shortcut icon" type="image/png" href="images/favicon-32x32.png" />
     <link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css" />
     <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css" />
     <link rel="stylesheet" href="lib/slim-select/slimselect.css" />
@@ -48,7 +44,7 @@
             <div class="navbar-brand d-flex align-items-center w-100 px-3 py-1">
               <!-- Desktop Logo -->
               <img
-                src="https://maps.forsite.ca/BCID_H_rgb_pos.png"
+                src="images/BCID_H_rgb_pos.png"
                 alt="BC Logo"
                 width="165"
                 height="64"
@@ -56,7 +52,7 @@
               />
               <!-- Mobile Logo -->
               <img
-                src="https://maps.forsite.ca/BCID_H_rgb_pos.png"
+                src="images/BCID_H_rgb_pos.png"
                 alt="BC Logo"
                 width="103"
                 height="40"
@@ -105,12 +101,7 @@
             class="offcanvas-header bg-light d-md-none border-bottom justify-content-between p-3"
           >
             <div class="d-flex align-items-center">
-              <img
-                src="https://maps.forsite.ca/BCID_H_rgb_pos.png"
-                alt="BC Logo"
-                height="30"
-                class="me-2"
-              />
+              <img src="images/BCID_H_rgb_pos.png" alt="BC Logo" height="30" class="me-2" />
               <h5 class="offcanvas-title fw-bold text-dark fs-6" id="sidebarOffcanvasLabel">
                 CBST Sourcing Tools
               </h5>
@@ -440,11 +431,7 @@
               <p>Add a zipped shapefile to the map.</p>
               <p>
                 Visit the
-                <a
-                  target="_blank"
-                  href="https://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm"
-                  >Shapefiles</a
-                >
+                <a target="_blank" href="https://en.wikipedia.org/wiki/Shapefile">Shapefiles</a>
                 help topic for information and limitations.
               </p>
               <form enctype="multipart/form-data" method="post" id="uploadForm">
@@ -475,18 +462,13 @@
           <div id="mapDiv"></div>
           <div id="topbar">
             <div>
-              <button
-                class="action-button esri-widget"
-                id="basemapButton"
-                type="button"
-                title="Basemaps"
-              >
+              <button class="action-button" id="basemapButton" type="button" title="Basemaps">
                 Basemaps
               </button>
             </div>
             <div>
               <button
-                class="action-button esri-widget"
+                class="action-button"
                 id="printerButton"
                 type="button"
                 title="Export Map to PDF"
