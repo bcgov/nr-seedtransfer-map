@@ -280,29 +280,24 @@ async function fetchAllFeatures(layerId, outFields = '*') {
       }
     }
 
-    // 2. Layer 5 (Suitable BEC)
-    console.log('Downloading Layer 5 (Suitable BEC)...');
-    const l5 = await fetchAllFeatures(5, 'map_label,objectid_1');
-    console.log(`Layer 5 fetched: ${l5.features.length} features. Processing bounds...`);
-    for (const f of l5.features) {
+    // 2. BEC variant polygons (FeatureServer layer 5: BEC_10_Suit_v4).
+    //
+    // Layer 6 (BEC_10_NotSuit_v4) is byte-identical to layer 5 on Forsite — same
+    // 15,266 features and total area. Suitable vs non-suitable is determined at
+    // runtime by MAP_LABEL filtering, not by layer, so we export once as
+    // BEC_Variants.fgb (see defineMap.js).
+    console.log('Downloading Layer 5 (BEC variants)...');
+    const becVariants = await fetchAllFeatures(5, 'map_label,objectid_1');
+    console.log(
+      `Layer 5 fetched: ${becVariants.features.length} features. Processing bounds...`,
+    );
+    for (const f of becVariants.features) {
       addBbox(f.properties.map_label, f.geometry);
     }
-    console.log('Serializing Layer 5 to FlatGeobuf...');
-    const fgb5 = serializeWithIndex(l5);
-    fs.writeFileSync(path.join(outputDir, 'Suitable_BEC.fgb'), Buffer.from(fgb5));
-    console.log('Layer 5 saved to Suitable_BEC.fgb');
-
-    // 3. Layer 6 (Nonsuitable BEC)
-    console.log('Downloading Layer 6 (Non-suitable BEC)...');
-    const l6 = await fetchAllFeatures(6, 'map_label,objectid_1');
-    console.log(`Layer 6 fetched: ${l6.features.length} features. Processing bounds...`);
-    for (const f of l6.features) {
-      addBbox(f.properties.map_label, f.geometry);
-    }
-    console.log('Serializing Layer 6 to FlatGeobuf...');
-    const fgb6 = serializeWithIndex(l6);
-    fs.writeFileSync(path.join(outputDir, 'Nonsuitable_BEC.fgb'), Buffer.from(fgb6));
-    console.log('Layer 6 saved to Nonsuitable_BEC.fgb');
+    console.log('Serializing BEC variants to FlatGeobuf...');
+    const fgbBec = serializeWithIndex(becVariants);
+    fs.writeFileSync(path.join(outputDir, 'BEC_Variants.fgb'), Buffer.from(fgbBec));
+    console.log('Layer 5 saved to BEC_Variants.fgb');
 
     // Save bounds
     fs.writeFileSync(path.join(outputDir, 'bec_bounds.json'), JSON.stringify(bounds, null, 2));
