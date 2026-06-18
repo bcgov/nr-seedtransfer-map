@@ -224,7 +224,7 @@ define([
       maxY: 1,
     }
 
-    const cacheBust = '?v=7.0.10'
+    const cacheBust = '?v=7.0.12'
     const candidates = dataUrl.getDataUrlCandidates(fgbUrl)
     let lastError = null
 
@@ -257,7 +257,7 @@ define([
    *    as a standard promise rejection to be caught and displayed by the UI error banner.
    */
   function fetchJSON(url) {
-    const cacheBust = '?v=7.0.10'
+    const cacheBust = '?v=7.0.12'
     const candidates = dataUrl.getDataUrlCandidates(url)
 
     function tryFetch(target) {
