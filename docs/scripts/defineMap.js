@@ -2,7 +2,10 @@
  * Define the JavaScript functions used to create the structure and widgets
  */
 
-define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
+define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], function (
+  flatgeobuf,
+  dataUrl,
+) {
   var map
   var becBounds = null
   var currentLayer = {
@@ -15,12 +18,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
   function loadBecBounds() {
     if (becBounds) return Promise.resolve(becBounds)
 
-    let boundsUrl = 'Version_7_0/bec_bounds.json'
-    const isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
-    if (isDbPruned && window.location.pathname.includes('/deployments/pr-')) {
-      boundsUrl = '../../' + boundsUrl
-    }
-    boundsUrl += '?v=7.0.8'
+    let boundsUrl = dataUrl.resolveDataUrl('Version_7_0/bec_bounds.json') + '?v=7.0.8'
 
     return fetch(boundsUrl)
       .then(function (r) {
@@ -198,12 +196,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
         },
       })
 
-      let mguUrl = 'Version_7_0/Management_Units.fgb'
-      const isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
-      if (isDbPruned && window.location.pathname.includes('/deployments/pr-')) {
-        mguUrl = '../../' + mguUrl
-      }
-      mguUrl += '?v=7.0.8'
+      let mguUrl = dataUrl.resolveDataUrl('Version_7_0/Management_Units.fgb') + '?v=7.0.8'
       ;(async function () {
         try {
           const features = []
@@ -408,12 +401,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js'], function (flatgeobuf) {
       const rect = { minX: minX, minY: minY, maxX: maxX, maxY: maxY }
       const features = []
 
-      let targetUrl = baseUrl
-      const isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
-      if (isDbPruned && window.location.pathname.includes('/deployments/pr-')) {
-        targetUrl = '../../' + baseUrl
-      }
-      targetUrl += '?v=7.0.8'
+      let targetUrl = dataUrl.resolveDataUrl(baseUrl) + '?v=7.0.8'
       ;(async function () {
         try {
           const iterator = flatgeobuf.deserialize(targetUrl, rect)
