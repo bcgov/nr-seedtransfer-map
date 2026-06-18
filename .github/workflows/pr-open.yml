@@ -108,7 +108,8 @@ jobs:
         with:
           folder: docs
           branch: gh-pages
-          clean: false # Do not delete other previews!
+          clean: true # Removes stale files from the target subfolder only — safe because
+          # target-folder scopes rsync's --delete to deployments/pr-{N}/, not other PR folders.
           target-folder: deployments/pr-${{ github.event.number }}
 
       - name: 🧪 Smoke Test PR Preview URL
