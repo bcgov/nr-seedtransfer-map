@@ -103,6 +103,15 @@ jobs:
           # ---------------------------------------------------------------------------
           echo "📂 Full database deploy: compiling JSON to FlatGeobuf."
           npm run db:convert
+
+          # Drop compiled-source JSON from the deploy. The app fetches the .fgb
+          # equivalents at runtime (fetchFGB rewrites *_Seedlots.json /
+          # *_migrated_height_list_*.json to .fgb), so these ~500MB of source
+          # files are dead weight that bloat gh-pages and break the Pages build.
+          # Orchard_list.json, Seedlot_list.json and bec_bounds.json ARE fetched
+          # as JSON at runtime and must stay.
+          find docs/Version_7_0 -type f \( -name '*_Seedlots.json' -o -name '*_migrated_height_list_*.json' \) -delete
+
           sed -i 's/<body/<body data-full-fgb-deploy="true"/' docs/index.html
       - name: Deploy to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
