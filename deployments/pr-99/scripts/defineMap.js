@@ -18,7 +18,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
   function loadBecBounds() {
     if (becBounds) return Promise.resolve(becBounds)
 
-    let boundsUrl = dataUrl.resolveDataUrl('Version_7_0/bec_bounds.json') + '?v=7.0.9'
+    let boundsUrl = dataUrl.resolveDataUrl('Version_7_0/bec_bounds.json') + '?v=7.0.10'
 
     return fetch(boundsUrl)
       .then(function (r) {
@@ -219,7 +219,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
         },
       })
 
-      let mguUrl = dataUrl.resolveDataUrl('Version_7_0/Management_Units.fgb') + '?v=7.0.9'
+      let mguUrl = dataUrl.resolveDataUrl('Version_7_0/Management_Units.fgb') + '?v=7.0.10'
       ;(async function () {
         try {
           const features = []
@@ -424,7 +424,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
       const rect = { minX: minX, minY: minY, maxX: maxX, maxY: maxY }
       const features = []
 
-      let targetUrl = dataUrl.resolveDataUrl(baseUrl) + '?v=7.0.9'
+      let targetUrl = dataUrl.resolveDataUrl(baseUrl) + '?v=7.0.10'
       ;(async function () {
         try {
           const iterator = flatgeobuf.deserialize(targetUrl, rect)

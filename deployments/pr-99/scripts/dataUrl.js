@@ -11,19 +11,29 @@ define([], function () {
     'Version_7_0/bec_bounds.json': true,
   }
 
+  function isPrPreview() {
+    return window.location.pathname.includes('/deployments/pr-')
+  }
+
   function resolveDataUrl(url) {
     if (!url.startsWith('Version_7_0/')) return url
 
     var isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
-    if (
-      isDbPruned &&
-      window.location.pathname.includes('/deployments/pr-') &&
-      !PRUNED_LOCAL_PATHS[url]
-    ) {
+    if (isDbPruned && isPrPreview() && !PRUNED_LOCAL_PATHS[url]) {
       return '../../' + url
     }
     return url
   }
 
-  return { resolveDataUrl: resolveDataUrl }
+  // PR previews may serve stale HTML (data-database-pruned) while gh-pages already
+  // has a full FGB deploy. Try the local path before production ../../ fallback.
+  function getDataUrlCandidates(url) {
+    var resolved = resolveDataUrl(url)
+    if (resolved.startsWith('../../') && isPrPreview()) {
+      return [url, resolved]
+    }
+    return [resolved]
+  }
+
+  return { resolveDataUrl: resolveDataUrl, getDataUrlCandidates: getDataUrlCandidates }
 })
