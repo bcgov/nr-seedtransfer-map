@@ -144,5 +144,10 @@ blob-report/
 # Unignore docs/lib/ to override global .gitignore rules (e.g. lib/ rules)
 !docs/lib/
 
-# Ignore compiled FlatGeobuf databases
+# Ignore seedlot FlatGeobuf databases (compiled from JSON sources by `npm run db:convert` in CI)
 docs/Version_7_0/*.fgb
+
+# Track frozen polygon snapshots exported from Forsite (the only copy of this data;
+# Forsite contract is ending, so these cannot be recompiled — see scripts/export-layers-to-fgb.js)
+!docs/Version_7_0/Management_Units.fgb
+!docs/Version_7_0/BEC_Variants.fgb
