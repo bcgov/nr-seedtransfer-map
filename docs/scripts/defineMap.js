@@ -49,7 +49,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
       label: 'OpenStreetMap',
       tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
       attribution:
-        '\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+        '\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
     },
     {
       id: 'carto-light',
@@ -60,7 +60,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
         'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
       ],
       attribution:
-        '\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors \u00a9 <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
+        '\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors \u00a9 <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>',
     },
     {
       id: 'carto-dark',
@@ -71,7 +71,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
         'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
       ],
       attribution:
-        '\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors \u00a9 <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
+        '\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors \u00a9 <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>',
     },
   ]
   var currentBasemapIndex = 0
@@ -152,18 +152,18 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
       style: {
         version: 8,
         sources: {
-          osm: {
+          'basemap-osm': {
             type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tiles: BASEMAPS[0].tiles,
             tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
+            attribution: BASEMAPS[0].attribution,
           },
         },
         layers: [
           {
-            id: 'osm',
+            id: 'basemap-layer-osm',
             type: 'raster',
-            source: 'osm',
+            source: 'basemap-osm',
             minzoom: 0,
             maxzoom: 19,
           },
@@ -177,6 +177,29 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
     map.addControl(new maplibregl.NavigationControl(), 'top-left')
 
     map.on('load', function () {
+      // Register alternate basemap layers (hidden) so switching only toggles visibility
+      // and does not reset runtime-added sources/layers via setStyle().
+      for (var i = 1; i < BASEMAPS.length; i++) {
+        var bm = BASEMAPS[i]
+        map.addSource('basemap-' + bm.id, {
+          type: 'raster',
+          tiles: bm.tiles,
+          tileSize: 256,
+          attribution: bm.attribution,
+        })
+        map.addLayer(
+          {
+            id: 'basemap-layer-' + bm.id,
+            type: 'raster',
+            source: 'basemap-' + bm.id,
+            layout: { visibility: 'none' },
+            minzoom: 0,
+            maxzoom: 19,
+          },
+          'basemap-layer-osm',
+        )
+      }
+
       map.addSource('mgu-source', {
         type: 'geojson',
         data: {
@@ -714,20 +737,17 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
     if (!basemapBtn) return
 
     function applyBasemap(index) {
-      var bm = BASEMAPS[index]
-      var source = map.getSource('osm')
-      if (!source) return
-      // MapLibre raster sources are immutable once added — swap via style update
-      var style = map.getStyle()
-      style.sources['osm'].tiles = bm.tiles
-      // Update attribution control text
-      var attribution = map.getAttributionControl ? map.getAttributionControl() : null
-      if (attribution && typeof attribution.setHTML === 'function') {
-        attribution.setHTML(bm.attribution)
-      }
-      map.setStyle(style)
-      basemapBtn.title = 'Basemap: ' + bm.label
-      basemapBtn.setAttribute('aria-label', 'Switch basemap (current: ' + bm.label + ')')
+      BASEMAPS.forEach(function (bm, i) {
+        var layerId = 'basemap-layer-' + bm.id
+        if (map.getLayer(layerId)) {
+          map.setLayoutProperty(layerId, 'visibility', i === index ? 'visible' : 'none')
+        }
+      })
+      basemapBtn.title = 'Basemap: ' + BASEMAPS[index].label
+      basemapBtn.setAttribute(
+        'aria-label',
+        'Switch basemap (current: ' + BASEMAPS[index].label + ')',
+      )
     }
 
     basemapBtn.title = 'Basemap: ' + BASEMAPS[0].label
