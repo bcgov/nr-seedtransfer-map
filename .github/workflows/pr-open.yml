@@ -128,6 +128,24 @@ jobs:
             find docs/Version_7_0 -type f ! -name "Management_Units.fgb" ! -name "Suitable_BEC.fgb" ! -name "Nonsuitable_BEC.fgb" ! -name "bec_bounds.json" -delete
             sed -i 's/<body/<body data-database-pruned="true"/' docs/index.html
           fi
+      - name: Clear stale preview folder on gh-pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          if git ls-tree -d --name-only origin/gh-pages "deployments/pr-${{ github.event.number }}" 2>/dev/null | grep -q .; then
+            WORK=$(mktemp -d)
+            git clone --branch gh-pages --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" "$WORK"
+            cd "$WORK"
+            rm -rf "deployments/pr-${{ github.event.number }}"
+            git add -A
+            if ! git diff --staged --quiet; then
+              git commit -m "chore(deploy): clear pr-${{ github.event.number }} before redeploy"
+              git push
+            fi
+          fi
       - name: Deploy to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
         with:
@@ -142,25 +160,29 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: 🧪 Smoke Test PR Preview URL
+      - name: Verify full preview on gh-pages branch
+        run: |
+          git fetch origin gh-pages
+          PREVIEW="deployments/pr-${{ github.event.number }}"
+          FGB_COUNT=$(git ls-tree --name-only origin/gh-pages "${PREVIEW}/Version_7_0/" | grep -c '\.fgb$' || true)
+          if [ "$FGB_COUNT" -lt 80 ]; then
+            echo "❌ Expected full FGB deploy on gh-pages, found ${FGB_COUNT} .fgb files"
+            exit 1
+          fi
+          git cat-file -e "origin/gh-pages:${PREVIEW}/Version_7_0/Pli_Seedlots.fgb"
+          git show "origin/gh-pages:${PREVIEW}/index.html" | grep -q 'data-full-fgb-deploy="true"' \
+            || { echo "❌ index.html missing data-full-fgb-deploy"; exit 1; }
+          echo "✅ gh-pages has full preview (${FGB_COUNT} .fgb files)"
+
+      - name: Log CDN status (informational)
+        continue-on-error: true
         run: |
           PREVIEW_BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/pr-${{ github.event.number }}"
-          echo "📡 Waiting for CDN to serve full preview at $PREVIEW_BASE/"
-          TIMEOUT=600
-          INTERVAL=15
-          ELAPSED=0
-
-          while [ $ELAPSED -lt $TIMEOUT ]; do
-            INDEX=$(curl -o /dev/null -s -w "%{http_code}" "$PREVIEW_BASE/" || true)
-            FGB=$(curl -o /dev/null -s -w "%{http_code}" "$PREVIEW_BASE/Version_7_0/Pli_Seedlots.fgb" || true)
-            if [ "$INDEX" = "200" ] && [ "$FGB" = "200" ]; then
-              echo "✅ Preview is live on CDN (index + seedlot FGB both HTTP 200)."
-              exit 0
-            fi
-            echo "⏳ CDN not ready yet (index=$INDEX, Pli_Seedlots.fgb=$FGB). Retrying in ${INTERVAL}s... ($ELAPSED/$TIMEOUT)"
-            sleep $INTERVAL
-            ELAPSED=$((ELAPSED + INTERVAL))
-          done
-
-          echo "❌ Timeout: CDN did not serve the full preview database at $PREVIEW_BASE/"
-          exit 1
+          INDEX=$(curl -o /dev/null -s -w "%{http_code}" "$PREVIEW_BASE/" || true)
+          FGB=$(curl -o /dev/null -s -w "%{http_code}" "$PREVIEW_BASE/Version_7_0/Pli_Seedlots.fgb" || true)
+          echo "CDN: index=${INDEX} Pli_Seedlots.fgb=${FGB} at ${PREVIEW_BASE}/"
+          if [ "$INDEX" = "200" ] && [ "$FGB" = "200" ]; then
+            echo "✅ CDN is serving the full preview."
+          else
+            echo "::warning::GitHub Pages CDN may lag behind gh-pages (index=${INDEX}, fgb=${FGB}). Use npm run dev locally; re-test preview after CDN catches up."
+          fi
