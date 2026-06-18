@@ -10,7 +10,7 @@
     "lint": "eslint docs/scripts",
     "lint:fix": "eslint docs/scripts --fix",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "node --test tests/unit.test.js",
+    "test:unit": "node --test tests/unit.test.js tests/dataUrl.test.js",
     "test:e2e": "playwright test",
     "validate": "npm run lint && npm run format:check && npm run test:unit"
   },
