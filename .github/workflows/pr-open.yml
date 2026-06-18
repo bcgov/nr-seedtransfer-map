@@ -126,20 +126,18 @@ jobs:
             find docs/Version_7_0 -type f ! -name "Management_Units.fgb" ! -name "Suitable_BEC.fgb" ! -name "Nonsuitable_BEC.fgb" ! -name "bec_bounds.json" -delete
             sed -i 's/<body/<body data-database-pruned="true"/' docs/index.html
           fi
-      - name: Deploy to deployments/pr-${{ github.event.number }}/preview
+      - name: Deploy to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
         with:
           folder: docs
           branch: gh-pages
           clean: true # Removes stale files from the target subfolder only — safe because
-          # target-folder scopes rsync's --delete to deployments/pr-{N}/preview/, not other PR folders.
-          # Deploy under .../preview/ (not pr-{N}/ root) to avoid GitHub Pages CDN serving a
-          # stale cached tree at the old path while gh-pages has newer commits.
-          target-folder: deployments/pr-${{ github.event.number }}/preview
+          # target-folder scopes rsync's --delete to deployments/pr-{N}/, not other PR folders.
+          target-folder: deployments/pr-${{ github.event.number }}
 
       - name: 🧪 Smoke Test PR Preview URL
         run: |
-          PREVIEW_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/pr-${{ github.event.number }}/preview/"
+          PREVIEW_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/pr-${{ github.event.number }}/"
           echo "📡 Checking if preview is live at $PREVIEW_URL"
           TIMEOUT=300
           INTERVAL=15
