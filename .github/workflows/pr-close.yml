@@ -1,9 +1,15 @@
-name: PR Cleanup
+name: PR Preview Cleanup
 
 on:
   pull_request:
     types: [closed]
+  # Daily backstop: reconcile gh-pages against open PRs so a missed or raced
+  # close event can never leave an orphaned preview to bloat the branch.
+  schedule:
+    - cron: '17 8 * * *'
+  workflow_dispatch:
 
+# Serialize all gh-pages mutations across pr-open, pr-close, and merge.
 concurrency:
   group: gh-pages-state
   cancel-in-progress: false
@@ -12,27 +18,62 @@ permissions: {}
 
 jobs:
   cleanup:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    name: Remove preview for closed PR
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: write
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: gh-pages
-
-      - name: Clean up preview folder
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+      - name: Remove preview folder
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
-          PREVIEW_DIR="deployments/pr-${{ github.event.number }}"
-          if [ -d "$PREVIEW_DIR" ]; then
-            echo "🧹 Deleting preview folder: $PREVIEW_DIR"
-            rm -rf "$PREVIEW_DIR"
-            git add -A
-            git commit -m "chore(deployments): remove sandbox preview for PR #${{ github.event.number }}"
-            git push origin gh-pages
-          else
-            echo "ℹ️ No preview folder found to delete."
+          chmod +x .github/scripts/prune-previews.sh
+          .github/scripts/prune-previews.sh "${{ github.event.number }}"
+
+  sweep:
+    name: Sweep orphaned previews
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+      pull-requests: read
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+      - name: Remove previews for closed PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          chmod +x .github/scripts/prune-previews.sh
+
+          closed=()
+          while read -r name; do
+            case "$name" in
+              pr-*) num="${name#pr-}" ;;
+              *) continue ;;
+            esac
+            [[ "$num" =~ ^[0-9]+$ ]] || continue
+            state="$(gh api "repos/${REPO}/pulls/${num}" --jq '.state' 2>/dev/null || echo '')"
+            if [ "$state" = "closed" ]; then
+              echo "PR #${num} is closed → flagging preview for removal"
+              closed+=("$num")
+            fi
+          done < <(gh api "repos/${REPO}/contents/deployments?ref=gh-pages" --jq '.[].name' 2>/dev/null || true)
+
+          if [ "${#closed[@]}" -eq 0 ]; then
+            echo "✅ No orphaned previews found."
+            exit 0
           fi
+
+          .github/scripts/prune-previews.sh "${closed[@]}"
