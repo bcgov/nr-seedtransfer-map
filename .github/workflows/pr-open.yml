@@ -65,8 +65,8 @@ jobs:
           else
             npx playwright install --with-deps chromium
           fi
-      - name: Compile JSON to FlatGeobuf
-        run: npm run db:convert
+      - name: Compile JSON to FlatGeobuf (e2e species only)
+        run: SPECIES_ONLY=Pli,Fdi,Fdc,Sx,Yc npm run db:convert
       - name: Run E2E Integration tests
         run: npm run test:e2e
 
@@ -91,61 +91,19 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - name: Prune database if unchanged or compile to FlatGeobuf
+      - name: Compile full database for preview
         run: |
-          git fetch --depth=1 origin ${{ github.base_ref }}
-
           # ---------------------------------------------------------------------------
           # TEMPORARY — FORCE_FULL_FGB_DEPLOY (remove after ESRI stack merges to main)
           # ---------------------------------------------------------------------------
           # While the flatgeobuf / ESRI-eviction PR stack is open, PR previews must ship
           # the full compiled database locally. The normal "pruned" path only keeps polygon
-          # outlines (Management_Units, Suitable_BEC, Nonsuitable_BEC) and expects seedlot
-          # FGB files to load from production root via ../../ — but production gh-pages does
-          # not yet run db:convert, and legacy production JSON is being retired.
-          #
-          # With FORCE_FULL_FGB_DEPLOY=true every PR preview runs npm run db:convert and
-          # deploys all FGB files under deployments/pr-{N}/. Slower deploys, but previews
-          # work without production fallbacks.
-          #
-          # WHEN TO REMOVE: delete the FORCE_FULL_FGB_DEPLOY block (set false or remove the
-          # variable and the `||` branch) once this stack is on main and merge.yml deploys
-          # db:convert output to production gh-pages root. Documented in PR #99.
+          # outlines and expects seedlot FGB from production root via ../../ — but production
+          # gh-pages does not yet run db:convert. Documented in PR #99.
           # ---------------------------------------------------------------------------
-          FORCE_FULL_FGB_DEPLOY=true
-
-          # Two-dot diff against the PR's direct base branch (not main) so stacked PRs
-          # only detect DB changes introduced by this specific PR, not the entire stack.
-          if [ "$FORCE_FULL_FGB_DEPLOY" = "true" ] || git diff --name-only origin/${{ github.base_ref }} HEAD | grep -E "^docs/Version_7_0/.*_Seedlots\.json|^docs/Version_7_0/.*_migrated_height_list.*\.json|^docs/Version_7_0/Orchard_list\.json|^docs/Version_7_0/Seedlot_list\.json"; then
-            echo "📂 Full database deploy: compiling JSON to FlatGeobuf."
-            npm run db:convert
-            sed -i 's/<body/<body data-full-fgb-deploy="true"/' docs/index.html
-          else
-            echo "⚡ Database is unchanged. Pruning for speed."
-            # Delete database files only, preserving local polygon FlatGeobuf files and bounds mapping.
-            # Previews set data-database-pruned on <body>; client code in dataUrl.js keeps
-            # polygon FGB local and falls back to ../../ for seedlot assets on production root.
-            find docs/Version_7_0 -type f ! -name "Management_Units.fgb" ! -name "Suitable_BEC.fgb" ! -name "Nonsuitable_BEC.fgb" ! -name "bec_bounds.json" -delete
-            sed -i 's/<body/<body data-database-pruned="true"/' docs/index.html
-          fi
-      - name: Clear stale preview folder on gh-pages
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin gh-pages
-          if git ls-tree -d --name-only origin/gh-pages "deployments/pr-${{ github.event.number }}" 2>/dev/null | grep -q .; then
-            WORK=$(mktemp -d)
-            git clone --branch gh-pages --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" "$WORK"
-            cd "$WORK"
-            rm -rf "deployments/pr-${{ github.event.number }}"
-            git add -A
-            if ! git diff --staged --quiet; then
-              git commit -m "chore(deploy): clear pr-${{ github.event.number }} before redeploy"
-              git push
-            fi
-          fi
+          echo "📂 Full database deploy: compiling JSON to FlatGeobuf."
+          npm run db:convert
+          sed -i 's/<body/<body data-full-fgb-deploy="true"/' docs/index.html
       - name: Deploy to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
         with:
@@ -154,11 +112,6 @@ jobs:
           clean: true # Removes stale files from the target subfolder only — safe because
           # target-folder scopes rsync's --delete to deployments/pr-{N}/, not other PR folders.
           target-folder: deployments/pr-${{ github.event.number }}
-
-      - name: Request GitHub Pages rebuild
-        run: gh api -X POST "/repos/${{ github.repository }}/pages/builds"
-        env:
-          GH_TOKEN: ${{ github.token }}
 
       - name: Verify full preview on gh-pages branch
         run: |

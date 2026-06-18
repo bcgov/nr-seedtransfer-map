@@ -18,8 +18,17 @@ const path = require('path');
 
   const versionDir = path.join(__dirname, '../docs/Version_7_0');
   const files = fs.readdirSync(versionDir);
+  const speciesOnly = process.env.SPECIES_ONLY
+    ? new Set(process.env.SPECIES_ONLY.split(',').map(s => s.trim().toLowerCase()))
+    : null;
+  const includeSpecies = species =>
+    !speciesOnly || speciesOnly.has(species.toLowerCase());
 
-  console.log(`Processing JSON databases in ${versionDir}...`);
+  console.log(
+    speciesOnly
+      ? `Processing JSON databases in ${versionDir} (species: ${[...speciesOnly].join(', ')})...`
+      : `Processing JSON databases in ${versionDir}...`
+  );
 
   // Custom buildHeader implementation that respects the indexNodeSize option instead of hardcoding to 0
   function customBuildHeader(t, r = 0) {
@@ -201,6 +210,7 @@ const path = require('path');
   files.forEach(file => {
     if (file.endsWith('_Seedlots.json')) {
       const species = file.replace('_Seedlots.json', '');
+      if (!includeSpecies(species)) return;
       const jsonPath = path.join(versionDir, file);
       const fgbPath = path.join(versionDir, `${species}_Seedlots.fgb`);
 
@@ -236,6 +246,8 @@ const path = require('path');
       const serialized = serializeWithIndex(fc, becStore);
       fs.writeFileSync(fgbPath, Buffer.from(serialized));
     } else if (file.includes('_migrated_height_list_') && file.endsWith('.json')) {
+      const species = file.split('_migrated_height_list_')[0];
+      if (!includeSpecies(species)) return;
       const baseName = file.replace('.json', '');
       const jsonPath = path.join(versionDir, file);
 
