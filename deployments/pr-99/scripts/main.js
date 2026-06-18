@@ -224,7 +224,7 @@ define([
       maxY: 1,
     }
 
-    let targetUrl = dataUrl.resolveDataUrl(fgbUrl) + '?v=7.0.8'
+    const targetUrl = dataUrl.resolveDataUrl(fgbUrl) + '?v=7.0.9'
 
     const features = []
     const iterator = flatgeobuf.deserialize(targetUrl, rect)
@@ -246,7 +246,7 @@ define([
    *    as a standard promise rejection to be caught and displayed by the UI error banner.
    */
   function fetchJSON(url) {
-    let targetUrl = dataUrl.resolveDataUrl(url) + '?v=7.0.8'
+    let targetUrl = dataUrl.resolveDataUrl(url) + '?v=7.0.9'
 
     return fetch(targetUrl).then(function (r) {
       if (!r.ok) {
