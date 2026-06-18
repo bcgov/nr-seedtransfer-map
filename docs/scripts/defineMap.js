@@ -14,6 +14,7 @@ define([
   'esri/Graphic',
   'esri/renderers/SimpleRenderer',
   'esri/symbols/SimpleFillSymbol',
+  'lib/flatgeobuf/flatgeobuf-geojson.min.js',
 ], function (
   Map,
   MapView,
@@ -26,6 +27,7 @@ define([
   Graphic,
   SimpleRenderer,
   SimpleFillSymbol,
+  flatgeobuf,
 ) {
   var map, view, xy
   var _scaleBar
@@ -36,6 +38,19 @@ define([
   var portalUrl = 'https://www.arcgis.com'
   var template
   var uploadFormEl, uploadStatusEl
+
+  // Local FlatGeobuf polygon snapshots exported from the (retiring) Forsite
+  // FeatureServer. See scripts/export-layers-to-fgb.js and issue #100.
+  var BEC_VARIANTS_URL = 'Version_7_0/BEC_Variants.fgb'
+  var MANAGEMENT_UNITS_URL = 'Version_7_0/Management_Units.fgb'
+
+  // Original Forsite simple-renderer colors, preserved for visual parity.
+  var SUIT_COLOR = { r: 217, g: 95, b: 2, outline: [115, 76, 0] } // orange
+  var NONSUIT_COLOR = { r: 170, g: 102, b: 205, outline: [76, 0, 115] } // purple
+
+  // Cache of all BEC variant features ({ rings, label }) parsed once from the
+  // local FGB; display layers are built by filtering this to selected variants.
+  var becFeaturesPromise = null
 
   template = {
     title: 'Selected {MAP_LABEL}',
@@ -111,156 +126,105 @@ define([
   }
 
   function layerInit() {
-    currentLayer = featureInit(
-      'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/5',
-      ['*'],
-      'CBST',
-    )
-    nonsuitLayer = featureInit(
-      'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/6',
-      ['*'],
-      'CBST Species May Not Be Suitable',
-    )
-
-    mguLayer = featureInit(
-      'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer/0',
-      ['*'],
-      'Management Unit',
-    )
-    mguLayer
-      .load()
-      .then(function () {
+    // Management Units render as a static outline overlay from startup.
+    // Loaded from the local FlatGeobuf snapshot (formerly Forsite layer 0).
+    loadFgbFeatures(MANAGEMENT_UNITS_URL)
+      .then(function (features) {
+        mguLayer = buildPolygonLayer(features, null, {
+          fill: [130, 130, 130, 0],
+          outline: [0, 0, 0],
+          outlineWidth: 1,
+          opacity: 1,
+          title: 'Management Unit',
+          popup: false,
+        })
         map.add(mguLayer)
       })
       .catch(function (error) {
-        console.error(
-          'Failed to load Management Unit layer. Skipping map addition to prevent WebGL crash.',
-          error,
-        )
+        console.error('Failed to load Management Unit layer from local FlatGeobuf.', error)
       })
   }
 
   function updateLayer(outlist) {
-    // outlist: definition query strings that reflect the user's chosen species and BEC variant
-    // Can be either:
-    // [outlist_suit, outlist_non_suit] - simple format
-    // or { yearLayers: [{year, suit, nonSuit}, ...] } - year-based format
-
-    // Color scheme for years: 2043=Yellow, 2053=Green, 2063=Blue
-    const yearColors = {
-      2043: { r: 255, g: 200, b: 0, a: 0.6 }, // Yellow
-      2053: { r: 0, g: 170, b: 0, a: 0.6 }, // Green
-      2063: { r: 0, g: 112, b: 255, a: 0.6 }, // Blue
-    }
-
-    // Check if this is year-based data (object) or simple format (array)
-    const isYearBased =
-      outlist && typeof outlist === 'object' && !Array.isArray(outlist) && outlist.yearLayers
-
-    if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
-      // Year-based format - create separate layers for each year
-      outlist.yearLayers.forEach((yearData, _index) => {
-        const year = String(yearData.year)
-        const suitBecList = Array.isArray(yearData.suit) ? yearData.suit : []
-        const nonSuitBecList = Array.isArray(yearData.nonSuit) ? yearData.nonSuit : []
-        const color = yearColors[year] || { r: 100, g: 100, b: 100, a: 0.6 }
-
-        // Create suitable layer for this year
-        if (suitBecList.length > 0) {
-          const definitionExpr = 'MAP_LABEL in (' + suitBecList.join(', ') + ')'
-          const yearLayerSuit = cloneLayerWithColor(
-            currentLayer,
-            definitionExpr,
-            color,
-            `Year ${year} - Suitable`,
-          )
-          map.add(yearLayerSuit)
-        }
-
-        // Create non-suitable layer for this year
-        if (nonSuitBecList.length > 0) {
-          const definitionExpr = 'MAP_LABEL in (' + nonSuitBecList.join(', ') + ')'
-          const yearLayerNonSuit = cloneLayerWithColor(
-            nonsuitLayer,
-            definitionExpr,
-            { r: color.r, g: color.g, b: color.b, a: 0.3 }, // Lighter shade for non-suitable
-            `Year ${year} - Not Suitable`,
-          )
-          map.add(yearLayerNonSuit)
-        }
-      })
-    } else {
-      // Simple format (single year or fallback) - use original layers
-      const suitList = Array.isArray(outlist) ? outlist[0] : ''
-      const nonSuitList = Array.isArray(outlist) ? outlist[1] : ''
-
-      if (nonSuitList && nonSuitList.length > 0) {
-        nonsuitLayer.definitionExpression = 'MAP_LABEL in (' + nonSuitList + ')'
-        nonsuitLayer.popupTemplate = template
-        map.add(nonsuitLayer)
-      } else {
-        nonsuitLayer.definitionExpression = '1=0'
-        nonsuitLayer.popupTemplate = ''
-        map.add(nonsuitLayer)
+    // outlist: the user's chosen suitable / non-suitable BEC variants. Either:
+    //   [suitList, nonSuitList]                       - simple format (quoted, comma-joined)
+    //   { yearLayers: [{year, suit, nonSuit}, ...] }  - year-based format (arrays)
+    //
+    // Polygons are drawn from the local BEC_Variants FlatGeobuf snapshot: we
+    // load all variant features once (cached), then build a client-side ArcGIS
+    // FeatureLayer containing only the selected variants for each display layer.
+    // Returns a promise so callers can keep the loader visible until the (large)
+    // BEC snapshot has finished loading on first use.
+    return loadBecFeatures().then(function (becFeatures) {
+      // Color scheme for years: 2043=Yellow, 2053=Green, 2063=Blue
+      const yearColors = {
+        2043: { r: 255, g: 200, b: 0 },
+        2053: { r: 0, g: 170, b: 0 },
+        2063: { r: 0, g: 112, b: 255 },
       }
 
-      if (suitList && suitList.length > 0) {
-        currentLayer.definitionExpression = 'MAP_LABEL in (' + suitList + ')'
-        currentLayer.popupTemplate = template
-        map.add(currentLayer)
+      const isYearBased =
+        outlist && typeof outlist === 'object' && !Array.isArray(outlist) && outlist.yearLayers
+
+      if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
+        outlist.yearLayers.forEach((yearData) => {
+          const year = String(yearData.year)
+          const color = yearColors[year] || { r: 100, g: 100, b: 100 }
+          const suitSet = parseLabelSet(yearData.suit)
+          const nonSuitSet = parseLabelSet(yearData.nonSuit)
+
+          if (suitSet.size > 0) {
+            map.add(
+              buildPolygonLayer(becFeatures, suitSet, {
+                fill: [color.r, color.g, color.b],
+                outline: [color.r, color.g, color.b],
+                outlineWidth: 1.5,
+                opacity: 0.6,
+                title: `Year ${year} - Suitable`,
+              }),
+            )
+          }
+
+          if (nonSuitSet.size > 0) {
+            map.add(
+              buildPolygonLayer(becFeatures, nonSuitSet, {
+                fill: [color.r, color.g, color.b],
+                outline: [color.r, color.g, color.b],
+                outlineWidth: 1.5,
+                opacity: 0.3, // Lighter shade for non-suitable
+                title: `Year ${year} - Not Suitable`,
+              }),
+            )
+          }
+        })
       } else {
-        currentLayer.definitionExpression = '1=0'
-        currentLayer.popupTemplate = ''
+        const suitSet = parseLabelSet(Array.isArray(outlist) ? outlist[0] : '')
+        const nonSuitSet = parseLabelSet(Array.isArray(outlist) ? outlist[1] : '')
+
+        nonsuitLayer = buildPolygonLayer(becFeatures, nonSuitSet, {
+          fill: [NONSUIT_COLOR.r, NONSUIT_COLOR.g, NONSUIT_COLOR.b],
+          outline: NONSUIT_COLOR.outline,
+          outlineWidth: 1,
+          opacity: 0.5,
+          title: 'CBST Species May Not Be Suitable',
+        })
+        map.add(nonsuitLayer)
+
+        currentLayer = buildPolygonLayer(becFeatures, suitSet, {
+          fill: [SUIT_COLOR.r, SUIT_COLOR.g, SUIT_COLOR.b],
+          outline: SUIT_COLOR.outline,
+          outlineWidth: 1,
+          opacity: 0.5,
+          title: 'CBST',
+        })
         map.add(currentLayer)
       }
-    }
 
-    if (mguLayer.loadStatus === 'loaded') {
-      map.add(mguLayer)
-    }
-  }
-
-  function cloneLayerWithColor(baseLayer, definitionExpression, colorObj, title) {
-    // Create color symbol and renderer
-    const fillSymbol = new SimpleFillSymbol({
-      color: [colorObj.r, colorObj.g, colorObj.b, colorObj.a],
-      outline: {
-        color: [colorObj.r, colorObj.g, colorObj.b, 1],
-        width: 1.5,
-      },
+      // Keep the Management Units outline on top, if it has finished loading.
+      if (mguLayer) {
+        map.add(mguLayer)
+      }
     })
-
-    const renderer = new SimpleRenderer({
-      symbol: fillSymbol,
-    })
-
-    // Build full URL including layer ID. baseLayer.url returns only the service URL,
-    // so we must append layerId to point to the correct sublayer.
-    const fullUrl = baseLayer.url.replace(/\/$/, '') + '/' + baseLayer.layerId
-
-    // Create a new feature layer clone with custom styling and renderer
-    const clonedLayer = new FeatureLayer({
-      url: fullUrl,
-      title: title,
-      outFields: ['*'],
-      opacity: colorObj.a,
-      visibilityMode: 'independent',
-      definitionExpression: definitionExpression,
-      popupTemplate: template,
-      renderer: renderer,
-    })
-
-    // Monitor layer loading for any errors
-    clonedLayer.when(
-      function () {
-        // Layer loaded successfully
-      },
-      function (error) {
-        console.warn('Failed to load cloned feature layer: ' + title, error)
-      },
-    )
-
-    return clonedLayer
   }
 
   /*
@@ -276,19 +240,111 @@ define([
   function clearLyrs() {
     map.layers.removeAll()
   }
-  // Initialize a feature layer
-  function featureInit(src, fields, name) {
-    var layer = new FeatureLayer({
-      url: src,
-      title: name,
-      outFields: fields,
-      opacity: 0.5,
-      visibilityMode: 'independent',
+  // Convert a GeoJSON Polygon/MultiPolygon into ArcGIS polygon rings.
+  function geomToRings(geometry) {
+    if (!geometry) return null
+    if (geometry.type === 'Polygon') return geometry.coordinates
+    if (geometry.type === 'MultiPolygon') {
+      var rings = []
+      geometry.coordinates.forEach(function (poly) {
+        poly.forEach(function (ring) {
+          rings.push(ring)
+        })
+      })
+      return rings
+    }
+    return null
+  }
+
+  // Parse the (single-quoted, comma-joined or array) variant lists into a Set
+  // of plain MAP_LABEL strings, e.g. "'IDFdk1', 'SBSmc2'" -> {IDFdk1, SBSmc2}.
+  function parseLabelSet(input) {
+    var set = new Set()
+    if (!input) return set
+    var parts = Array.isArray(input) ? input : String(input).split(',')
+    parts.forEach(function (part) {
+      var label = String(part)
+        .trim()
+        .replace(/^'+|'+$/g, '')
+      if (label) set.add(label)
     })
-    layer.load().catch(function (error) {
-      console.warn('Failed to load feature layer: ' + name, error)
+    return set
+  }
+
+  // Read all features from a local FlatGeobuf file into lightweight
+  // { rings, label } records (geometry kept as raw rings for cheap reuse).
+  // The whole file is fetched and decoded from bytes: the URL-based
+  // flatgeobuf.deserialize path requires a bounding rect for HTTP range
+  // queries, but here we need every feature so we can filter by MAP_LABEL.
+  function loadFgbFeatures(url) {
+    return (async function () {
+      var response = await fetch(url)
+      if (!response.ok) {
+        throw new Error('Failed to fetch ' + url + ': ' + response.status)
+      }
+      var bytes = new Uint8Array(await response.arrayBuffer())
+      var out = []
+      var iterator = flatgeobuf.deserialize(bytes)
+      for await (var feature of iterator) {
+        var rings = geomToRings(feature.geometry)
+        if (!rings) continue
+        var props = feature.properties || {}
+        out.push({ rings: rings, label: props.map_label })
+      }
+      return out
+    })()
+  }
+
+  // Load (once) and cache all BEC variant features from the local snapshot.
+  function loadBecFeatures() {
+    if (!becFeaturesPromise) {
+      becFeaturesPromise = loadFgbFeatures(BEC_VARIANTS_URL).catch(function (error) {
+        becFeaturesPromise = null // allow a later retry if loading failed
+        throw error
+      })
+    }
+    return becFeaturesPromise
+  }
+
+  // Build a client-side ArcGIS FeatureLayer from cached polygon features,
+  // optionally filtered to a Set of MAP_LABELs.
+  function buildPolygonLayer(features, labelSet, opts) {
+    var graphics = []
+    var oid = 1
+    for (var i = 0; i < features.length; i++) {
+      var ft = features[i]
+      if (labelSet && !labelSet.has(ft.label)) continue
+      graphics.push(
+        new Graphic({
+          geometry: {
+            type: 'polygon',
+            rings: ft.rings,
+            spatialReference: { wkid: 4326 },
+          },
+          attributes: { OBJECTID: oid++, MAP_LABEL: ft.label == null ? '' : ft.label },
+        }),
+      )
+    }
+
+    var symbol = new SimpleFillSymbol({
+      color: opts.fill,
+      outline: { color: opts.outline, width: opts.outlineWidth || 1 },
     })
-    return layer
+
+    return new FeatureLayer({
+      source: graphics,
+      objectIdField: 'OBJECTID',
+      geometryType: 'polygon',
+      spatialReference: { wkid: 4326 },
+      fields: [
+        { name: 'OBJECTID', type: 'oid' },
+        { name: 'MAP_LABEL', type: 'string' },
+      ],
+      title: opts.title,
+      opacity: opts.opacity == null ? 0.5 : opts.opacity,
+      popupTemplate: opts.popup === false || graphics.length === 0 ? null : template,
+      renderer: new SimpleRenderer({ symbol: symbol }),
+    })
   }
 
   function fullExtent() {

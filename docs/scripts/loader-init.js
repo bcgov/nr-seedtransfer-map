@@ -1,5 +1,5 @@
-// Intercept and silence expected Esri CDN hosted FeatureLayer tile loading errors
-// (e.g. Failed to load tile) that happen on the maps.forsite.ca server
+// Intercept and silence expected Esri basemap/CDN tile loading errors
+// (e.g. transient "Failed to load tile" on network blips)
 // to keep the developer console 100% clean of expected warnings.
 const originalConsoleError = console.error
 const originalConsoleWarn = console.warn

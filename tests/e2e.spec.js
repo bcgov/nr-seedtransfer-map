@@ -115,17 +115,26 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await cutblockRow.waitFor({ state: 'visible', timeout: 30 * 1000 })
     await expect(cutblockRow).not.toContainText('No matching records found')
 
-    // Verify the map layer's definition expression is updated (not empty/1=0)
-    await expect.poll(async () => {
-      return await page.evaluate(() => {
-        if (!window.defineMap || typeof window.defineMap._currentLayer !== 'function') return null
-        const currentLayer = window.defineMap._currentLayer()
-        return currentLayer ? currentLayer.definitionExpression : null
-      })
-    }, {
-      message: 'Expected currentLayer.definitionExpression to be updated with MAP_LABEL list',
-      timeout: 10000,
-    }).toContain('MAP_LABEL in')
+    // Verify the suitability layer was populated with BEC polygons from the
+    // local FlatGeobuf snapshot (the layer's client-side source holds the
+    // selected suitable variants' graphics).
+    await expect
+      .poll(
+        async () => {
+          return await page.evaluate(() => {
+            if (!window.defineMap || typeof window.defineMap._currentLayer !== 'function')
+              return null
+            const currentLayer = window.defineMap._currentLayer()
+            if (!currentLayer || !currentLayer.source) return null
+            return currentLayer.source.length
+          })
+        },
+        {
+          message: 'Expected currentLayer to be populated with suitable BEC polygons',
+          timeout: 20000,
+        },
+      )
+      .toBeGreaterThan(0)
   })
 
   test('Seedlot Flow: Entering Orchard 101 populates representative seedlot and table', async ({
