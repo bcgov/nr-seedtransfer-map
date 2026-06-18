@@ -9,10 +9,13 @@ on:
     - cron: '17 8 * * *'
   workflow_dispatch:
 
-# Serialize all gh-pages mutations across pr-open, pr-close, and merge.
+# Workflow-level: share pr-open's per-PR group so closing a PR CANCELS its
+# in-flight open/deploy run. Without this the deploy could finish after the
+# cleanup and re-create the folder. (Each gh-pages-mutating job below also
+# joins the gh-pages-state group to serialize the actual push against merge.yml.)
 concurrency:
-  group: gh-pages-state
-  cancel-in-progress: false
+  group: pr-preview-${{ github.event.number }}
+  cancel-in-progress: true
 
 permissions: {}
 
@@ -24,6 +27,10 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: write
+    # Serialize the actual gh-pages push against pr-open's deploy and merge.yml.
+    concurrency:
+      group: gh-pages-state
+      cancel-in-progress: false
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
@@ -44,6 +51,10 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
+    # Serialize the actual gh-pages push against pr-open's deploy and merge.yml.
+    concurrency:
+      group: gh-pages-state
+      cancel-in-progress: false
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
