@@ -24,10 +24,11 @@ scripts.
 ### 1. One-Time Setup
 
 Before running tests, formatting code, or serving the application locally, make sure you install the
-project's development dependencies:
+project's development dependencies and compile the local binary FlatGeobuf database files:
 
 ```bash
 npm install
+npm run db:convert
 ```
 
 ### 2. Start the Local Server
