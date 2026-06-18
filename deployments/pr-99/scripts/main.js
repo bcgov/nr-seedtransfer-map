@@ -6,9 +6,10 @@
 // Vendored locally to prevent CDN dependency failure and satisfy BC Gov Content Security Policies (CSP).
 define([
   'lib/flatgeobuf/flatgeobuf-geojson.min.js',
+  'scripts/dataUrl.js',
   'scripts/speciesStore.js',
   'scripts/becStore.js',
-], function (flatgeobuf, speciesStore, becStore) {
+], function (flatgeobuf, dataUrl, speciesStore, becStore) {
   var timeSeriesYears = ['2053']
 
   // Helper function to build year-based layer data when multiple years are selected
@@ -223,16 +224,7 @@ define([
       maxY: 1,
     }
 
-    const isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
-    let targetUrl = fgbUrl
-    if (
-      isDbPruned &&
-      fgbUrl.startsWith('Version_7_0/') &&
-      window.location.pathname.includes('/deployments/pr-')
-    ) {
-      targetUrl = '../../' + fgbUrl
-    }
-    targetUrl += '?v=7.0.8'
+    let targetUrl = dataUrl.resolveDataUrl(fgbUrl) + '?v=7.0.8'
 
     const features = []
     const iterator = flatgeobuf.deserialize(targetUrl, rect)
@@ -254,16 +246,7 @@ define([
    *    as a standard promise rejection to be caught and displayed by the UI error banner.
    */
   function fetchJSON(url) {
-    const isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
-    let targetUrl = url
-    if (
-      isDbPruned &&
-      url.startsWith('Version_7_0/') &&
-      window.location.pathname.includes('/deployments/pr-')
-    ) {
-      targetUrl = '../../' + url
-    }
-    targetUrl += '?v=7.0.8'
+    let targetUrl = dataUrl.resolveDataUrl(url) + '?v=7.0.8'
 
     return fetch(targetUrl).then(function (r) {
       if (!r.ok) {
