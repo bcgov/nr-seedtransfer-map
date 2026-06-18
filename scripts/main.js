@@ -2,284 +2,14 @@
  seedlot selector functionality and data
  */
 
-define(function () {
+// Load locally vendored FlatGeobuf library for client-side spatial index parsing (RequireJS/AMD loading).
+// Vendored locally to prevent CDN dependency failure and satisfy BC Gov Content Security Policies (CSP).
+define([
+  'lib/flatgeobuf/flatgeobuf-geojson.min.js',
+  'scripts/speciesStore.js',
+  'scripts/becStore.js',
+], function (flatgeobuf, speciesStore, becStore) {
   var timeSeriesYears = ['2053']
-
-  var speciesStore = [
-    { name: 'AT', minsuit: 97.5 },
-    { name: 'BA', minsuit: 97.5 },
-    { name: 'BG', minsuit: 98.5 },
-    { name: 'BL', minsuit: 97.0 },
-    { name: 'CW', minsuit: 98.0 },
-    { name: 'DR', minsuit: 97.5 },
-    { name: 'EP', minsuit: 97.5 },
-    { name: 'FDC', minsuit: 97.5 },
-    { name: 'FDI', minsuit: 97.5 },
-    { name: 'HM', minsuit: 97.5 },
-    { name: 'HW', minsuit: 97.5 },
-    { name: 'LT', minsuit: 97.5 },
-    { name: 'LW', minsuit: 97.5 },
-    { name: 'PA', minsuit: 96.5 },
-    { name: 'PJ', minsuit: 97.5 },
-    { name: 'PLC', minsuit: 97.5 },
-    { name: 'PLI', minsuit: 97.5 },
-    { name: 'PW', minsuit: 96.0 },
-    { name: 'PY', minsuit: 96.0 },
-    { name: 'SB', minsuit: 97.5 },
-    { name: 'SS', minsuit: 97.0 },
-    { name: 'SX', minsuit: 97.5 },
-    { name: 'SXS', minsuit: 97.5 },
-    { name: 'YC', minsuit: 96.0 },
-  ]
-
-  var becStore = [
-    { name: 'BAFAun', id: 1 },
-    { name: 'BGxh1', id: 2 },
-    { name: 'BGxh2', id: 3 },
-    { name: 'BGxh3', id: 4 },
-    { name: 'BGxw1', id: 5 },
-    { name: 'BGxw2', id: 6 },
-    { name: 'BWBSdk', id: 7 },
-    { name: 'BWBSmk', id: 8 },
-    { name: 'BWBSmw', id: 9 },
-    { name: 'BWBSvk', id: 10 },
-    { name: 'BWBSwk1', id: 11 },
-    { name: 'BWBSwk2', id: 12 },
-    { name: 'BWBSwk3', id: 13 },
-    { name: 'CDFmm', id: 14 },
-    { name: 'CMAun', id: 15 },
-    { name: 'CMAwh', id: 16 },
-    { name: 'CWHdm1', id: 17 },
-    { name: 'CWHdm2', id: 18 },
-    { name: 'CWHdm3', id: 19 },
-    { name: 'CWHds1', id: 20 },
-    { name: 'CWHds2', id: 21 },
-    { name: 'CWHmm1', id: 22 },
-    { name: 'CWHmm2', id: 23 },
-    { name: 'CWHms3', id: 24 },
-    { name: 'CWHms4', id: 25 },
-    { name: 'CWHms5', id: 26 },
-    { name: 'CWHvh1', id: 27 },
-    { name: 'CWHvh2', id: 28 },
-    { name: 'CWHvh3', id: 29 },
-    { name: 'CWHvm1', id: 30 },
-    { name: 'CWHvm2', id: 31 },
-    { name: 'CWHvm3', id: 32 },
-    { name: 'CWHvm4', id: 33 },
-    { name: 'CWHwh1', id: 34 },
-    { name: 'CWHwh2', id: 35 },
-    { name: 'CWHwm', id: 36 },
-    { name: 'CWHws1', id: 37 },
-    { name: 'CWHws2', id: 38 },
-    { name: 'CWHws3', id: 39 },
-    { name: 'CWHxs', id: 40 },
-    { name: 'ESSFdc1', id: 41 },
-    { name: 'ESSFdc2', id: 42 },
-    { name: 'ESSFdc3', id: 43 },
-    { name: 'ESSFdcp', id: 44 },
-    { name: 'ESSFdcw', id: 45 },
-    { name: 'ESSFdh1', id: 46 },
-    { name: 'ESSFdh2', id: 47 },
-    { name: 'ESSFdk1', id: 48 },
-    { name: 'ESSFdk2', id: 49 },
-    { name: 'ESSFdkp', id: 50 },
-    { name: 'ESSFdkw', id: 51 },
-    { name: 'ESSFdv1', id: 52 },
-    { name: 'ESSFdv2', id: 53 },
-    { name: 'ESSFdvp', id: 54 },
-    { name: 'ESSFdvw', id: 55 },
-    { name: 'ESSFmc', id: 56 },
-    { name: 'ESSFmcp', id: 57 },
-    { name: 'ESSFmcw', id: 58 },
-    { name: 'ESSFmh', id: 59 },
-    { name: 'ESSFmk', id: 60 },
-    { name: 'ESSFmkp', id: 61 },
-    { name: 'ESSFmkw', id: 62 },
-    { name: 'ESSFmm1', id: 63 },
-    { name: 'ESSFmm2', id: 64 },
-    { name: 'ESSFmm3', id: 65 },
-    { name: 'ESSFmmp', id: 66 },
-    { name: 'ESSFmmw', id: 67 },
-    { name: 'ESSFmv1', id: 68 },
-    { name: 'ESSFmv2', id: 69 },
-    { name: 'ESSFmv3', id: 70 },
-    { name: 'ESSFmv4', id: 71 },
-    { name: 'ESSFmvp', id: 72 },
-    { name: 'ESSFmw1', id: 73 },
-    { name: 'ESSFmw2', id: 74 },
-    { name: 'ESSFmwp', id: 75 },
-    { name: 'ESSFmww', id: 76 },
-    { name: 'ESSFun', id: 77 },
-    { name: 'ESSFun1', id: 78 },
-    { name: 'ESSFunp', id: 79 },
-    { name: 'ESSFvc', id: 80 },
-    { name: 'ESSFvcp', id: 81 },
-    { name: 'ESSFvcw', id: 82 },
-    { name: 'ESSFwc2', id: 83 },
-    { name: 'ESSFwc3', id: 84 },
-    { name: 'ESSFwc4', id: 85 },
-    { name: 'ESSFwcp', id: 86 },
-    { name: 'ESSFwcw', id: 87 },
-    { name: 'ESSFwh1', id: 88 },
-    { name: 'ESSFwh2', id: 89 },
-    { name: 'ESSFwh3', id: 90 },
-    { name: 'ESSFwk1', id: 91 },
-    { name: 'ESSFwk2', id: 92 },
-    { name: 'ESSFwm1', id: 93 },
-    { name: 'ESSFwm2', id: 94 },
-    { name: 'ESSFwm3', id: 95 },
-    { name: 'ESSFwm4', id: 96 },
-    { name: 'ESSFwmp', id: 97 },
-    { name: 'ESSFwmw', id: 98 },
-    { name: 'ESSFwv', id: 99 },
-    { name: 'ESSFwvp', id: 100 },
-    { name: 'ESSFwvw', id: 101 },
-    { name: 'ESSFxc1', id: 102 },
-    { name: 'ESSFxc2', id: 103 },
-    { name: 'ESSFxc3', id: 104 },
-    { name: 'ESSFxcp', id: 105 },
-    { name: 'ESSFxcw', id: 106 },
-    { name: 'ESSFxv1', id: 107 },
-    { name: 'ESSFxv2', id: 108 },
-    { name: 'ESSFxvp', id: 109 },
-    { name: 'ESSFxvw', id: 110 },
-    { name: 'ICHdk', id: 111 },
-    { name: 'ICHdm', id: 112 },
-    { name: 'ICHdw1', id: 113 },
-    { name: 'ICHdw3', id: 114 },
-    { name: 'ICHdw4', id: 115 },
-    { name: 'ICHmc1', id: 116 },
-    { name: 'ICHmc2', id: 117 },
-    { name: 'ICHmk1', id: 118 },
-    { name: 'ICHmk2', id: 119 },
-    { name: 'ICHmk3', id: 120 },
-    { name: 'ICHmk4', id: 121 },
-    { name: 'ICHmk5', id: 122 },
-    { name: 'ICHmm', id: 123 },
-    { name: 'ICHmw1', id: 124 },
-    { name: 'ICHmw2', id: 125 },
-    { name: 'ICHmw3', id: 126 },
-    { name: 'ICHmw4', id: 127 },
-    { name: 'ICHmw5', id: 128 },
-    { name: 'ICHun', id: 129 },
-    { name: 'ICHvc', id: 130 },
-    { name: 'ICHvk1', id: 131 },
-    { name: 'ICHvk2', id: 132 },
-    { name: 'ICHwc', id: 133 },
-    { name: 'ICHwk1', id: 134 },
-    { name: 'ICHwk2', id: 135 },
-    { name: 'ICHwk3', id: 136 },
-    { name: 'ICHwk4', id: 137 },
-    { name: 'ICHxm1', id: 138 },
-    { name: 'ICHxw', id: 139 },
-    { name: 'ICHxwa', id: 140 },
-    { name: 'IDFdc', id: 141 },
-    { name: 'IDFdh', id: 142 },
-    { name: 'IDFdk1', id: 143 },
-    { name: 'IDFdk2', id: 144 },
-    { name: 'IDFdk3', id: 145 },
-    { name: 'IDFdk4', id: 146 },
-    { name: 'IDFdk5', id: 147 },
-    { name: 'IDFdm1', id: 148 },
-    { name: 'IDFdm2', id: 149 },
-    { name: 'IDFdw', id: 150 },
-    { name: 'IDFmw2', id: 151 },
-    { name: 'IDFww', id: 152 },
-    { name: 'IDFxc', id: 153 },
-    { name: 'IDFxh1', id: 154 },
-    { name: 'IDFxh2', id: 155 },
-    { name: 'IDFxk', id: 156 },
-    { name: 'IDFxm', id: 157 },
-    { name: 'IDFxw', id: 158 },
-    { name: 'IDFxx1', id: 159 },
-    { name: 'IDFxx2', id: 160 },
-    { name: 'IMAun', id: 161 },
-    { name: 'MHmm1', id: 162 },
-    { name: 'MHmm2', id: 163 },
-    { name: 'MHmmp', id: 164 },
-    { name: 'MHms', id: 165 },
-    { name: 'MHmsp', id: 166 },
-    { name: 'MHun', id: 167 },
-    { name: 'MHunp', id: 168 },
-    { name: 'MHvh', id: 169 },
-    { name: 'MHvhp', id: 170 },
-    { name: 'MHwh', id: 171 },
-    { name: 'MHwhp', id: 172 },
-    { name: 'MSdc1', id: 173 },
-    { name: 'MSdc2', id: 174 },
-    { name: 'MSdc3', id: 175 },
-    { name: 'MSdk', id: 176 },
-    { name: 'MSdm1', id: 177 },
-    { name: 'MSdm2', id: 178 },
-    { name: 'MSdm3', id: 179 },
-    { name: 'MSdv', id: 180 },
-    { name: 'MSdw', id: 181 },
-    { name: 'MSun', id: 182 },
-    { name: 'MSxk1', id: 183 },
-    { name: 'MSxk2', id: 184 },
-    { name: 'MSxk3', id: 185 },
-    { name: 'MSxv', id: 186 },
-    { name: 'PPxh1', id: 187 },
-    { name: 'PPxh2', id: 188 },
-    { name: 'SBPSdc', id: 189 },
-    { name: 'SBPSmc', id: 190 },
-    { name: 'SBPSmk', id: 191 },
-    { name: 'SBPSxc', id: 192 },
-    { name: 'SBSdh1', id: 193 },
-    { name: 'SBSdh2', id: 194 },
-    { name: 'SBSdk', id: 195 },
-    { name: 'SBSdw1', id: 196 },
-    { name: 'SBSdw2', id: 197 },
-    { name: 'SBSdw3', id: 198 },
-    { name: 'SBSmc1', id: 199 },
-    { name: 'SBSmc2', id: 200 },
-    { name: 'SBSmc3', id: 201 },
-    { name: 'SBSmh', id: 202 },
-    { name: 'SBSmk1', id: 203 },
-    { name: 'SBSmk2', id: 204 },
-    { name: 'SBSmm', id: 205 },
-    { name: 'SBSmw', id: 206 },
-    { name: 'SBSmz', id: 207 },
-    { name: 'SBSun', id: 208 },
-    { name: 'SBSvk', id: 209 },
-    { name: 'SBSvz', id: 210 },
-    { name: 'SBSwk1', id: 211 },
-    { name: 'SBSwk2', id: 212 },
-    { name: 'SBSwk3', id: 213 },
-    { name: 'SWBmk', id: 214 },
-    { name: 'SWBmks', id: 215 },
-    { name: 'SWBun', id: 216 },
-    { name: 'SWBuns', id: 217 },
-    { name: 'SWBvk', id: 218 },
-    { name: 'SWBvks', id: 219 },
-    // Legacy/retired variants appended for backward compatibility with Version_7_0 datasets
-    { name: 'BAFAunp', id: 220 },
-    { name: 'CMAunp', id: 221 },
-    { name: 'CWHdm', id: 222 },
-    { name: 'CWHms1', id: 223 },
-    { name: 'CWHms2', id: 224 },
-    { name: 'CWHun', id: 225 },
-    { name: 'CWHxm1', id: 226 },
-    { name: 'CWHxm2', id: 227 },
-    { name: 'ESSFmw', id: 228 },
-    { name: 'ESSFwc2w', id: 229 },
-    { name: 'ESSFwm', id: 230 },
-    { name: 'ICHmc1a', id: 231 },
-    { name: 'IDFmw1', id: 232 },
-    { name: 'IDFww1', id: 233 },
-    { name: 'IDFxh4', id: 234 },
-    { name: 'IMAunp', id: 235 },
-    { name: 'MHwh1', id: 236 },
-    { name: 'MSdk1', id: 237 },
-    { name: 'MSdk2', id: 238 },
-    { name: 'MSdm3w', id: 239 },
-    { name: 'MSmw1', id: 240 },
-    { name: 'MSmw2', id: 241 },
-    { name: 'MSun', id: 242 },
-    { name: 'PPdh2', id: 243 },
-    { name: 'PPxh3', id: 244 },
-    { name: 'SBSwk3a', id: 245 },
-  ]
 
   // Helper function to build year-based layer data when multiple years are selected
   function buildYearBasedLayers(sp, bec, yearsArray, mode = 'cutblock') {
@@ -293,12 +23,29 @@ define(function () {
       }
       let suit = speciesEntry.minsuit / 100
 
-      // Fetch data for each year separately
-      const yearPromises = yearsArray.map((year) =>
-        fetchMigratedHeightList(sp, [year])
-          .then((data) => ({ year, data }))
-          .catch(() => ({ year, data: [] })),
-      )
+      const type = mode === 'seedlot' ? 'seed' : 'site'
+      const becField = mode === 'seedlot' ? 'BECvar_seed' : 'BECvar_site'
+      const outputField = mode === 'seedlot' ? 'BECvar_site' : 'BECvar_seed'
+
+      const yearPromises = yearsArray.map((year) => {
+        let becNames
+        if (Array.isArray(bec)) {
+          becNames = bec.map((id) => becStore.find((x) => x.id == id).name)
+        } else {
+          becNames = [becStore.find((x) => x.id == bec).name]
+        }
+
+        const becPromises = becNames.map((name) => fetchMigratedHeightList(sp, [year], name, type))
+
+        return Promise.all(becPromises)
+          .then((results) => {
+            const dataForYear = results.flat()
+            return { year, data: dataForYear }
+          })
+          .catch(() => {
+            return { year, data: [] }
+          })
+      })
 
       Promise.all(yearPromises)
         .then((results) => {
@@ -307,12 +54,7 @@ define(function () {
             const suitList = []
             const nonSuitList = []
 
-            // Determine which field to use based on mode
-            const becField = mode === 'seedlot' ? 'BECvar_seed' : 'BECvar_site'
-            const outputField = mode === 'seedlot' ? 'BECvar_site' : 'BECvar_seed'
-
             if (Array.isArray(bec) && bec.length > 1) {
-              // Multiple BEC variants
               for (let i = 0; i < bec.length; i++) {
                 const becEntry = becStore.find((x) => x.id == bec[i])
                 if (becEntry) {
@@ -329,7 +71,6 @@ define(function () {
                 }
               }
             } else {
-              // Single BEC variant
               const becEntry = becStore.find((x) => x.id == bec[0] || x.id == bec)
               if (becEntry) {
                 const becName = becEntry.name
@@ -391,7 +132,7 @@ define(function () {
    * All other species use the base file (_5.json).
    * When multiple years are selected, combines results from all years.
    */
-  function fetchMigratedHeightList(sp, yearsArray) {
+  function fetchMigratedHeightList(sp, yearsArray, becName, type = 'site') {
     // Determine the base file fallback path using capitalized species code (e.g. Fdi, Plc, Pli, Sx, Sxs)
     const basePrefix = sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase()
     const fallbackPath = 'Version_7_0/' + basePrefix + '_migrated_height_list_5.json'
@@ -410,7 +151,7 @@ define(function () {
 
     if (!hasTimeSeries) {
       // Species without time series variants - use base file directly
-      return fetchJSON(fallbackPath)
+      return fetchFGB(fallbackPath, becName, type)
     }
 
     // For species with time series variants, fetch and combine results
@@ -421,8 +162,8 @@ define(function () {
       const timeSeriesPath =
         'Version_7_0/' + filePrefix + '_migrated_height_list_' + yearsToFetch[0] + '.json'
 
-      return fetchJSON(timeSeriesPath).catch(() => {
-        return fetchJSON(fallbackPath)
+      return fetchFGB(timeSeriesPath, becName, type).catch(() => {
+        return fetchFGB(fallbackPath, becName, type)
       })
     }
 
@@ -430,8 +171,8 @@ define(function () {
     const fetchPromises = yearsToFetch.map((year) => {
       const timeSeriesPath = 'Version_7_0/' + filePrefix + '_migrated_height_list_' + year + '.json'
 
-      return fetchJSON(timeSeriesPath).catch(() => {
-        return fetchJSON(fallbackPath)
+      return fetchFGB(timeSeriesPath, becName, type).catch(() => {
+        return fetchFGB(fallbackPath, becName, type)
       })
     })
 
@@ -452,6 +193,46 @@ define(function () {
 
       return combined
     })
+  }
+
+  async function fetchFGB(url, becName, type) {
+    let fgbUrl = url
+    if (url.endsWith('.json')) {
+      if (url.includes('_migrated_height_list_')) {
+        fgbUrl = url.replace('.json', '_' + type + '.fgb')
+      } else {
+        fgbUrl = url.replace('.json', '.fgb')
+      }
+    }
+
+    const idx = becStore.findIndex((b) => b.name === becName)
+    if (idx === -1) {
+      throw new Error('BEC Variant ' + becName + ' not found in becStore')
+    }
+
+    const rect = {
+      minX: idx * 10 - 1,
+      minY: -1,
+      maxX: idx * 10 + 1,
+      maxY: 1,
+    }
+
+    const isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
+    let targetUrl = fgbUrl
+    if (
+      isDbPruned &&
+      fgbUrl.startsWith('Version_7_0/') &&
+      window.location.pathname.includes('/deployments/pr-')
+    ) {
+      targetUrl = '../../' + fgbUrl
+    }
+
+    const features = []
+    const iterator = flatgeobuf.deserialize(targetUrl, rect)
+    for await (const feature of iterator) {
+      features.push(feature.properties)
+    }
+    return features
   }
 
   /**
@@ -593,9 +374,7 @@ define(function () {
     if (!speciesEntry) {
       return Promise.reject(new Error('Unknown species: ' + sp))
     }
-    let suit = speciesEntry.minsuit
-
-    suit = suit / 100
+    let suit = speciesEntry.minsuit / 100
 
     outlist_suit = []
     outlist_non_suit = []
@@ -603,133 +382,108 @@ define(function () {
     let p1 = getSeedLot(bec, suit, 0, jsonseedlot, sp, timeSeriesYears)
 
     let p2 = new Promise((resolve, reject) => {
-      fetchMigratedHeightList(sp, timeSeriesYears)
-        .then(function (data) {
-          var results = []
+      let becNames = []
+      if (Array.isArray(bec)) {
+        becNames = bec.map((id) => becStore.find((x) => x.id == id).name)
+      } else {
+        becNames = [becStore.find((x) => x.id == bec).name]
+      }
 
-          let becPromise = new Promise((resolveInner, rejectInner) => {
-            if (bec.length == 1) {
-              var becEntry = becStore.find((x) => x.id == bec)
-              if (!becEntry) {
-                rejectInner(new Error('Unknown BEC variant ID: ' + bec))
-                return
+      const becPromises = becNames.map((name) =>
+        fetchMigratedHeightList(sp, timeSeriesYears, name, 'site'),
+      )
+
+      Promise.all(becPromises)
+        .then(function (resultsArray) {
+          if (bec.length == 1) {
+            var data = resultsArray[0]
+            bec_name = becNames[0]
+            var results = data.filter(function (x) {
+              return x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit
+            })
+            if (results.length == 0) {
+              reject(new Error('No results available for those parameters'))
+              return
+            }
+            output_suit = data.filter(function (x) {
+              return x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1
+            })
+            output_non_suit = data.filter(function (x) {
+              return x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0
+            })
+
+            updateData(results).then(function (data) {
+              populateCutblockTable(data)
+            })
+
+            if (output_suit.length > 0) {
+              for (let i = 0; i < output_suit.length; i++) {
+                outlist_suit.push("'" + output_suit[i].BECvar_seed + "'")
               }
-              bec_name = becEntry.name
-              results = data.filter(function (x) {
-                return x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit
-              })
-              if (results.length == 0) {
-                rejectInner(new Error('No results available for those parameters'))
-                return
+            }
+            outlist_suit = outlist_suit.join(', ')
+
+            if (output_non_suit.length > 0) {
+              for (let i = 0; i < output_non_suit.length; i++) {
+                outlist_non_suit.push("'" + output_non_suit[i].BECvar_seed + "'")
               }
-              output_suit = data.filter(function (x) {
-                return (
-                  x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1
-                )
-              })
-              output_non_suit = data.filter(function (x) {
-                return (
-                  x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0
-                )
-              })
+            }
+            outlist_non_suit = outlist_non_suit.join(', ')
 
-              updateData(results).then(function (data) {
-                populateCutblockTable(data)
-              })
+            resolve([outlist_suit, outlist_non_suit])
+          } else {
+            let results_intersection_arrays = resultsArray.map((data, i) => {
+              const name = becNames[i]
+              return data.filter((x) => x['BECvar_site'] == name && x['HTp_pred'] >= suit)
+            })
 
-              // ========= SUITABLE OUTPUT ======================
-              if (output_suit.length > 0) {
-                for (let i = 0; i < output_suit.length; i++) {
-                  outlist_suit.push("'" + output_suit[i].BECvar_seed + "'")
+            let output_suit_arrays = resultsArray.map((data, i) => {
+              const name = becNames[i]
+              return data.filter(
+                (x) => x['BECvar_site'] == name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1,
+              )
+            })
+
+            let output_non_suit_arrays = resultsArray.map((data, i) => {
+              const name = becNames[i]
+              return data.filter(
+                (x) => x['BECvar_site'] == name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 0,
+              )
+            })
+
+            let t1 = getIntersection(results_intersection_arrays).then(function (intersection) {
+              if (intersection.length == 0) {
+                throw new Error('No results available for those parameters')
+              }
+              return updateData(intersection).then(function (data2) {
+                populateCutblockTable(data2)
+              })
+            })
+
+            let t2 = getIntersection(output_suit_arrays).then(function (output) {
+              if (output.length > 0) {
+                for (let i = 0; i < output.length; i++) {
+                  outlist_suit.push("'" + output[i].BECvar_seed + "'")
                 }
               }
               outlist_suit = outlist_suit.join(', ')
+            })
 
-              // ========= NON SUITABLE OUTPUT ==========
-              if (output_non_suit.length > 0) {
-                for (let i = 0; i < output_non_suit.length; i++) {
-                  outlist_non_suit.push("'" + output_non_suit[i].BECvar_seed + "'")
+            let t3 = getIntersection(output_non_suit_arrays).then(function (output) {
+              if (output.length > 0) {
+                for (let i = 0; i < output.length; i++) {
+                  outlist_non_suit.push("'" + output[i].BECvar_seed + "'")
                 }
               }
               outlist_non_suit = outlist_non_suit.join(', ')
+            })
 
-              resolveInner(outlist_suit)
-            } else {
-              for (let i = 0; i < bec.length; i++) {
-                var becEntryMulti = becStore.find((x) => x.id == bec[i])
-                if (!becEntryMulti) {
-                  rejectInner(new Error('Unknown BEC variant ID: ' + bec[i]))
-                  return
-                }
-                bec_name = becEntryMulti.name
-                results.push(
-                  data.filter(function (x) {
-                    return x['BECvar_site'] == bec_name && x['HTp_pred'] >= suit
-                  }),
-                )
-                output_suit.push(
-                  data.filter(function (x) {
-                    return (
-                      x['BECvar_site'] == bec_name &&
-                      x['HTp_pred'] >= suit &&
-                      x['Sp_suit_site'] == 1
-                    )
-                  }),
-                )
-                output_non_suit.push(
-                  data.filter(function (x) {
-                    return (
-                      x['BECvar_site'] == bec_name &&
-                      x['HTp_pred'] >= suit &&
-                      x['Sp_suit_site'] == 0
-                    )
-                  }),
-                )
-              }
-
-              let t1 = getIntersection(results).then(function (intersection) {
-                if (intersection.length == 0) {
-                  throw new Error('No results available for those parameters')
-                }
-                return updateData(intersection).then(function (data2) {
-                  populateCutblockTable(data2)
-                })
+            Promise.all([t1, t2, t3])
+              .then(() => {
+                resolve([outlist_suit, outlist_non_suit])
               })
-
-              // ========= SUITABLE OUTPUT ======================
-
-              let t2 = getIntersection(output_suit).then(function (output) {
-                if (output.length > 0) {
-                  for (let i = 0; i < output.length; i++) {
-                    outlist_suit.push("'" + output[i].BECvar_seed + "'")
-                  }
-                }
-                outlist_suit = outlist_suit.join(', ')
-              })
-
-              let t3 = getIntersection(output_non_suit).then(function (output) {
-                // ========= NON SUITABLE OUTPUT ==========
-                if (output.length > 0) {
-                  for (let i = 0; i < output.length; i++) {
-                    outlist_non_suit.push("'" + output[i].BECvar_seed + "'")
-                  }
-                }
-                outlist_non_suit = outlist_non_suit.join(', ')
-              })
-
-              Promise.all([t1, t2, t3])
-                .then(() => {
-                  resolveInner(results)
-                })
-                .catch((err) => {
-                  rejectInner(err)
-                })
-            }
-          }).then(function () {
-            return [outlist_suit, outlist_non_suit]
-          })
-
-          resolve(becPromise)
+              .catch(reject)
+          }
         })
         .catch(function (errorThrown) {
           if (errorThrown.message === 'No results available for those parameters') {
@@ -741,7 +495,6 @@ define(function () {
     })
 
     return Promise.all([p1, p2]).then((values) => {
-      // Check if multiple years selected - if so, use year-based layers with colors
       if (timeSeriesYears.length > 1) {
         return buildYearBasedLayers(sp, bec, timeSeriesYears)
       }
@@ -783,11 +536,9 @@ define(function () {
 
   function getSeedLot(bec, spmin, min, jsonseedlot, sp, yearsArray) {
     return new Promise((resolve, reject) => {
-      // Try to load time series variant first if available for PL or SX species
       const yearsToFetch = Array.isArray(yearsArray) ? yearsArray : [yearsArray]
       const isTimeSeriesSpecies = sp === 'PL' || sp === 'SX'
 
-      // For multiple years, we'll fetch each year's seedlot file if available
       const seedlotFiles = isTimeSeriesSpecies
         ? yearsToFetch.map(
             (year) =>
@@ -800,80 +551,61 @@ define(function () {
           )
         : [jsonseedlot]
 
-      const loadSeedLots = (filePaths, index = 0) => {
-        if (index >= filePaths.length) {
-          reject(new Error('Failed to load any Seedlot files'))
-          return
-        }
-
-        const currentFile = filePaths[index]
-        fetchJSON(currentFile)
-          .then((data) => {
-            processAndDisplaySeedLot(data, resolve, reject)
-          })
-          .catch(() => {
-            // Try fallback to base file if this is a time series variant
-            if (isTimeSeriesSpecies && index < filePaths.length - 1) {
-              loadSeedLots(filePaths, index + 1)
-            } else if (currentFile !== jsonseedlot) {
-              // Try base file as final fallback
-              loadSeedLots([jsonseedlot], 0)
-            } else {
-              reject(new Error('Failed to load Seedlot database'))
-            }
-          })
+      let becNames
+      if (Array.isArray(bec)) {
+        becNames = bec.map((id) => becStore.find((x) => x.id == id).name)
+      } else {
+        becNames = [becStore.find((x) => x.id == bec).name]
       }
 
-      const processAndDisplaySeedLot = (data, resolve, reject) => {
-        var bec_name = ''
-        var results = []
-        let finalPromise
-
-        if (bec.length == 1) {
-          var becEntrySeed = becStore.find((x) => x.id == bec)
-          if (!becEntrySeed) {
-            reject(new Error('Unknown BEC variant ID: ' + bec))
-            return
-          }
-          bec_name = becEntrySeed.name
-          results = data.filter(function (x) {
-            return x['BECvar_site'] == bec_name && parseFloat(x['MigrationDistance']) >= spmin
-          })
-          finalPromise = Promise.resolve(results)
-        } else {
-          for (let i = 0; i < bec.length; i++) {
-            var becEntrySeedMulti = becStore.find((x) => x.id == bec[i])
-            if (!becEntrySeedMulti) {
-              reject(new Error('Unknown BEC variant ID: ' + bec[i]))
-              return
+      const fetchPromises = seedlotFiles.map((file) => {
+        const becPromises = becNames.map((name) =>
+          fetchFGB(file, name).catch(() => {
+            if (file !== jsonseedlot) {
+              return fetchFGB(jsonseedlot, name)
             }
-            bec_name = becEntrySeedMulti.name
-            results.push(
+            throw new Error('Failed to load Seedlot database')
+          }),
+        )
+        return Promise.all(becPromises).then((results) => results.flat())
+      })
+
+      Promise.all(fetchPromises)
+        .then((resultsArray) => {
+          const data = resultsArray.flat()
+          let results
+          if (bec.length == 1) {
+            const bec_name = becNames[0]
+            results = data.filter(function (x) {
+              return x['BECvar_site'] == bec_name && parseFloat(x['MigrationDistance']) >= spmin
+            })
+          } else {
+            const filteredByBec = becNames.map((name) =>
               data.filter(function (x) {
-                return x['BECvar_site'] == bec_name && parseFloat(x['MigrationDistance']) >= spmin
+                return x['BECvar_site'] == name && parseFloat(x['MigrationDistance']) >= spmin
               }),
             )
+            results = getIntersection(filteredByBec)
           }
-          finalPromise = getIntersection(results)
-        }
 
-        finalPromise.then((finalarray) => {
-          for (let i = 0; i < finalarray.length; i++) {
-            if (finalarray[i].Seedlot == '') {
-              finalarray[i].Seedlot = 0
+          Promise.resolve(results).then((finalarray) => {
+            for (let i = 0; i < finalarray.length; i++) {
+              if (finalarray[i].Seedlot == '') {
+                finalarray[i].Seedlot = 0
+              }
+              if (finalarray[i].GW == '') {
+                finalarray[i].GW = 0
+              }
             }
-            if (finalarray[i].GW == '') {
-              finalarray[i].GW = 0
-            }
-          }
-          var $table = $('#seedlot_table')
-          $table.bootstrapTable('destroy')
-          $table.bootstrapTable({ data: finalarray })
-          resolve()
+            var $table = $('#seedlot_table')
+            $table.bootstrapTable('destroy')
+            $table.bootstrapTable({ data: finalarray })
+            resolve()
+          })
         })
-      }
-
-      loadSeedLots(seedlotFiles)
+        .catch((err) => {
+          reject(new Error('Failed to load Seedlot database: ' + err.message))
+        })
     })
   }
 
@@ -923,22 +655,20 @@ define(function () {
     if (!speciesEntry) {
       return Promise.reject(new Error('Unknown species: ' + sp))
     }
-    let suit = speciesEntry.minsuit
-
-    suit = suit / 100
+    let suit = speciesEntry.minsuit / 100
 
     outlist_suit = []
     outlist_non_suit = []
     return new Promise((resolve, reject) => {
-      fetchMigratedHeightList(sp, timeSeriesYears)
+      var becEntryLot = becStore.find((x) => x.id == bec)
+      if (!becEntryLot) {
+        reject(new Error('Unknown BEC variant ID: ' + bec))
+        return
+      }
+      var bec_name = becEntryLot.name
+
+      fetchMigratedHeightList(sp, timeSeriesYears, bec_name, 'seed')
         .then(function (data) {
-          // find the name in becStore associated to the bec id chosen
-          var becEntryLot = becStore.find((x) => x.id == bec)
-          if (!becEntryLot) {
-            reject(new Error('Unknown BEC variant ID: ' + bec))
-            return
-          }
-          var bec_name = becEntryLot.name
           var results = data.filter(function (x) {
             return x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit
           })
@@ -947,7 +677,6 @@ define(function () {
             populateSeedlotTable(data)
           })
 
-          // 1 means the area is suitable and 0 means it is not a suitable area
           output_suit = data.filter(function (x) {
             return x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit && x['Sp_suit_site'] == 1
           })
@@ -959,7 +688,6 @@ define(function () {
             throw new Error('No results available for those parameters')
           }
 
-          // ========= SUITABLE OUTPUT ==========
           if (output_suit.length > 0) {
             for (let i = 0; i < output_suit.length; i++) {
               outlist_suit.push("'" + output_suit[i].BECvar_site + "'")
@@ -967,7 +695,6 @@ define(function () {
           }
           outlist_suit = outlist_suit.join(', ')
 
-          // ========= NON SUITABLE OUTPUT ==========
           if (output_non_suit.length > 0) {
             for (let i = 0; i < output_non_suit.length; i++) {
               outlist_non_suit.push("'" + output_non_suit[i].BECvar_site + "'")
@@ -975,7 +702,6 @@ define(function () {
           }
           outlist_non_suit = outlist_non_suit.join(', ')
 
-          // Check if multiple years selected - if so, use year-based layers
           if (timeSeriesYears.length > 1) {
             buildYearBasedLayers(sp, bec, timeSeriesYears, 'seedlot').then((yearLayers) => {
               resolve(yearLayers)
