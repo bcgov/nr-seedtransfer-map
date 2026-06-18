@@ -224,14 +224,25 @@ define([
       maxY: 1,
     }
 
-    const targetUrl = dataUrl.resolveDataUrl(fgbUrl) + '?v=7.0.9'
+    const cacheBust = '?v=7.0.10'
+    const candidates = dataUrl.getDataUrlCandidates(fgbUrl)
+    let lastError = null
 
-    const features = []
-    const iterator = flatgeobuf.deserialize(targetUrl, rect)
-    for await (const feature of iterator) {
-      features.push(feature.properties)
+    for (let c = 0; c < candidates.length; c++) {
+      const targetUrl = candidates[c] + cacheBust
+      try {
+        const features = []
+        const iterator = flatgeobuf.deserialize(targetUrl, rect)
+        for await (const feature of iterator) {
+          features.push(feature.properties)
+        }
+        return features
+      } catch (err) {
+        lastError = err
+      }
     }
-    return features
+
+    throw lastError || new Error('Failed to load FlatGeobuf: ' + fgbUrl)
   }
 
   /**
@@ -246,13 +257,23 @@ define([
    *    as a standard promise rejection to be caught and displayed by the UI error banner.
    */
   function fetchJSON(url) {
-    let targetUrl = dataUrl.resolveDataUrl(url) + '?v=7.0.9'
+    const cacheBust = '?v=7.0.10'
+    const candidates = dataUrl.getDataUrlCandidates(url)
 
-    return fetch(targetUrl).then(function (r) {
-      if (!r.ok) {
-        throw new Error(r.statusText)
+    function tryFetch(target) {
+      return fetch(target + cacheBust).then(function (r) {
+        if (!r.ok) {
+          throw new Error(r.statusText)
+        }
+        return r.json()
+      })
+    }
+
+    return tryFetch(candidates[0]).catch(function (firstErr) {
+      if (candidates.length === 1) {
+        throw firstErr
       }
-      return r.json()
+      return tryFetch(candidates[1])
     })
   }
 

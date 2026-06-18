@@ -75,3 +75,16 @@ test('resolveDataUrl leaves paths unchanged outside pruned PR previews', () => {
     )
   })
 })
+
+test('getDataUrlCandidates tries local path before production on PR previews', () => {
+  withDocument({ 'data-database-pruned': 'true' }, '/nr-seedtransfer-map/deployments/pr-99/', () => {
+    assert.deepStrictEqual(dataUrl.getDataUrlCandidates('Version_7_0/Pli_Seedlots.fgb'), [
+      'Version_7_0/Pli_Seedlots.fgb',
+      '../../Version_7_0/Pli_Seedlots.fgb',
+    ])
+    assert.deepStrictEqual(
+      dataUrl.getDataUrlCandidates('Version_7_0/Management_Units.fgb'),
+      ['Version_7_0/Management_Units.fgb'],
+    )
+  })
+})

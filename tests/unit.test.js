@@ -10,6 +10,9 @@ const mockDataUrl = {
   resolveDataUrl(url) {
     return url
   },
+  getDataUrlCandidates(url) {
+    return [url]
+  },
 }
 
 globalThis.define = function (dependencies, factory) {
