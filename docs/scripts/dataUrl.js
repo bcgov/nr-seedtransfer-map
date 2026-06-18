@@ -1,6 +1,6 @@
 /*
  * Resolve Version_7_0 data URLs for pruned PR preview deployments.
- * Pruned seedlot assets load from production via ../../ (JSON; FGB if present).
+ * Pruned seedlot assets load from production via ../../ when previews are pruned.
  * Polygon outlines and bec_bounds.json are kept in the PR folder (pr-open.yml).
  */
 define([], function () {

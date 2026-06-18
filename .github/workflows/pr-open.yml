@@ -5,6 +5,7 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - 'docs/**'
+      - '.github/workflows/pr-open.yml'
       - 'tests/**'
       - 'package*.json'
       - 'playwright.config.js'
@@ -92,9 +93,13 @@ jobs:
       - name: Prune database if unchanged or compile to FlatGeobuf
         run: |
           git fetch --depth=1 origin ${{ github.base_ref }}
+          # TEMPORARY: force full FlatGeobuf compile on all PR previews while the ESRI
+          # eviction stack is landing (open PRs need local FGB; production JSON is going away).
+          # Remove FORCE_FULL_FGB_DEPLOY once main runs db:convert on merge deploy.
+          FORCE_FULL_FGB_DEPLOY=true
           # Two-dot diff against the PR's direct base branch (not main) so stacked PRs
           # only detect DB changes introduced by this specific PR, not the entire stack.
-          if git diff --name-only origin/${{ github.base_ref }} HEAD | grep -E "^docs/Version_7_0/.*_Seedlots\.json|^docs/Version_7_0/.*_migrated_height_list.*\.json|^docs/Version_7_0/Orchard_list\.json|^docs/Version_7_0/Seedlot_list\.json"; then
+          if [ "$FORCE_FULL_FGB_DEPLOY" = "true" ] || git diff --name-only origin/${{ github.base_ref }} HEAD | grep -E "^docs/Version_7_0/.*_Seedlots\.json|^docs/Version_7_0/.*_migrated_height_list.*\.json|^docs/Version_7_0/Orchard_list\.json|^docs/Version_7_0/Seedlot_list\.json"; then
             echo "📂 Database changes detected. Keeping full database and compiling to FlatGeobuf."
             npm run db:convert
           else

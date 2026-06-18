@@ -115,7 +115,6 @@ define([
     getIntersection: getIntersection,
     updateData: updateData,
     setTimeSeriesYear: setTimeSeriesYear,
-    filterSeedlotRecordsForBec: filterSeedlotRecordsForBec,
   }
 
   function setTimeSeriesYear(years) {
@@ -203,35 +202,9 @@ define([
     })
   }
 
-  function filterSeedlotRecordsForBec(records, jsonUrl, becName, type) {
-    if (jsonUrl.includes('_migrated_height_list_')) {
-      if (type === 'seed') {
-        return records.filter(function (r) {
-          return r.BECvar_seed === becName
-        })
-      }
-      return records.filter(function (r) {
-        return r.BECvar_site === becName
-      })
-    }
-    return records.filter(function (r) {
-      return (r.BECvar_site || r.BECvarfut_plantation) === becName
-    })
-  }
-
-  async function deserializeFgbByBec(targetUrl, rect) {
-    const features = []
-    const iterator = flatgeobuf.deserialize(targetUrl, rect)
-    for await (const feature of iterator) {
-      features.push(feature.properties)
-    }
-    return features
-  }
-
   async function fetchFGB(url, becName, type) {
-    const jsonUrl = url.endsWith('.json') ? url : null
     let fgbUrl = url
-    if (jsonUrl) {
+    if (url.endsWith('.json')) {
       if (url.includes('_migrated_height_list_')) {
         fgbUrl = url.replace('.json', '_' + type + '.fgb')
       } else {
@@ -251,21 +224,14 @@ define([
       maxY: 1,
     }
 
-    const resolvedFgb = dataUrl.resolveDataUrl(fgbUrl)
-    const targetUrl = resolvedFgb + '?v=7.0.8'
+    const targetUrl = dataUrl.resolveDataUrl(fgbUrl) + '?v=7.0.9'
 
-    // Pruned PR previews drop seedlot FGB files and fall back to production root,
-    // which has JSON but not compiled FGB until the flatgeobuf stack is on main.
-    if (resolvedFgb.startsWith('../../') && jsonUrl) {
-      try {
-        return await deserializeFgbByBec(targetUrl, rect)
-      } catch {
-        const records = await fetchJSON(jsonUrl)
-        return filterSeedlotRecordsForBec(records, jsonUrl, becName, type)
-      }
+    const features = []
+    const iterator = flatgeobuf.deserialize(targetUrl, rect)
+    for await (const feature of iterator) {
+      features.push(feature.properties)
     }
-
-    return deserializeFgbByBec(targetUrl, rect)
+    return features
   }
 
   /**
@@ -280,7 +246,7 @@ define([
    *    as a standard promise rejection to be caught and displayed by the UI error banner.
    */
   function fetchJSON(url) {
-    let targetUrl = dataUrl.resolveDataUrl(url) + '?v=7.0.8'
+    let targetUrl = dataUrl.resolveDataUrl(url) + '?v=7.0.9'
 
     return fetch(targetUrl).then(function (r) {
       if (!r.ok) {

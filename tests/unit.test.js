@@ -25,7 +25,7 @@ globalThis.define = function (dependencies, factory) {
 // Load the target module
 require('../docs/scripts/main.js')
 
-const { getIntersection, updateData, filterSeedlotRecordsForBec } = exportedModule
+const { getIntersection, updateData } = exportedModule
 
 test('Unit Tests for main.js helpers', async (t) => {
   await t.test('getIntersection - 1 array', async () => {
@@ -69,34 +69,5 @@ test('Unit Tests for main.js helpers', async (t) => {
     assert.strictEqual(data[0].Sp_suit_seed, '1')
     assert.strictEqual(data[1].Sp_suit_seed, '0')
     assert.strictEqual(data[2].Sp_suit_seed, 'anything else')
-  })
-
-  await t.test('filterSeedlotRecordsForBec - migrated height list site', async () => {
-    const records = [
-      { BECvar_site: 'BAFAun', BECvar_seed: 'BAFAun' },
-      { BECvar_site: 'BAFAun', BECvar_seed: 'BGxh1' },
-      { BECvar_site: 'BGxh1', BECvar_seed: 'BAFAun' },
-    ]
-    const result = filterSeedlotRecordsForBec(
-      records,
-      'Version_7_0/Pli_migrated_height_list_5.json',
-      'BAFAun',
-      'site',
-    )
-    assert.strictEqual(result.length, 2)
-  })
-
-  await t.test('filterSeedlotRecordsForBec - migrated height list seed', async () => {
-    const records = [
-      { BECvar_site: 'BAFAun', BECvar_seed: 'BAFAun' },
-      { BECvar_site: 'BGxh1', BECvar_seed: 'BAFAun' },
-    ]
-    const result = filterSeedlotRecordsForBec(
-      records,
-      'Version_7_0/Pli_migrated_height_list_5.json',
-      'BAFAun',
-      'seed',
-    )
-    assert.strictEqual(result.length, 2)
   })
 })
