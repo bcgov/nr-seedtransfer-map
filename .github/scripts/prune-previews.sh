@@ -77,8 +77,10 @@ for attempt in 1 2 3 4 5; do
     exit 0
   fi
 
-  echo "::warning::gh-pages advanced during push; retrying (${attempt}/5)..."
-  sleep "$((attempt * 5))"
+  if [ "$attempt" -lt 5 ]; then
+    echo "::warning::gh-pages advanced during push; retrying (${attempt}/5)..."
+    sleep "$((attempt * 5))"
+  fi
 done
 
 echo "::error::Failed to push gh-pages cleanup after 5 attempts." >&2

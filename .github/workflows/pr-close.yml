@@ -68,6 +68,18 @@ jobs:
         run: |
           chmod +x .github/scripts/prune-previews.sh
 
+          list_file=$(mktemp)
+          err_file=$(mktemp)
+          if ! gh api "repos/${REPO}/contents/deployments?ref=gh-pages" --jq '.[].name' >"$list_file" 2>"$err_file"; then
+            if grep -qE '404|Not Found' "$err_file"; then
+              echo "✅ No deployments/ folder on gh-pages — nothing to sweep."
+              exit 0
+            fi
+            cat "$err_file" >&2
+            echo "::error::Failed to list deployments/ on gh-pages" >&2
+            exit 1
+          fi
+
           closed=()
           while read -r name; do
             case "$name" in
@@ -80,7 +92,7 @@ jobs:
               echo "PR #${num} is closed → flagging preview for removal"
               closed+=("$num")
             fi
-          done < <(gh api "repos/${REPO}/contents/deployments?ref=gh-pages" --jq '.[].name' 2>/dev/null || true)
+          done < "$list_file"
 
           if [ "${#closed[@]}" -eq 0 ]; then
             echo "✅ No orphaned previews found."
