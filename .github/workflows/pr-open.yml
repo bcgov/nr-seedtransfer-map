@@ -91,10 +91,10 @@ jobs:
         run: npm ci
       - name: Prune database if unchanged or compile to FlatGeobuf
         run: |
-          git fetch --depth=1 origin main
-          # Two-dot diff: HEAD is the PR merge commit, so origin/main..HEAD is the PR's delta.
-          # Avoids needing a deep history for a merge-base (triple-dot).
-          if git diff --name-only origin/main HEAD | grep -E "^docs/Version_7_0/.*_Seedlots\.json|^docs/Version_7_0/.*_migrated_height_list.*\.json|^docs/Version_7_0/Orchard_list\.json|^docs/Version_7_0/Seedlot_list\.json"; then
+          git fetch --depth=1 origin ${{ github.base_ref }}
+          # Two-dot diff against the PR's direct base branch (not main) so stacked PRs
+          # only detect DB changes introduced by this specific PR, not the entire stack.
+          if git diff --name-only origin/${{ github.base_ref }} HEAD | grep -E "^docs/Version_7_0/.*_Seedlots\.json|^docs/Version_7_0/.*_migrated_height_list.*\.json|^docs/Version_7_0/Orchard_list\.json|^docs/Version_7_0/Seedlot_list\.json"; then
             echo "📂 Database changes detected. Keeping full database and compiling to FlatGeobuf."
             npm run db:convert
           else
