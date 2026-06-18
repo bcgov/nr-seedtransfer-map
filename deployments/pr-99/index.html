@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>CBST Seedlot Selection Tool Version 7.0</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self' 'unsafe-eval';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: blob: https://*.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com;
+        connect-src 'self' https://*.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com https://www.arcgis.com;
+        font-src 'self';
+        worker-src 'self' blob:;
+        child-src 'self' blob:;
+      "
+    />
+    <link rel="shortcut icon" type="image/png" href="images/favicon-32x32.png" />
+    <link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css" />
+    <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="lib/slim-select/slimselect.css" />
+    <link href="css/styles.css?v=7.0.12" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="lib/bootstrap-table/css/bootstrap-table.min.css" />
+
+    <script src="lib/jquery/jquery.min.js"></script>
+    <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="lib/slim-select/slimselect.min.js"></script>
+    <script src="lib/bootstrap-table/js/bootstrap-table.min.js"></script>
+    <script src="lib/maplibre-gl/maplibre-gl.js"></script>
+
+    <!-- RequireJS AMD Loader -->
+    <script src="lib/require/require.js"></script>
+    <script src="scripts/loader-init.js?v=7.0.12" type="text/javascript"></script>
+    <script src="scripts/requireMain.js?v=7.0.12" type="text/javascript"></script>
+  </head>
+
+  <body data-full-fgb-deploy="true" data-seedlot-date="August 18th, 2025">
+    <div id="ctn" class="container-fluid g-0">
+      <div class="row g-0 bg-light fixed-top" id="titleRow">
+        <nav class="col-12 h-100">
+          <div id="titleDiv" class="bg-light h-100 d-flex align-items-center">
+            <div class="navbar-brand d-flex align-items-center w-100 px-3 py-1">
+              <!-- Desktop Logo -->
+              <img
+                src="images/BCID_H_rgb_pos.png"
+                alt="BC Logo"
+                width="165"
+                height="64"
+                class="d-none d-md-block me-3"
+              />
+              <!-- Mobile Logo -->
+              <img
+                src="images/BCID_H_rgb_pos.png"
+                alt="BC Logo"
+                width="103"
+                height="40"
+                class="d-md-none me-2"
+              />
+
+              <div class="flex-grow-1">
+                <span id="titleText" class="fs-5 fw-bold text-dark">
+                  <span class="d-none d-md-inline">CBST Seedlot Selection Tool Version 7.0</span>
+                  <span class="d-md-none">CBST Seedlot Tool</span>
+                </span>
+                <span class="titleTextsmall d-none d-md-inline-block ms-2 text-muted fs-6">
+                  CBST Areas of Use as per the April 2022 Amendments to the Chief Forester’s
+                  Standards for Seed Use, [BEC 10]
+                </span>
+                <span class="titleTextsmall align-text-top d-none d-md-block mt-1 text-muted fs-7">
+                  Seedlot Data Current as of
+                  <span class="seedlot-data-date-placeholder">August 18th, 2025</span>
+                </span>
+              </div>
+
+              <button
+                class="btn btn-outline-primary btn-sm d-md-none ms-auto px-3 py-2 fw-bold align-self-center"
+                type="button"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#sidebarOffcanvas"
+                aria-controls="sidebarOffcanvas"
+                style="border-color: #003366; color: #003366; font-size: 14px"
+              >
+                🔍 Tools
+              </button>
+            </div>
+          </div>
+        </nav>
+      </div>
+
+      <div class="row g-0" id="mainRow">
+        <!-- Sidebar offcanvas container -->
+        <div
+          class="col-md-3 col-12 offcanvas-md offcanvas-start border-end"
+          tabindex="-1"
+          id="sidebarOffcanvas"
+          aria-labelledby="sidebarOffcanvasLabel"
+        >
+          <div
+            class="offcanvas-header bg-light d-md-none border-bottom justify-content-between p-3"
+          >
+            <div class="d-flex align-items-center">
+              <img src="images/BCID_H_rgb_pos.png" alt="BC Logo" height="30" class="me-2" />
+              <h5 class="offcanvas-title fw-bold text-dark fs-6" id="sidebarOffcanvasLabel">
+                CBST Sourcing Tools
+              </h5>
+            </div>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="offcanvas"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="offcanvas-body p-0 d-flex flex-column h-100">
+            <div id="leftCol" class="card border-0 rounded-0 w-100 h-100 flex-grow-1">
+              <div id="tabContainer" class="card-header" role="tablist">
+                <ul class="nav nav-tabs card-header-tabs">
+                  <li class="nav-item" role="presentation">
+                    <button
+                      type="button"
+                      class="nav-link active"
+                      id="instructions-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#instructions"
+                      role="tab"
+                      aria-controls="instructions"
+                      aria-selected="true"
+                    >
+                      Instructions
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button
+                      type="button"
+                      class="nav-link"
+                      id="cutblock-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#cutblock"
+                      role="tab"
+                      aria-controls="cutblock"
+                      aria-selected="false"
+                    >
+                      I Have a Cutblock
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button
+                      type="button"
+                      class="nav-link"
+                      id="seedlot-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#seedlot"
+                      role="tab"
+                      aria-controls="seedlot"
+                      aria-selected="false"
+                    >
+                      I Have a Seedlot
+                    </button>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="tab-content" id="panelContent">
+                <div
+                  title="Instructions"
+                  id="instructions"
+                  class="card-body tab-pane fade show active"
+                  role="tabpanel"
+                  aria-labelledby="instructions-tab"
+                >
+                  <div
+                    class="alert alert-info py-2 px-3 mb-4 border-0 rounded"
+                    style="
+                      font-size: 13.5px;
+                      background-color: #e6f2ff;
+                      color: #004085;
+                      box-shadow: inset 0 0 0 1px rgba(0, 64, 133, 0.1);
+                    "
+                  >
+                    <strong>📅 Seedlot Data Currency:</strong><br />
+                    Data current as of
+                    <span class="seedlot-data-date-placeholder fw-bold">August 18th, 2025</span>.
+                  </div>
+                  <h5 class="card-title">I Have a Cutblock:</h5>
+                  <ul class="card-text">
+                    <li>
+                      Use this tab when you have a cutblock and you are searching for a seed source
+                    </li>
+                    <li>
+                      Species: Select the tree species of interest (currently available for Fd, Lw,
+                      Pl, Py and Sx).
+                    </li>
+                    <li>BEC Variant: Select the BEC variant for your cutblock location.</li>
+                    <li>Go: refreshes the map and tables according to the selections.</li>
+                  </ul>
+                  <h5 class="card-title">I Have a Seedlot:</h5>
+                  <ul class="card-text">
+                    <li>
+                      Use this tab when you:
+                      <ul>
+                        <li>
+                          have a seedlot and want to know the appropriate BEC variants where it can
+                          be used
+                        </li>
+                        <li>
+                          are collecting from a particular BEC variant and wants to know where it
+                          could be deployed.
+                        </li>
+                      </ul>
+                    </li>
+                    <li>
+                      Seedlot Number: if you know the seedlot and want to know where it can be used
+                      enter the seedlot number then select the Set Species BEC button to set the
+                      species and BEC variant values for you. Otherwise leave blank.
+                    </li>
+                    <li>
+                      Seedlot data refreshed
+                      <span class="seedlot-data-date-placeholder">August 18th, 2025</span>. Seedlots
+                      that have been registered on SPAR after
+                      <span class="seedlot-data-date-placeholder">August 18th, 2025</span> are not
+                      included in the tool
+                    </li>
+                    <li>
+                      Some B Class seedlots are not yet included in the tool (pending their
+                      assignment of a BEC 10 BECvariant).
+                    </li>
+                    <li>
+                      Species: Select the tree species of interest (currently available for Fd, Lw,
+                      Pl, Py and Sx).
+                    </li>
+                    <li>BEC Variant: Select the BEC variant of interest.</li>
+
+                    <li>Go: refreshes the map and tables according to the selections.</li>
+                  </ul>
+                  <h5 class="card-title">Map:</h5>
+                  <ul class="card-text">
+                    <li>Pan: shift across the map by clicking and dragging on the map</li>
+                    <li>
+                      Change map scale: Click the +/- buttons or "zoom" by holding the shift key
+                      down while clicking and dragging a box shape within the map.
+                    </li>
+                    <li>
+                      Switch Basemap: Select from several options of base maps. Click the window bar
+                      to reduce the window.
+                    </li>
+                    <li>
+                      Identify: click on a themed/selected polygon to launch a dialogue box that
+                      shows the starting and selected BEC units.
+                    </li>
+                  </ul>
+                  <h5 class="card-title">Tables:</h5>
+                  <ul class="card-text">
+                    <li>
+                      Sort: clicking a heading will sort the table by that heading, clicking again
+                      will change the sort direction
+                    </li>
+                  </ul>
+                </div>
+                <div
+                  title="I Have a Cutblock"
+                  id="cutblock"
+                  class="card-body tab-pane fade"
+                  role="tabpanel"
+                  aria-labelledby="cutblock-tab"
+                >
+                  <form aria-label="Cutblock species and BEC variant selection">
+                    <div class="mb-3">
+                      <label for="speciesInputCutblock">Species: </label><br />
+                      <select class="form-select" id="speciesInputCutblock"></select>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="becInputCutblock">BEC Variant: (Select up to 3) </label><br />
+                      <!-- <select class="form-control" id="becInputCutblock"></select> -->
+                      <select class="form-select" multiple id="becInputCutblock"></select>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="yearInputCutblock">Climate Year: </label><br />
+                      <select class="form-select" id="yearInputCutblock" multiple>
+                        <option value="2043">2043 (Near-term)</option>
+                        <option value="2053" selected>2053 (Mid-term)</option>
+                        <option value="2063">2063 (Long-term)</option>
+                      </select>
+                    </div>
+
+                    <button id="addButtonCutblock" type="submit" class="btn btn-secondary">
+                      GO
+                    </button>
+                    <button id="clearButtonCutblock" type="button" class="btn btn-secondary">
+                      Clear
+                    </button>
+                  </form>
+
+                  <div id="grid"></div>
+                  <br />
+                  <div id="seedlotgrid"></div>
+
+                  <div class="table-wrapper-scroll-y table-sm my-custom-scrollbar">
+                    <table class="table table-bordered table-striped" id="cutblock_table">
+                      <thead>
+                        <tr>
+                          <th data-field="BECvar_site" data-sortable="true">Plantation BEC</th>
+                          <th data-field="BECvar_seed" data-sortable="true">Seed BEC</th>
+                          <th data-field="Sp_suit_seed" data-sortable="true">Suitability</th>
+                          <th data-field="Limit" data-sortable="true">Limit</th>
+                          <!-- <th data-field="override">OverRide</th> -->
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <br />
+                  <div class="table-wrapper-scroll-y table-sm my-custom-scrollbar">
+                    <table class="table table-bordered table-striped mb-0" id="seedlot_table">
+                      <thead>
+                        <tr>
+                          <th data-field="Seedlot" data-sortable="true">Seedlot</th>
+                          <th data-field="Orchard" data-sortable="true">Orchard</th>
+                          <th data-field="GW" data-sortable="true">GW</th>
+                          <th data-field="GeneticClass" data-sortable="true">Class</th>
+                          <th data-field="BECvar_seed" data-sortable="true">Seed Bec</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <hr class="my-4" />
+                  <div class="mb-3">
+                    <label for="coordsforlocation_cutblock" class="form-label fw-bold"
+                      >Zoom to Location (Lat,Long):</label
+                    >
+                    <input
+                      id="coordsforlocation_cutblock"
+                      type="text"
+                      class="form-control"
+                      placeholder="e.g. 54.123, -125.456"
+                    />
+                  </div>
+                  <button id="btnUpdate_cutblock" type="button" class="btn btn-secondary w-100">
+                    Zoom to Location
+                  </button>
+                </div>
+                <div
+                  title="I Have a Seedlot"
+                  id="seedlot"
+                  class="card-body tab-pane fade"
+                  role="tabpanel"
+                  aria-labelledby="seedlot-tab"
+                >
+                  <form aria-label="Seedlot species and BEC variant selection">
+                    <div class="mb-3">
+                      <label for="orchardNumber">Orchard Number: </label><br />
+                      <input id="orchardNumber" type="number" class="form-control" min="0" />
+                    </div>
+                    <button id="addSeedlotfromOrchard" type="button" class="btn btn-secondary mb-3">
+                      Set Representative Seedlot</button
+                    ><br />
+
+                    <b>OR</b>
+                    <div class="mb-3">
+                      <label for="seedlotNumber">Seedlot Number: </label><br />
+                      <input id="seedlotNumber" type="text" class="form-control" /><br />
+                    </div>
+                    <button id="addSpeciesBecSeedlot" type="button" class="btn btn-secondary mb-3">
+                      Set Species & BEC</button
+                    ><br />
+                    <b>OR</b><br />
+                    <div class="mb-3">
+                      <label for="speciesInputSeedlot">Species: </label><br />
+                      <select class="form-select" id="speciesInputSeedlot"></select>
+                    </div>
+                    <div class="mb-3">
+                      <label for="becInputSeedlot">BEC Variant: </label><br />
+                      <select class="form-select" multiple id="becInputSeedlot"></select>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="yearInputSeedlot">Climate Year: </label><br />
+                      <select class="form-select" id="yearInputSeedlot" multiple>
+                        <option value="2043">2043 (Near-term)</option>
+                        <option value="2053" selected>2053 (Mid-term)</option>
+                        <option value="2063">2063 (Long-term)</option>
+                      </select>
+                    </div>
+                    <br />
+                    <button id="addButtonSeedlot" type="button" class="btn btn-secondary">GO</button
+                    ><br />
+                    <br />
+                  </form>
+                  <div class="table-wrapper-scroll-y table-sm my-custom-scrollbar">
+                    <table class="table table-bordered table-striped" id="seed">
+                      <thead>
+                        <tr>
+                          <th data-field="BECvar_site" data-sortable="true">Plantation BEC</th>
+                          <th data-field="BECvar_seed" data-sortable="true">Seed BEC</th>
+                          <th data-field="Sp_suit_seed" data-sortable="true">Suitability</th>
+                          <th data-field="Limit" data-sortable="true">Limit</th>
+                          <!-- <th data-field="override">OverRide</th> -->
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <div id="gridSeed"></div>
+                  <br />
+                  <div id="gensuitGrid"></div>
+                  <div id="messages"></div>
+                  <hr class="my-4" />
+                  <div class="mb-3">
+                    <label for="coordsforlocation_seedlot" class="form-label fw-bold"
+                      >Zoom to Location (Lat,Long):</label
+                    >
+                    <input
+                      id="coordsforlocation_seedlot"
+                      type="text"
+                      class="form-control"
+                      placeholder="e.g. 54.123, -125.456"
+                    />
+                  </div>
+                  <button id="btnUpdate_seedlot" type="button" class="btn btn-secondary w-100">
+                    Zoom to Location
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="mainWindow" style="display: none">
+          <div>
+            <div class="uploadExpand">
+              <p>Add a zipped shapefile to the map.</p>
+              <p>
+                Visit the
+                <a
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href="https://en.wikipedia.org/wiki/Shapefile"
+                  >Shapefiles</a
+                >
+                help topic for information and limitations.
+              </p>
+              <form enctype="multipart/form-data" method="post" id="uploadForm">
+                <div class="field">
+                  <label class="file-upload">
+                    <span><strong>Add File</strong></span>
+                    <input
+                      class="inputupload"
+                      type="file"
+                      name="file"
+                      id="inFile"
+                      aria-label="Upload KML or GeoJSON file"
+                    />
+                  </label>
+                </div>
+              </form>
+              <span class="file-upload-status" style="opacity: 1" id="upload-status"></span>
+              <div id="fileInfo"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="mapCol" class="col-md-9 col-12 g-0" style="position: relative">
+          <!--add the below divs in the JS when making the widgets-->
+          <div id="coords"></div>
+          <!-- <div id ="scaleDiv"></div> -->
+
+          <div id="mapDiv"></div>
+          <div id="topbar">
+            <div>
+              <button class="action-button" id="basemapButton" type="button" title="Basemaps">
+                Basemaps
+              </button>
+            </div>
+            <div>
+              <button
+                class="action-button"
+                id="printerButton"
+                type="button"
+                title="Export Map to PDF"
+              >
+                Export
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Legend Card -->
+          <div
+            id="mapLegend"
+            class="card shadow-sm border p-2"
+            style="
+              position: absolute;
+              bottom: 20px;
+              right: 20px;
+              z-index: 99;
+              background: rgba(255, 255, 255, 0.95);
+              font-size: 13px;
+              border-radius: 6px;
+              display: none;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            "
+          >
+            <div
+              class="fw-bold mb-1 border-bottom pb-1 text-dark"
+              style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px"
+            >
+              CBST Suitability
+            </div>
+            <div class="d-flex align-items-center mb-1">
+              <span
+                class="d-inline-block rounded-circle me-2"
+                style="
+                  width: 12px;
+                  height: 12px;
+                  background-color: rgba(217, 95, 2, 0.7);
+                  border: 1.5px solid rgb(115, 76, 0);
+                "
+              ></span>
+              <span class="text-dark">Suitable</span>
+            </div>
+            <div class="d-flex align-items-center">
+              <span
+                class="d-inline-block rounded-circle me-2"
+                style="
+                  width: 12px;
+                  height: 12px;
+                  background-color: rgba(170, 102, 205, 0.7);
+                  border: 1.5px solid rgb(76, 0, 115);
+                "
+              ></span>
+              <span class="text-dark">Borderline Suitable</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Climate Year Legend -->
+    <div id="climate-legend" class="climate-legend" style="display: none">
+      <div class="legend-title">Climate Scenarios</div>
+      <div class="legend-item">
+        <span class="legend-color" style="background-color: #ffc800"></span>
+        <span class="legend-label">2043 (Near-term)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background-color: #00aa00"></span>
+        <span class="legend-label">2053 (Mid-term)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background-color: #0070ff"></span>
+        <span class="legend-label">2063 (Long-term)</span>
+      </div>
+    </div>
+
+    <!-- Fullscreen loader spinner overlay -->
+    <div
+      id="loading-overlay"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.85);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      "
+    >
+      <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <div
+        id="loading-text"
+        style="margin-top: 15px; font-weight: bold; font-size: 1.2rem; color: #004085"
+      >
+        Loading database...
+      </div>
+    </div>
+  </body>
+</html>
