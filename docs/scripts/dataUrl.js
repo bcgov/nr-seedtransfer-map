@@ -1,7 +1,8 @@
 /*
  * Resolve Version_7_0 data URLs for pruned PR preview deployments.
- * Pruned seedlot assets load from production via ../../ when previews are pruned.
- * Polygon outlines and bec_bounds.json are kept in the PR folder (pr-open.yml).
+ * Full deploys set data-full-fgb-deploy on <body> (pr-open.yml FORCE_FULL_FGB_DEPLOY).
+ * Pruned deploys set data-database-pruned and fall back to production ../../ for seedlots.
+ * Polygon outlines and bec_bounds.json are always kept in the PR folder when pruned.
  */
 define([], function () {
   var PRUNED_LOCAL_PATHS = {
@@ -18,6 +19,10 @@ define([], function () {
   function resolveDataUrl(url) {
     if (!url.startsWith('Version_7_0/')) return url
 
+    if (document.body.getAttribute('data-full-fgb-deploy') === 'true') {
+      return url
+    }
+
     var isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
     if (isDbPruned && isPrPreview() && !PRUNED_LOCAL_PATHS[url]) {
       return '../../' + url
@@ -25,11 +30,11 @@ define([], function () {
     return url
   }
 
-  // PR previews may serve stale HTML (data-database-pruned) while gh-pages already
-  // has a full FGB deploy. Try the local path before production ../../ fallback.
+  // Stale CDN may serve old pruned HTML while gh-pages already has a full deploy.
+  // On PR previews, always try the local path before any production ../../ fallback.
   function getDataUrlCandidates(url) {
     var resolved = resolveDataUrl(url)
-    if (resolved.startsWith('../../') && isPrPreview()) {
+    if (isPrPreview() && resolved.startsWith('../../')) {
       return [url, resolved]
     }
     return [resolved]

@@ -50,6 +50,18 @@ test('resolveDataUrl keeps polygon files local in pruned PR previews', () => {
   })
 })
 
+test('resolveDataUrl uses local paths when data-full-fgb-deploy is set', () => {
+  withDocument({ 'data-full-fgb-deploy': 'true' }, '/nr-seedtransfer-map/deployments/pr-99/', () => {
+    assert.strictEqual(
+      dataUrl.resolveDataUrl('Version_7_0/Pli_Seedlots.fgb'),
+      'Version_7_0/Pli_Seedlots.fgb',
+    )
+    assert.deepStrictEqual(dataUrl.getDataUrlCandidates('Version_7_0/Pli_Seedlots.fgb'), [
+      'Version_7_0/Pli_Seedlots.fgb',
+    ])
+  })
+})
+
 test('resolveDataUrl falls back to production for pruned seedlot assets', () => {
   withDocument({ 'data-database-pruned': 'true' }, '/nr-seedtransfer-map/deployments/pr-99/', () => {
     assert.strictEqual(

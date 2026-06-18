@@ -80,6 +80,7 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: write
+      pages: write
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
@@ -118,6 +119,7 @@ jobs:
           if [ "$FORCE_FULL_FGB_DEPLOY" = "true" ] || git diff --name-only origin/${{ github.base_ref }} HEAD | grep -E "^docs/Version_7_0/.*_Seedlots\.json|^docs/Version_7_0/.*_migrated_height_list.*\.json|^docs/Version_7_0/Orchard_list\.json|^docs/Version_7_0/Seedlot_list\.json"; then
             echo "📂 Full database deploy: compiling JSON to FlatGeobuf."
             npm run db:convert
+            sed -i 's/<body/<body data-full-fgb-deploy="true"/' docs/index.html
           else
             echo "⚡ Database is unchanged. Pruning for speed."
             # Delete database files only, preserving local polygon FlatGeobuf files and bounds mapping.
@@ -135,24 +137,30 @@ jobs:
           # target-folder scopes rsync's --delete to deployments/pr-{N}/, not other PR folders.
           target-folder: deployments/pr-${{ github.event.number }}
 
+      - name: Request GitHub Pages rebuild
+        run: gh api -X POST "/repos/${{ github.repository }}/pages/builds"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: 🧪 Smoke Test PR Preview URL
         run: |
-          PREVIEW_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/pr-${{ github.event.number }}/"
-          echo "📡 Checking if preview is live at $PREVIEW_URL"
-          TIMEOUT=300
+          PREVIEW_BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/pr-${{ github.event.number }}"
+          echo "📡 Waiting for CDN to serve full preview at $PREVIEW_BASE/"
+          TIMEOUT=600
           INTERVAL=15
           ELAPSED=0
 
           while [ $ELAPSED -lt $TIMEOUT ]; do
-            STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$PREVIEW_URL" || true)
-            if [ "$STATUS" = "200" ]; then
-              echo "✅ Smoke test passed! Preview is live and returning HTTP 200."
+            INDEX=$(curl -o /dev/null -s -w "%{http_code}" "$PREVIEW_BASE/" || true)
+            FGB=$(curl -o /dev/null -s -w "%{http_code}" "$PREVIEW_BASE/Version_7_0/Pli_Seedlots.fgb" || true)
+            if [ "$INDEX" = "200" ] && [ "$FGB" = "200" ]; then
+              echo "✅ Preview is live on CDN (index + seedlot FGB both HTTP 200)."
               exit 0
             fi
-            echo "⏳ Status is $STATUS, retrying in ${INTERVAL}s... ($ELAPSED/$TIMEOUT)"
+            echo "⏳ CDN not ready yet (index=$INDEX, Pli_Seedlots.fgb=$FGB). Retrying in ${INTERVAL}s... ($ELAPSED/$TIMEOUT)"
             sleep $INTERVAL
             ELAPSED=$((ELAPSED + INTERVAL))
           done
 
-          echo "❌ Timeout reached! Preview environment is not returning HTTP 200."
+          echo "❌ Timeout: CDN did not serve the full preview database at $PREVIEW_BASE/"
           exit 1
