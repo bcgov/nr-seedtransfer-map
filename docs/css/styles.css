@@ -1,9 +1,6 @@
 /* 
 CBST revamp
 */
-.esri-widget {
-  font-family: Calibri;
-}
 
 html,
 body {
@@ -57,31 +54,6 @@ body {
   overflow: auto;
   margin: 0 auto;
   white-space: nowrap;
-}
-
-.esri-item-list__scroller {
-  overflow-y: visible;
-}
-
-/* override default styles */
-.esri-feature-form {
-  background: #fff;
-}
-
-.esri-feature-templates {
-  width: 256px;
-}
-
-.esri-feature-templates__section-header {
-  display: none;
-}
-
-.esri-feature-templates__section {
-  box-shadow: none;
-}
-
-.esri-feature-templates__scroller {
-  max-height: 200px;
 }
 
 .table-wrapper-scroll-y {
@@ -164,10 +136,6 @@ body {
   z-index: 1000;
   font-family: Calibri, sans-serif;
   font-size: 13px;
-}
-
-.climate-legend.esri-widget {
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
 
 .legend-title {
@@ -253,7 +221,7 @@ body {
 
   /* Force GPU compositing layer promotion on mobile to prevent Chrome blanking out the WebGL canvas */
   #mapDiv,
-  .esri-view-surface {
+  .maplibregl-canvas {
     transform: translate3d(0, 0, 0);
     will-change: transform;
     backface-visibility: hidden;

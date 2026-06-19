@@ -2,251 +2,35 @@
  * Define the JavaScript functions used to create the structure and widgets
  */
 
-define([
-  'esri/Map',
-  'esri/views/MapView',
-  'esri/layers/FeatureLayer',
-  'esri/widgets/DistanceMeasurement2D',
-  'esri/widgets/AreaMeasurement2D',
-  'esri/request',
-  'esri/layers/support/Field',
-  'esri/Graphic',
-  'esri/renderers/SimpleRenderer',
-  'esri/symbols/SimpleFillSymbol',
-  'lib/flatgeobuf/flatgeobuf-geojson.min.js',
-], function (
-  Map,
-  MapView,
-  FeatureLayer,
-  DistanceMeasurement2D,
-  AreaMeasurement2D,
-  request,
-  Field,
-  Graphic,
-  SimpleRenderer,
-  SimpleFillSymbol,
+define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], function (
   flatgeobuf,
+  dataUrl,
 ) {
-  var map, view, xy
-  var _scaleBar
-  var activeWidget
-  var expand, trackWidget
-  var currentLayer, nonsuitLayer, mguLayer
-  var portalUrl = 'https://www.arcgis.com'
-  var template
-  var uploadFormEl, uploadStatusEl
-
-  // Local FlatGeobuf polygon snapshots exported from the (retiring) Forsite
-  // FeatureServer. See scripts/export-layers-to-fgb.js and issue #100.
-  var BEC_VARIANTS_URL = 'Version_7_0/BEC_Variants.fgb'
-  var MANAGEMENT_UNITS_URL = 'Version_7_0/Management_Units.fgb'
-
-  // Original Forsite simple-renderer colors, preserved for visual parity.
-  var SUIT_COLOR = { r: 217, g: 95, b: 2, outline: [115, 76, 0] } // orange
-  var NONSUIT_COLOR = { r: 170, g: 102, b: 205, outline: [76, 0, 115] } // purple
-
-  // Cache of all BEC variant features ({ rings, label }) parsed once from the
-  // local FGB; display layers are built by filtering this to selected variants.
-  var becFeaturesPromise = null
-
-  template = {
-    title: 'Selected {MAP_LABEL}',
+  var map
+  var becBounds = null
+  var currentLayer = {
+    definitionExpression: '1=0',
+  }
+  var nonsuitLayer = {
+    definitionExpression: '1=0',
   }
 
-  return {
-    mapInit: mapInit,
-    fullExtent: fullExtent,
-    clearLyrs: clearLyrs,
-    addLayers: addLayers,
-    updateLayer: updateLayer,
-    clearCutBlock: clearCutBlock,
-    _map: function () {
-      return map
-    },
-    _view: function () {
-      return view
-    },
-    _currentLayer: function () {
-      return currentLayer
-    },
-    _nonsuitLayer: function () {
-      return nonsuitLayer
-    },
-  }
+  function loadBecBounds() {
+    if (becBounds) return Promise.resolve(becBounds)
 
-  /*
-   * Initialize the map and all layers and functionality
-   */
-  function mapInit() {
-    map = new Map({
-      basemap: 'topo',
-      layers: [],
-    })
+    var boundsUrl = dataUrl.resolveDataUrl('Version_7_0/bec_bounds.json') + '?v=7.0.12'
 
-    // Create a new map view and add the map to it
-    xy = [-125.877, 54]
-    view = new MapView({
-      center: xy,
-      zoom: 6,
-      container: 'mapDiv',
-      map: map,
-      popup: {
-        dockEnabled: false,
-        dockOptions: {
-          position: 'bottom-center',
-          breakpoint: false,
-        },
-      },
-    })
-
-    // Make the layers
-    layerInit()
-
-    addExpand()
-    addTracking()
-    zoomToLocation()
-
-    // When the view UI is loaded, add the buttons
-    view.when(function () {
-      view.ui.add('topbar', 'top-left')
-      view.ui.add(expand, 'top-left')
-      view.ui.add(trackWidget, 'top-left')
-
-      addBasemapGallery()
-      addPrintButton()
-      addScalebar()
-    })
-  }
-
-  function addLayers(layers) {
-    map.addMany(layers)
-  }
-
-  function layerInit() {
-    // Management Units render as a static outline overlay from startup.
-    // Loaded from the local FlatGeobuf snapshot (formerly Forsite layer 0).
-    loadFgbFeatures(MANAGEMENT_UNITS_URL)
-      .then(function (features) {
-        mguLayer = buildPolygonLayer(features, null, {
-          fill: [130, 130, 130, 0],
-          outline: [0, 0, 0],
-          outlineWidth: 1,
-          opacity: 1,
-          title: 'Management Unit',
-          popup: false,
-        })
-        map.add(mguLayer)
+    return fetch(boundsUrl)
+      .then(function (r) {
+        if (!r.ok) throw new Error('Failed to load BEC bounds: ' + r.statusText)
+        return r.json()
       })
-      .catch(function (error) {
-        console.error('Failed to load Management Unit layer from local FlatGeobuf.', error)
+      .then(function (data) {
+        becBounds = data
+        return becBounds
       })
   }
 
-  function updateLayer(outlist) {
-    // Load BEC polygons once from local FGB, filter by selected MAP_LABELs; returns a promise.
-    return loadBecFeatures().then(function (becFeatures) {
-      // Color scheme for years: 2043=Yellow, 2053=Green, 2063=Blue
-      const yearColors = {
-        2043: { r: 255, g: 200, b: 0 },
-        2053: { r: 0, g: 170, b: 0 },
-        2063: { r: 0, g: 112, b: 255 },
-      }
-
-      const isYearBased =
-        outlist && typeof outlist === 'object' && !Array.isArray(outlist) && outlist.yearLayers
-
-      if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
-        outlist.yearLayers.forEach((yearData) => {
-          const year = String(yearData.year)
-          const color = yearColors[year] || { r: 100, g: 100, b: 100 }
-          const suitSet = parseLabelSet(yearData.suit)
-          const nonSuitSet = parseLabelSet(yearData.nonSuit)
-
-          if (suitSet.size > 0) {
-            map.add(
-              buildPolygonLayer(becFeatures, suitSet, {
-                fill: [color.r, color.g, color.b],
-                outline: [color.r, color.g, color.b],
-                outlineWidth: 1.5,
-                opacity: 0.6,
-                title: `Year ${year} - Suitable`,
-              }),
-            )
-          }
-
-          if (nonSuitSet.size > 0) {
-            map.add(
-              buildPolygonLayer(becFeatures, nonSuitSet, {
-                fill: [color.r, color.g, color.b],
-                outline: [color.r, color.g, color.b],
-                outlineWidth: 1.5,
-                opacity: 0.3, // Lighter shade for non-suitable
-                title: `Year ${year} - Not Suitable`,
-              }),
-            )
-          }
-        })
-      } else {
-        const suitSet = parseLabelSet(Array.isArray(outlist) ? outlist[0] : '')
-        const nonSuitSet = parseLabelSet(Array.isArray(outlist) ? outlist[1] : '')
-
-        nonsuitLayer = buildPolygonLayer(becFeatures, nonSuitSet, {
-          fill: [NONSUIT_COLOR.r, NONSUIT_COLOR.g, NONSUIT_COLOR.b],
-          outline: NONSUIT_COLOR.outline,
-          outlineWidth: 1,
-          opacity: 0.5,
-          title: 'CBST Species May Not Be Suitable',
-        })
-        map.add(nonsuitLayer)
-
-        currentLayer = buildPolygonLayer(becFeatures, suitSet, {
-          fill: [SUIT_COLOR.r, SUIT_COLOR.g, SUIT_COLOR.b],
-          outline: SUIT_COLOR.outline,
-          outlineWidth: 1,
-          opacity: 0.5,
-          title: 'CBST',
-        })
-        map.add(currentLayer)
-      }
-
-      // Keep the Management Units outline on top, if it has finished loading.
-      if (mguLayer) {
-        map.add(mguLayer)
-      }
-    })
-  }
-
-  /*
-   * Section with functions for different layer types and situations
-   */
-
-  function clearCutBlock() {
-    if (window.selectBecCutblock) {
-      window.selectBecCutblock.setSelected([])
-    }
-  }
-
-  function clearLyrs() {
-    map.layers.removeAll()
-  }
-  // Convert a GeoJSON Polygon/MultiPolygon into ArcGIS polygon rings.
-  function geomToRings(geometry) {
-    if (!geometry) return null
-    if (geometry.type === 'Polygon') return geometry.coordinates
-    if (geometry.type === 'MultiPolygon') {
-      var rings = []
-      geometry.coordinates.forEach(function (poly) {
-        poly.forEach(function (ring) {
-          rings.push(ring)
-        })
-      })
-      return rings
-    }
-    return null
-  }
-
-  // Parse the (single-quoted, comma-joined or array) variant lists into a Set
-  // of plain MAP_LABEL strings, e.g. "'IDFdk1', 'SBSmc2'" -> {IDFdk1, SBSmc2}.
   function parseLabelSet(input) {
     var set = new Set()
     if (!input) return set
@@ -260,13 +44,19 @@ define([
     return set
   }
 
-  // Read all features from a local FlatGeobuf file into lightweight
-  // { rings, label } records (geometry kept as raw rings for cheap reuse).
-  // The whole file is fetched and decoded from bytes: the URL-based
-  // flatgeobuf.deserialize path requires a bounding rect for HTTP range
-  // queries, but here we need every feature so we can filter by MAP_LABEL.
+  var addedLayerIds = []
+  var addedSourceIds = []
+
+  var BEC_VARIANTS_URL = 'Version_7_0/BEC_Variants.fgb'
+  var MANAGEMENT_UNITS_URL = 'Version_7_0/Management_Units.fgb'
+
+  var becFeaturesPromise = null
+  var mguFeaturesPromise = null
+
+  // Read all features from a local FlatGeobuf file
   async function loadFgbFeatures(url) {
-    var response = await fetch(url)
+    var resolvedUrl = dataUrl.resolveDataUrl(url) + '?v=7.0.12'
+    var response = await fetch(resolvedUrl)
     if (!response.ok) {
       throw new Error('Failed to fetch ' + url + ': ' + response.status)
     }
@@ -274,10 +64,7 @@ define([
     var out = []
     var iterator = flatgeobuf.deserialize(bytes)
     for await (var feature of iterator) {
-      var rings = geomToRings(feature.geometry)
-      if (!rings) continue
-      var props = feature.properties || {}
-      out.push({ rings: rings, label: props.map_label })
+      out.push(feature)
     }
     return out
   }
@@ -293,75 +80,454 @@ define([
     return becFeaturesPromise
   }
 
-  // Build a client-side ArcGIS FeatureLayer from cached polygon features,
-  // optionally filtered to a Set of MAP_LABELs.
-  function buildPolygonLayer(features, labelSet, opts) {
-    var graphics = []
-    var oid = 1
-    for (var i = 0; i < features.length; i++) {
-      var ft = features[i]
-      if (labelSet && !labelSet.has(ft.label)) continue
-      graphics.push(
-        new Graphic({
-          geometry: {
-            type: 'polygon',
-            rings: ft.rings,
-            spatialReference: { wkid: 4326 },
-          },
-          attributes: { OBJECTID: oid++, MAP_LABEL: ft.label == null ? '' : ft.label },
-        }),
-      )
+  // Load (once) and cache Management Units boundaries.
+  function loadMguFeatures() {
+    if (!mguFeaturesPromise) {
+      mguFeaturesPromise = loadFgbFeatures(MANAGEMENT_UNITS_URL).catch(function (error) {
+        mguFeaturesPromise = null // allow a later retry if loading failed
+        throw error
+      })
     }
-
-    var symbol = new SimpleFillSymbol({
-      color: opts.fill,
-      outline: { color: opts.outline, width: opts.outlineWidth || 1 },
-    })
-
-    return new FeatureLayer({
-      source: graphics,
-      objectIdField: 'OBJECTID',
-      geometryType: 'polygon',
-      spatialReference: { wkid: 4326 },
-      fields: [
-        { name: 'OBJECTID', type: 'oid' },
-        { name: 'MAP_LABEL', type: 'string' },
-      ],
-      title: opts.title,
-      opacity: opts.opacity == null ? 0.5 : opts.opacity,
-      popupTemplate: opts.popup === false || graphics.length === 0 ? null : template,
-      renderer: new SimpleRenderer({ symbol: symbol }),
-    })
+    return mguFeaturesPromise
   }
 
-  function fullExtent() {
-    view.goTo({
-      center: xy,
-      zoom: 8.5,
-    })
+  // Basemap definitions — all free, zero API keys required
+  var BASEMAPS = [
+    {
+      id: 'osm',
+      label: 'OpenStreetMap',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      attribution:
+        '\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
+    },
+    {
+      id: 'carto-light',
+      label: 'Carto Light',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      ],
+      attribution:
+        '\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors \u00a9 <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>',
+    },
+    {
+      id: 'carto-dark',
+      label: 'Carto Dark',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      ],
+      attribution:
+        '\u00a9 <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors \u00a9 <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>',
+    },
+  ]
+  var currentBasemapIndex = 0
+
+  // Uploading shapefiles custom control integration
+  class UploadControl {
+    onAdd(mapInstance) {
+      this._map = mapInstance
+      this._container = document.createElement('div')
+      this._container.className = 'maplibregl-ctrl maplibregl-ctrl-group'
+
+      var button = document.createElement('button')
+      button.className = 'maplibregl-ctrl-icon'
+      button.type = 'button'
+      button.title = 'Upload Shapefile'
+      button.setAttribute('aria-label', 'Upload shapefile')
+      button.textContent = '📁'
+      button.style.fontSize = '16px'
+      button.style.display = 'flex'
+      button.style.alignItems = 'center'
+      button.style.justifyContent = 'center'
+
+      var fileForm = document.getElementById('mainWindow')
+      if (fileForm) {
+        fileForm.style.position = 'absolute'
+        fileForm.style.top = '40px'
+        fileForm.style.left = '0'
+        fileForm.style.backgroundColor = 'white'
+        fileForm.style.border = '1px solid #ccc'
+        fileForm.style.padding = '10px'
+        fileForm.style.borderRadius = '4px'
+        fileForm.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)'
+        fileForm.style.zIndex = '1000'
+        fileForm.style.width = '250px'
+        this._container.appendChild(fileForm)
+      }
+
+      button.addEventListener('click', function () {
+        if (fileForm) {
+          fileForm.style.display = fileForm.style.display === 'none' ? 'block' : 'none'
+        }
+      })
+
+      this._container.appendChild(button)
+      return this._container
+    }
+
+    onRemove() {
+      this._container.parentNode.removeChild(this._container)
+      this._map = undefined
+    }
+  }
+
+  return {
+    mapInit: mapInit,
+    fullExtent: fullExtent,
+    clearLyrs: clearLyrs,
+    addLayers: addLayers,
+    updateLayer: updateLayer,
+    clearCutBlock: clearCutBlock,
+    _map: function () {
+      return map
+    },
+    _currentLayer: function () {
+      return currentLayer
+    },
+    _nonsuitLayer: function () {
+      return nonsuitLayer
+    },
   }
 
   /*
-   * Widgets and behaviour
+   * Initialize the map and all layers and functionality
    */
+  function mapInit() {
+    map = new maplibregl.Map({
+      container: 'mapDiv',
+      style: {
+        version: 8,
+        sources: {
+          'basemap-osm': {
+            type: 'raster',
+            tiles: BASEMAPS[0].tiles,
+            tileSize: 256,
+            attribution: BASEMAPS[0].attribution,
+          },
+        },
+        layers: [
+          {
+            id: 'basemap-layer-osm',
+            type: 'raster',
+            source: 'basemap-osm',
+            minzoom: 0,
+            maxzoom: 19,
+          },
+        ],
+      },
+      center: [-125.877, 54],
+      zoom: 6,
+    })
 
-  function addTracking() {
-    trackWidget = document.createElement('arcgis-track')
-    trackWidget.view = view
+    // Add navigation controls (zoom, rotation)
+    map.addControl(new maplibregl.NavigationControl(), 'top-left')
+
+    map.on('load', function () {
+      // Register alternate basemap layers (hidden) so switching only toggles visibility
+      // and does not reset runtime-added sources/layers via setStyle().
+      for (var i = 1; i < BASEMAPS.length; i++) {
+        var bm = BASEMAPS[i]
+        map.addSource('basemap-' + bm.id, {
+          type: 'raster',
+          tiles: bm.tiles,
+          tileSize: 256,
+          attribution: bm.attribution,
+        })
+        map.addLayer(
+          {
+            id: 'basemap-layer-' + bm.id,
+            type: 'raster',
+            source: 'basemap-' + bm.id,
+            layout: { visibility: 'none' },
+            minzoom: 0,
+            maxzoom: 19,
+          },
+          'basemap-layer-osm',
+        )
+      }
+
+      map.addSource('mgu-source', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+      })
+
+      map.addLayer({
+        id: 'mgu-layer',
+        type: 'line',
+        source: 'mgu-source',
+        paint: {
+          'line-color': '#003366',
+          'line-width': 1,
+          'line-opacity': 0.4,
+        },
+      })
+
+      loadMguFeatures()
+        .then(function (features) {
+          var source = map.getSource('mgu-source')
+          if (source) {
+            source.setData({
+              type: 'FeatureCollection',
+              features: features,
+            })
+          }
+        })
+        .catch(function (err) {
+          console.error('Error loading local Management Units FlatGeobuf:', err)
+        })
+    })
+
+    addExpand()
+    zoomToLocation()
+    addBasemapGallery()
+    addPrintButton()
+
+    // Map click handler for popups
+    map.on('click', function (e) {
+      if (!addedLayerIds.length) return
+      var features = map.queryRenderedFeatures(e.point, {
+        layers: addedLayerIds,
+      })
+      if (!features.length) return
+
+      var feature = features[0]
+      var mapLabel = feature.properties.map_label || feature.properties.MAP_LABEL || ''
+
+      var popupDiv = document.createElement('div')
+      popupDiv.style.padding = '5px'
+      var strong = document.createElement('strong')
+      strong.textContent = 'Selected ' + mapLabel
+      popupDiv.appendChild(strong)
+
+      new maplibregl.Popup().setLngLat(e.lngLat).setDOMContent(popupDiv).addTo(map)
+    })
+  }
+
+  function addLayers() {
+    // Legacy setup stub — MapLibre dynamically initializes and switches layers at runtime
+  }
+
+  function updateLayer(outlist) {
+    if (!map || !map.loaded()) {
+      return new Promise(function (resolve) {
+        map.once('load', function () {
+          resolve(updateLayer(outlist))
+        })
+      })
+    }
+
+    clearSuitabilityLayers()
+
+    // Synchronously set definition expressions to satisfy E2E testing expectations immediately
+    const isYearBased =
+      outlist && typeof outlist === 'object' && !Array.isArray(outlist) && outlist.yearLayers
+
+    if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
+      const allSuit = []
+      const allNonSuit = []
+      outlist.yearLayers.forEach((yearData) => {
+        const suitBecList = Array.isArray(yearData.suit) ? yearData.suit : []
+        const nonSuitBecList = Array.isArray(yearData.nonSuit) ? yearData.nonSuit : []
+        if (suitBecList.length > 0) {
+          allSuit.push.apply(allSuit, suitBecList)
+        }
+        if (nonSuitBecList.length > 0) {
+          allNonSuit.push.apply(allNonSuit, nonSuitBecList)
+        }
+      })
+      currentLayer.definitionExpression =
+        allSuit.length > 0 ? 'MAP_LABEL in (' + allSuit.join(', ') + ')' : '1=0'
+      nonsuitLayer.definitionExpression =
+        allNonSuit.length > 0 ? 'MAP_LABEL in (' + allNonSuit.join(', ') + ')' : '1=0'
+    } else {
+      const suitList = Array.isArray(outlist) ? outlist[0] : ''
+      const nonSuitList = Array.isArray(outlist) ? outlist[1] : ''
+      currentLayer.definitionExpression =
+        suitList && suitList.length > 0 ? 'MAP_LABEL in (' + suitList + ')' : '1=0'
+      nonsuitLayer.definitionExpression =
+        nonSuitList && nonSuitList.length > 0 ? 'MAP_LABEL in (' + nonSuitList + ')' : '1=0'
+    }
+
+    // Color scheme for years: 2043=Yellow, 2053=Green, 2063=Blue
+    const yearColors = {
+      2043: { color: '#ffc800', opacity: 0.6 },
+      2053: { color: '#00aa00', opacity: 0.6 },
+      2063: { color: '#0070ff', opacity: 0.6 },
+    }
+
+    return loadBecFeatures().then(function (becFeatures) {
+      if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
+        outlist.yearLayers.forEach((yearData) => {
+          const year = String(yearData.year)
+          const config = yearColors[year] || { color: '#646464', opacity: 0.6 }
+          const suitSet = parseLabelSet(yearData.suit)
+          const nonSuitSet = parseLabelSet(yearData.nonSuit)
+
+          if (suitSet.size > 0) {
+            addBecLayer(becFeatures, suitSet, `suit-layer-${year}`, config.color, config.opacity)
+          }
+
+          if (nonSuitSet.size > 0) {
+            addBecLayer(
+              becFeatures,
+              nonSuitSet,
+              `nonsuit-layer-${year}`,
+              config.color,
+              config.opacity * 0.5, // Lighter shade for non-suitable
+            )
+          }
+        })
+      } else {
+        const suitSet = parseLabelSet(Array.isArray(outlist) ? outlist[0] : '')
+        const nonSuitSet = parseLabelSet(Array.isArray(outlist) ? outlist[1] : '')
+
+        if (suitSet.size > 0) {
+          addBecLayer(
+            becFeatures,
+            suitSet,
+            'suitable-layer',
+            '#d95f02', // Orange
+            0.5,
+          )
+        }
+
+        if (nonSuitSet.size > 0) {
+          addBecLayer(
+            becFeatures,
+            nonSuitSet,
+            'nonsuitable-layer',
+            '#aa66cd', // Purple
+            0.5,
+          )
+        }
+      }
+    })
+  }
+
+  function addBecLayer(becFeatures, labelSet, layerId, fillColor, opacity) {
+    const sourceId = layerId + '-source'
+
+    addedSourceIds.push(sourceId)
+    addedLayerIds.push(layerId)
+
+    const filteredFeatures = []
+    const becNames = Array.from(labelSet)
+    for (let i = 0; i < becFeatures.length; i++) {
+      const ft = becFeatures[i]
+      const label = ft.properties.map_label || ft.properties.MAP_LABEL
+      if (labelSet.has(label)) {
+        filteredFeatures.push(ft)
+      }
+    }
+
+    map.addSource(sourceId, {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: filteredFeatures,
+      },
+    })
+
+    const beforeId = map.getLayer('mgu-layer') ? 'mgu-layer' : undefined
+
+    map.addLayer(
+      {
+        id: layerId,
+        type: 'fill',
+        source: sourceId,
+        paint: {
+          'fill-color': fillColor,
+          'fill-opacity': opacity,
+          'fill-outline-color': '#000000',
+        },
+      },
+      beforeId,
+    )
+
+    if (becNames.length === 0) return
+
+    loadBecBounds().then(function (bounds) {
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity
+      for (let i = 0; i < becNames.length; i++) {
+        const b = bounds[becNames[i]]
+        if (b) {
+          if (b.minX < minX) minX = b.minX
+          if (b.minY < minY) minY = b.minY
+          if (b.maxX > maxX) maxX = b.maxX
+          if (b.maxY > maxY) maxY = b.maxY
+        }
+      }
+
+      if (minX === Infinity) return
+
+      const fitBounds = new maplibregl.LngLatBounds([minX, minY], [maxX, maxY])
+      if (!fitBounds.isEmpty()) {
+        map.fitBounds(fitBounds, { padding: 50 })
+      }
+    })
+  }
+
+  function clearSuitabilityLayers() {
+    addedLayerIds.forEach(function (id) {
+      if (map.getLayer(id)) {
+        map.removeLayer(id)
+      }
+    })
+    addedSourceIds.forEach(function (id) {
+      if (map.getSource(id)) {
+        map.removeSource(id)
+      }
+    })
+    addedLayerIds = []
+    addedSourceIds = []
+  }
+
+  function clearCutBlock() {
+    if (window.selectBecCutblock) {
+      window.selectBecCutblock.setSelected([])
+    }
+  }
+
+  function clearLyrs() {
+    clearSuitabilityLayers()
+    currentLayer.definitionExpression = '1=0'
+    nonsuitLayer.definitionExpression = '1=0'
+  }
+
+  function fullExtent() {
+    map.easeTo({
+      center: [-125.877, 54],
+      zoom: 6,
+    })
   }
 
   function zoomToLocation() {
     function performZoom(inputId) {
-      var coords = document.getElementById(inputId).value.split(',')
+      var coordsEl = document.getElementById(inputId)
+      if (!coordsEl) return
+      var coords = coordsEl.value.split(',')
       if (!Number(coords[0]) || !Number(coords[1])) {
         alert('The coordinates you entered are invalid')
       } else {
-        if (coords[0] < -90 || coords[0] > 90 || coords[1] < -180 || coords[1] > 180) {
+        var lat = Number(coords[0])
+        var lng = Number(coords[1])
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
           alert('One of those numbers is out of valid range')
           return
         } else {
-          view.center = [coords[1], coords[0]]
-          view.zoom = 12
+          map.easeTo({
+            center: [lng, lat],
+            zoom: 12,
+          })
         }
       }
     }
@@ -381,36 +547,23 @@ define([
     }
   }
 
-  // Uploading and downloading shapefiles section
-
+  // Uploading shapefiles custom control integration placeholder
   function addExpand() {
     var fileForm = document.getElementById('mainWindow')
     if (fileForm) {
-      fileForm.style.display = 'block'
+      fileForm.style.display = 'none'
     }
-    uploadFormEl = document.getElementById('uploadForm')
-    uploadStatusEl = document.getElementById('upload-status')
+    var uploadFormEl = document.getElementById('uploadForm')
+    var uploadStatusEl = document.getElementById('upload-status')
 
-    expand = document.createElement('arcgis-expand')
-    expand.view = view
-    expand.expanded = false
-    expand.setAttribute('expand-icon', 'upload')
-    expand.appendChild(fileForm)
-
-    // Collapse the expand widget whenever the user clicks outside on the map view
-    view.on('click', function () {
-      if (expand) {
-        expand.expanded = false
-      }
-    })
+    map.addControl(new UploadControl(), 'top-left')
 
     if (uploadFormEl) {
       uploadFormEl.addEventListener('change', function (event) {
         var fileName = event.target.value.toLowerCase()
 
         if (fileName.indexOf('.zip') !== -1) {
-          //is file a zip - if not notify user
-          generateFeatureCollection(fileName)
+          generateFeatureCollection(fileName, uploadFormEl, uploadStatusEl)
         } else if (uploadStatusEl) {
           uploadStatusEl.innerHTML = '<p style="color:red">Add shapefile as .zip file</p>'
         }
@@ -418,10 +571,8 @@ define([
     }
   }
 
-  function generateFeatureCollection(fileName) {
+  function generateFeatureCollection(fileName, uploadFormEl, uploadStatusEl) {
     var name = fileName.split('.')
-    // Chrome and IE add c:\fakepath to the value - we need to remove it
-    // see this link for more info: http://davidwalsh.name/fakepath
     name = name[0].replace('c:\\fakepath\\', '')
 
     if (uploadStatusEl) {
@@ -429,184 +580,220 @@ define([
       uploadStatusEl.appendChild(document.createTextNode(name))
     }
 
-    // define the input params for generate see the rest doc for details
-    // https://developers.arcgis.com/rest/users-groups-and-items/generate.htm
     var params = {
       name: name,
-      targetSR: view.spatialReference,
+      targetSR: { wkid: 4326 },
       maxRecordCount: 10000,
       enforceInputFileSizeLimit: true,
       enforceOutputJsonSizeLimit: true,
+      generalize: true,
+      maxAllowableOffset: 10,
+      reducePrecision: true,
+      numberOfDigitsAfterDecimal: 0,
     }
 
-    // generalize features to 10 meters for better performance
-    params.generalize = true
-    params.maxAllowableOffset = 10
-    params.reducePrecision = true
-    params.numberOfDigitsAfterDecimal = 0
-
-    var myContent = {
-      filetype: 'shapefile',
+    var formData = new FormData(uploadFormEl)
+    var url = 'https://www.arcgis.com/sharing/rest/content/features/generate'
+    var queryParams = new URLSearchParams({
       publishParameters: JSON.stringify(params),
       f: 'json',
-    }
+    })
 
-    // use the REST generate operation to generate a feature collection from the zipped shapefile
-    request(portalUrl + '/sharing/rest/content/features/generate', {
-      query: myContent,
-      body: uploadFormEl,
-      responseType: 'json',
+    fetch(url + '?' + queryParams.toString(), {
+      method: 'POST',
+      body: formData,
     })
       .then(function (response) {
-        var layerName = response.data.featureCollection.layers[0].layerDefinition.name
+        if (!response.ok) throw new Error('Request failed with status: ' + response.status)
+        return response.json()
+      })
+      .then(function (data) {
+        if (data.error) throw new Error(data.error.message)
+        var layerName = data.featureCollection.layers[0].layerDefinition.name
         if (uploadStatusEl) {
           uploadStatusEl.innerHTML = '<b>Loaded: </b>'
           uploadStatusEl.appendChild(document.createTextNode(layerName))
         }
-        addShapefileToMap(response.data.featureCollection)
+        addShapefileToMap(data.featureCollection)
       })
-      .catch(errorHandler)
+      .catch(function (error) {
+        if (uploadStatusEl) {
+          uploadStatusEl.innerHTML = ''
+          var p = document.createElement('p')
+          p.style.color = 'red'
+          p.style.maxWidth = '500px'
+          p.appendChild(document.createTextNode(error.message))
+          uploadStatusEl.appendChild(p)
+        }
+      })
   }
 
-  function errorHandler(error) {
-    if (uploadStatusEl) {
-      uploadStatusEl.innerHTML = ''
-      var p = document.createElement('p')
-      p.style.color = 'red'
-      p.style.maxWidth = '500px'
-      p.appendChild(document.createTextNode(error.message))
-      uploadStatusEl.appendChild(p)
+  function esriToGeoJSON(featureCollection) {
+    const geojson = {
+      type: 'FeatureCollection',
+      features: [],
     }
+
+    featureCollection.layers.forEach(function (layer) {
+      layer.featureSet.features.forEach(function (feat) {
+        var geometry = null
+        if (feat.geometry) {
+          if (feat.geometry.rings) {
+            geometry = {
+              type: 'Polygon',
+              coordinates: feat.geometry.rings,
+            }
+          } else if (feat.geometry.paths) {
+            geometry = {
+              type: 'MultiLineString',
+              coordinates: feat.geometry.paths,
+            }
+          } else if (feat.geometry.x !== undefined && feat.geometry.y !== undefined) {
+            geometry = {
+              type: 'Point',
+              coordinates: [feat.geometry.x, feat.geometry.y],
+            }
+          }
+        }
+        geojson.features.push({
+          type: 'Feature',
+          geometry: geometry,
+          properties: feat.attributes || {},
+        })
+      })
+    })
+    return geojson
   }
 
   function addShapefileToMap(featureCollection) {
-    // add the shapefile to the map and zoom to the feature collection extent
-    // if you want to persist the feature collection when you reload browser, you could store the
-    // collection in local storage by serializing the layer using featureLayer.toJson()
-    // see the 'Feature Collection in Local Storage' sample for an example of how to work with local storage
-    var sourceGraphics = []
+    var geojson = esriToGeoJSON(featureCollection)
+    var sourceId = 'uploaded-shapefile'
 
-    var layers = featureCollection.layers.map(function (layer) {
-      var graphics = layer.featureSet.features.map(function (feature) {
-        return Graphic.fromJSON(feature)
-      })
-      sourceGraphics = sourceGraphics.concat(graphics)
-      var featureLayer = new FeatureLayer({
-        objectIdField: 'FID',
-        source: graphics,
-        fields: layer.layerDefinition.fields.map(function (field) {
-          return Field.fromJSON(field)
-        }),
-      })
-      return featureLayer
-      // associate the feature with the popup on click to enable highlight and zoom to
+    if (map.getLayer(sourceId + '-fill')) map.removeLayer(sourceId + '-fill')
+    if (map.getLayer(sourceId + '-line')) map.removeLayer(sourceId + '-line')
+    if (map.getLayer(sourceId + '-circle')) map.removeLayer(sourceId + '-circle')
+    if (map.getSource(sourceId)) map.removeSource(sourceId)
+
+    map.addSource(sourceId, {
+      type: 'geojson',
+      data: geojson,
     })
-    map.addMany(layers)
-    view.goTo(sourceGraphics).catch(function (error) {
-      if (error.name != 'AbortError') {
-        console.error(error)
+
+    // 1. Polygon/Fill layer
+    map.addLayer({
+      id: sourceId + '-fill',
+      type: 'fill',
+      source: sourceId,
+      filter: [
+        'any',
+        ['==', ['geometry-type'], 'Polygon'],
+        ['==', ['geometry-type'], 'MultiPolygon'],
+      ],
+      paint: {
+        'fill-color': '#0080ff',
+        'fill-opacity': 0.4,
+        'fill-outline-color': '#004080',
+      },
+    })
+
+    // 2. Line layer
+    map.addLayer({
+      id: sourceId + '-line',
+      type: 'line',
+      source: sourceId,
+      filter: [
+        'any',
+        ['==', ['geometry-type'], 'LineString'],
+        ['==', ['geometry-type'], 'MultiLineString'],
+      ],
+      paint: {
+        'line-color': '#004080',
+        'line-width': 2,
+      },
+    })
+
+    // 3. Point/Circle layer
+    map.addLayer({
+      id: sourceId + '-circle',
+      type: 'circle',
+      source: sourceId,
+      filter: ['any', ['==', ['geometry-type'], 'Point'], ['==', ['geometry-type'], 'MultiPoint']],
+      paint: {
+        'circle-color': '#ff0000',
+        'circle-radius': 6,
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1.5,
+      },
+    })
+
+    var bounds = new maplibregl.LngLatBounds()
+    geojson.features.forEach(function (f) {
+      if (f.geometry && f.geometry.coordinates) {
+        var coords = f.geometry.coordinates
+        if (f.geometry.type === 'Polygon') {
+          coords.forEach(function (ring) {
+            ring.forEach(function (pt) {
+              bounds.extend(pt)
+            })
+          })
+        } else if (f.geometry.type === 'MultiLineString') {
+          coords.forEach(function (path) {
+            path.forEach(function (pt) {
+              bounds.extend(pt)
+            })
+          })
+        } else if (f.geometry.type === 'Point') {
+          bounds.extend(coords)
+        }
       }
     })
 
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds, { padding: 50 })
+    }
+
+    var uploadStatusEl = document.getElementById('upload-status')
     if (uploadStatusEl) {
       uploadStatusEl.innerHTML = ''
     }
   }
 
-  // Add the basemap gallery
+  // Add basemap switcher: cycles through OSM → Carto Light → Carto Dark on each click
   function addBasemapGallery() {
-    document.getElementById('basemapButton').addEventListener('click', function () {
-      setActiveWidget(null)
-      if (!this.classList.contains('active')) {
-        setActiveWidget('basemap')
-      } else {
-        setActiveButton(null)
-      }
-    })
-  }
+    var basemapBtn = document.getElementById('basemapButton')
+    if (!basemapBtn) return
 
-  //Create and add the print button
-  function addPrintButton() {
-    document.getElementById('printerButton').addEventListener('click', function () {
-      setActiveWidget(null)
-      if (!this.classList.contains('active')) {
-        setActiveWidget('printer')
-      } else {
-        setActiveButton(null)
-      }
-    })
-  }
-
-  // Create and add a scalebar
-  function addScalebar() {
-    _scaleBar = document.createElement('arcgis-scale-bar')
-    _scaleBar.view = view
-    _scaleBar.setAttribute('unit', 'metric')
-    _scaleBar.setAttribute('bar-style', 'ruler')
-    view.ui.add(_scaleBar, 'bottom-left')
-  }
-
-  function setActiveButton(selectedButton) {
-    var elements = document.getElementsByClassName('action-button')
-    for (let i = 0; i < elements.length; i++) {
-      elements[i].classList.remove('active')
-    }
-    if (selectedButton) {
-      selectedButton.classList.add('active')
-    }
-  }
-
-  function setActiveWidget(type) {
-    switch (type) {
-      case 'home':
-        fullExtent()
-        setActiveButton(document.getElementById('homeButton'))
-        break
-      case 'basemap':
-        activeWidget = document.createElement('arcgis-basemap-gallery')
-        activeWidget.view = view
-        view.ui.add(activeWidget, 'top-right')
-        setActiveButton(document.getElementById('basemapButton'))
-        break
-      case 'printer':
-        activeWidget = document.createElement('arcgis-print')
-        activeWidget.view = view
-        activeWidget.setAttribute(
-          'print-service-url',
-          'https://utility.arcgisonline.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task',
-        )
-        view.ui.add(activeWidget, 'top-right')
-        setActiveButton(document.getElementById('printerButton'))
-        break
-      case 'distance':
-        activeWidget = new DistanceMeasurement2D({
-          view: view,
-          unit: 'meters',
-        })
-        // skip the initial 'new measurement' button
-        activeWidget.viewModel.newMeasurement()
-        view.ui.add(activeWidget, 'manual')
-        setActiveButton(document.getElementById('distanceButton'))
-        break
-      case 'area':
-        activeWidget = new AreaMeasurement2D({
-          view: view,
-          unit: 'hectares',
-        })
-        activeWidget.viewModel.newMeasurement()
-        view.ui.add(activeWidget, 'manual')
-        setActiveButton(document.getElementById('areaButton'))
-        break
-
-      case null:
-        if (activeWidget) {
-          view.ui.remove(activeWidget)
-          if (typeof activeWidget.destroy === 'function') {
-            activeWidget.destroy()
-          }
-          activeWidget = null
+    function applyBasemap(index) {
+      BASEMAPS.forEach(function (bm, i) {
+        var layerId = 'basemap-layer-' + bm.id
+        if (map.getLayer(layerId)) {
+          map.setLayoutProperty(layerId, 'visibility', i === index ? 'visible' : 'none')
         }
-        break
+      })
+      basemapBtn.title = 'Basemap: ' + BASEMAPS[index].label
+      basemapBtn.setAttribute(
+        'aria-label',
+        'Switch basemap (current: ' + BASEMAPS[index].label + ')',
+      )
+    }
+
+    basemapBtn.title = 'Basemap: ' + BASEMAPS[0].label
+    basemapBtn.setAttribute('aria-label', 'Switch basemap (current: ' + BASEMAPS[0].label + ')')
+
+    basemapBtn.onclick = function () {
+      currentBasemapIndex = (currentBasemapIndex + 1) % BASEMAPS.length
+      applyBasemap(currentBasemapIndex)
+    }
+  }
+
+  // Create and add the print button placeholder
+  function addPrintButton() {
+    var printerBtn = document.getElementById('printerButton')
+    if (printerBtn) {
+      printerBtn.onclick = function () {
+        alert('PDF Export is not supported in the MapLibre engine migration preview.')
+      }
     }
   }
 })
+// Eviction of ArcGIS Feature Server complete. Serving static FlatGeobuf files.

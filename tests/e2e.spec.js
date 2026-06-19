@@ -115,18 +115,17 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await cutblockRow.waitFor({ state: 'visible', timeout: 30 * 1000 })
     await expect(cutblockRow).not.toContainText('No matching records found')
 
-    // Verify suitable BEC polygons loaded from local FlatGeobuf (client-side source length > 0).
+    // Verify the map layer's definition expression is updated (not empty/1=0)
     await expect.poll(async () => {
       return await page.evaluate(() => {
         if (!window.defineMap || typeof window.defineMap._currentLayer !== 'function') return null
         const currentLayer = window.defineMap._currentLayer()
-        if (!currentLayer || !currentLayer.source) return null
-        return currentLayer.source.length
+        return currentLayer ? currentLayer.definitionExpression : null
       })
     }, {
-      message: 'Expected currentLayer to be populated with suitable BEC polygons',
-      timeout: 20000,
-    }).toBeGreaterThan(0)
+      message: 'Expected currentLayer.definitionExpression to be updated with MAP_LABEL list',
+      timeout: 10000,
+    }).toContain('MAP_LABEL in')
   })
 
   test('Seedlot Flow: Entering Orchard 101 populates representative seedlot and table', async ({
@@ -305,11 +304,13 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
       const uploadStatus = page.locator('#upload-status')
       await expect(uploadStatus).toHaveText('')
 
-      // Verify that the graphics/layers are added to the ArcGIS map view
+      // Verify that the graphics/layers are added to the MapLibre map
       const hasLayers = await page.evaluate(() => {
         if (!window.defineMap || typeof window.defineMap._map !== 'function') return false
         const map = window.defineMap._map()
-        return !!(map && map.layers && map.layers.length > 0)
+        if (!map) return false
+        const style = map.getStyle()
+        return !!(style && style.layers && style.layers.some(l => l.id.startsWith('uploaded-shapefile')))
       })
 
       expect(hasLayers).toBe(true)

@@ -6,14 +6,23 @@ let exportedModule
 const mockSpeciesStore = require('../docs/scripts/speciesStore.js')
 const mockBecStore = require('../docs/scripts/becStore.js')
 
+const mockDataUrl = {
+  resolveDataUrl(url) {
+    return url
+  },
+  getDataUrlCandidates(url) {
+    return [url]
+  },
+}
+
 globalThis.define = function (dependencies, factory) {
   if (typeof dependencies === 'function') {
     factory = dependencies
   }
   const mockFlatGeobuf = {
-    deserialize: () => {}
+    deserialize: () => {},
   }
-  exportedModule = factory(mockFlatGeobuf, mockSpeciesStore, mockBecStore)
+  exportedModule = factory(mockFlatGeobuf, mockDataUrl, mockSpeciesStore, mockBecStore)
 }
 
 // Load the target module

@@ -19,7 +19,7 @@ export default [
         ...globals.browser,
         ...globals.jquery,
         ...globals.amd,
-        esri: "readonly",
+        maplibregl: "readonly",
         SlimSelect: "readonly",
         bootstrap: "readonly",
         module: "readonly",
