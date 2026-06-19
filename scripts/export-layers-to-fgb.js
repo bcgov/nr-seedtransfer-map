@@ -287,7 +287,7 @@ async function fetchAllFeatures(layerId, outFields = '*') {
     // runtime by MAP_LABEL filtering, not by layer, so we export once as
     // BEC_Variants.fgb (see defineMap.js).
     console.log('Downloading Layer 5 (BEC variants)...');
-    const becVariants = await fetchAllFeatures(5, 'map_label,objectid_1');
+    const becVariants = await fetchAllFeatures(5, 'map_label');
     console.log(
       `Layer 5 fetched: ${becVariants.features.length} features. Processing bounds...`,
     );
