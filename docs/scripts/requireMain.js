@@ -196,8 +196,8 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
     defineMap.clearLyrs()
     main
       .addSuitabilityLayerCutblock(document.getElementById('speciesInputCutblock').value, selected)
-      .then((layers) => {
-        defineMap.updateLayer(layers)
+      .then((layers) => defineMap.updateLayer(layers))
+      .then(() => {
         hideLoader()
         updateClimateLegendsVis()
       })
@@ -215,8 +215,8 @@ require(['scripts/defineMap.js', 'scripts/main.js'], function (defineMap, main) 
         document.getElementById('speciesInputSeedlot').value,
         document.getElementById('becInputSeedlot').value,
       )
-      .then((layers) => {
-        defineMap.updateLayer(layers)
+      .then((layers) => defineMap.updateLayer(layers))
+      .then(() => {
         hideLoader()
         updateClimateLegendsVis()
       })

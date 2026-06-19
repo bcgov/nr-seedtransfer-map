@@ -10,18 +10,14 @@
         default-src 'self';
         script-src 'self' https://js.arcgis.com 'unsafe-eval';
         style-src 'self' 'unsafe-inline' https://js.arcgis.com;
-        img-src 'self' data: blob: https://*.arcgis.com https://*.arcgisonline.com https://maps.forsite.ca;
-        connect-src 'self' https://*.arcgis.com https://*.arcgisonline.com https://maps.forsite.ca;
+        img-src 'self' data: blob: https://*.arcgis.com https://*.arcgisonline.com;
+        connect-src 'self' https://*.arcgis.com https://*.arcgisonline.com;
         font-src 'self' https://js.arcgis.com;
         worker-src 'self' blob:;
         child-src 'self' blob:;
       "
     />
-    <link
-      rel="shortcut icon"
-      type="image/png"
-      href="https://maps.forsite.ca/favicon/favicon-32x32.png"
-    />
+    <link rel="shortcut icon" type="image/png" href="images/favicon-32x32.png" />
     <!-- ArcGIS Maps SDK and theme are kept on the Esri CDN due to its footprint (30MB+ of dynamic modules/WASM) -->
     <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
     <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css" />
@@ -53,7 +49,7 @@
             <div class="navbar-brand d-flex align-items-center w-100 px-3 py-1">
               <!-- Desktop Logo -->
               <img
-                src="https://maps.forsite.ca/BCID_H_rgb_pos.png"
+                src="images/BCID_H_rgb_pos.png"
                 alt="BC Logo"
                 width="165"
                 height="64"
@@ -61,7 +57,7 @@
               />
               <!-- Mobile Logo -->
               <img
-                src="https://maps.forsite.ca/BCID_H_rgb_pos.png"
+                src="images/BCID_H_rgb_pos.png"
                 alt="BC Logo"
                 width="103"
                 height="40"
@@ -110,12 +106,7 @@
             class="offcanvas-header bg-light d-md-none border-bottom justify-content-between p-3"
           >
             <div class="d-flex align-items-center">
-              <img
-                src="https://maps.forsite.ca/BCID_H_rgb_pos.png"
-                alt="BC Logo"
-                height="30"
-                class="me-2"
-              />
+              <img src="images/BCID_H_rgb_pos.png" alt="BC Logo" height="30" class="me-2" />
               <h5 class="offcanvas-title fw-bold text-dark fs-6" id="sidebarOffcanvasLabel">
                 CBST Sourcing Tools
               </h5>
