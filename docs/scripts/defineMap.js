@@ -413,8 +413,15 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
   function addBecLayer(becFeatures, labelSet, layerId, fillColor, opacity) {
     const sourceId = layerId + '-source'
 
-    addedSourceIds.push(sourceId)
-    addedLayerIds.push(layerId)
+    if (map.getLayer(layerId)) map.removeLayer(layerId)
+    if (map.getSource(sourceId)) map.removeSource(sourceId)
+
+    if (addedSourceIds.indexOf(sourceId) === -1) {
+      addedSourceIds.push(sourceId)
+    }
+    if (addedLayerIds.indexOf(layerId) === -1) {
+      addedLayerIds.push(layerId)
+    }
 
     const filteredFeatures = []
     const becNames = Array.from(labelSet)
@@ -597,6 +604,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
     var queryParams = new URLSearchParams({
       publishParameters: JSON.stringify(params),
       f: 'json',
+      filetype: 'shapefile',
     })
 
     fetch(url + '?' + queryParams.toString(), {
@@ -628,6 +636,44 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
       })
   }
 
+  function esriRingsToGeoJSON(rings) {
+    if (!rings || rings.length === 0) return null
+    var polygons = []
+    rings.forEach(function (ring) {
+      if (ring.length < 3) return
+      var sum = 0
+      for (var i = 0; i < ring.length - 1; i++) {
+        sum += (ring[i + 1][0] - ring[i][0]) * (ring[i + 1][1] + ring[i][1])
+      }
+      var isOuter = sum > 0
+      var coords = ring.slice()
+      if (isOuter) {
+        coords.reverse()
+        polygons.push([coords])
+      } else {
+        coords.reverse()
+        if (polygons.length === 0) {
+          polygons.push([coords])
+        } else {
+          polygons[polygons.length - 1].push(coords)
+        }
+      }
+    })
+
+    if (polygons.length === 0) return null
+    if (polygons.length === 1) {
+      return {
+        type: 'Polygon',
+        coordinates: polygons[0],
+      }
+    } else {
+      return {
+        type: 'MultiPolygon',
+        coordinates: polygons,
+      }
+    }
+  }
+
   function esriToGeoJSON(featureCollection) {
     const geojson = {
       type: 'FeatureCollection',
@@ -639,10 +685,7 @@ define(['lib/flatgeobuf/flatgeobuf-geojson.min.js', 'scripts/dataUrl.js'], funct
         var geometry = null
         if (feat.geometry) {
           if (feat.geometry.rings) {
-            geometry = {
-              type: 'Polygon',
-              coordinates: feat.geometry.rings,
-            }
+            geometry = esriRingsToGeoJSON(feat.geometry.rings)
           } else if (feat.geometry.paths) {
             geometry = {
               type: 'MultiLineString',
