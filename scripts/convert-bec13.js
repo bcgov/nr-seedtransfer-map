@@ -222,6 +222,9 @@ const path = require('path');
 
   function serializeWithIndex(geojson) {
     const featuresCount = geojson.features.length;
+    if (featuresCount === 0) {
+      throw new Error('Cannot serialize an empty FeatureCollection to FlatGeobuf (featuresCount=0).');
+    }
     const indexNodeSize = 16;
 
     const firstProps = geojson.features[0] ? geojson.features[0].properties : null;
@@ -347,68 +350,118 @@ const path = require('path');
 
   console.log(`Reading and processing features from ${jsonPath}...`);
 
+  let inFeaturesArray = false;
+  let scanIdx = 0;
+  let braceCount = 0;
+  let inString = false;
+  let escape = false;
+  let featureStartIdx = -1;
+
   for await (const chunk of stream) {
     buffer += chunk;
-    let index = buffer.indexOf('{"type":"Feature"');
-    while (index !== -1) {
-      let nextIndex = buffer.indexOf('{"type":"Feature"', index + 16);
-      if (nextIndex === -1) {
-        const arrayEndIndex = buffer.indexOf(']}', index + 16);
-        if (arrayEndIndex !== -1) {
-          nextIndex = arrayEndIndex;
+
+    if (!inFeaturesArray) {
+      const featuresKeyIdx = buffer.indexOf('"features"');
+      if (featuresKeyIdx !== -1) {
+        const arrayStartIdx = buffer.indexOf('[', featuresKeyIdx);
+        if (arrayStartIdx !== -1) {
+          inFeaturesArray = true;
+          buffer = buffer.slice(arrayStartIdx + 1);
+          scanIdx = 0;
         } else {
-          break;
+          buffer = buffer.slice(featuresKeyIdx);
+          scanIdx = 0;
         }
+      } else {
+        if (buffer.length > 20) {
+          buffer = buffer.slice(buffer.length - 20);
+        }
+        scanIdx = 0;
+      }
+      continue;
+    }
+
+    while (scanIdx < buffer.length) {
+      const char = buffer[scanIdx];
+
+      if (escape) {
+        escape = false;
+        scanIdx++;
+        continue;
+      }
+      if (char === '\\') {
+        escape = true;
+        scanIdx++;
+        continue;
+      }
+      if (char === '"') {
+        inString = !inString;
+        scanIdx++;
+        continue;
+      }
+      if (inString) {
+        scanIdx++;
+        continue;
       }
 
-      let featureStr = buffer.slice(index, nextIndex).trim();
-      if (featureStr.endsWith(',')) {
-        featureStr = featureStr.slice(0, -1);
-      }
+      if (char === '{') {
+        if (braceCount === 0) {
+          featureStartIdx = scanIdx;
+        }
+        braceCount++;
+      } else if (char === '}') {
+        braceCount--;
+        if (braceCount === 0 && featureStartIdx !== -1) {
+          const featureStr = buffer.slice(featureStartIdx, scanIdx + 1);
+          
+          try {
+            const f = JSON.parse(featureStr);
+            featureCount++;
 
-      try {
-        const f = JSON.parse(featureStr);
-        featureCount++;
+            // Get and normalize the map label, safely navigating potential null properties
+            const mapLabel = f.properties?.MAP_LABEL ?? f.properties?.map_label;
 
-        // Get and normalize the map label
-        const mapLabel = f.properties.MAP_LABEL || f.properties.map_label;
+            if (mapLabel) {
+              // Simplify (in 3005 meters) and Reproject (to 4326 lat/long)
+              const processedGeom = simplifyAndReprojectGeometry(f.geometry, TOLERANCE);
 
-        if (mapLabel) {
-          // Simplify (in 3005 meters) and Reproject (to 4326 lat/long)
-          const processedGeom = simplifyAndReprojectGeometry(f.geometry, TOLERANCE);
+              // Calculate bounding box in WGS84 for this variant
+              const bbox = getGeometryBbox(processedGeom);
+              if (!bounds[mapLabel]) {
+                bounds[mapLabel] = { ...bbox };
+              } else {
+                const b = bounds[mapLabel];
+                if (bbox.minX < b.minX) b.minX = bbox.minX;
+                if (bbox.minY < b.minY) b.minY = bbox.minY;
+                if (bbox.maxX > b.maxX) b.maxX = bbox.maxX;
+                if (bbox.maxY > b.maxY) b.maxY = bbox.maxY;
+              }
 
-          // Calculate bounding box in WGS84 for this variant
-          const bbox = getGeometryBbox(processedGeom);
-          if (!bounds[mapLabel]) {
-            bounds[mapLabel] = { ...bbox };
-          } else {
-            const b = bounds[mapLabel];
-            if (bbox.minX < b.minX) b.minX = bbox.minX;
-            if (bbox.minY < b.minY) b.minY = bbox.minY;
-            if (bbox.maxX > b.maxX) b.maxX = bbox.maxX;
-            if (bbox.maxY > b.maxY) b.maxY = bbox.maxY;
+              // Build output feature with only MAP_LABEL property
+              processedFeatures.push({
+                type: 'Feature',
+                geometry: processedGeom,
+                properties: {
+                  map_label: mapLabel
+                }
+              });
+            }
+
+            if (featureCount % 2000 === 0) {
+              console.log(`Processed ${featureCount} features...`);
+            }
+          } catch (err) {
+            console.error(`Error parsing feature ${featureCount + 1}:`, err.message);
           }
 
-          // Build output feature with only MAP_LABEL property
-          processedFeatures.push({
-            type: 'Feature',
-            geometry: processedGeom,
-            properties: {
-              map_label: mapLabel
-            }
-          });
+          // Slice the processed feature off the buffer
+          buffer = buffer.slice(scanIdx + 1);
+          scanIdx = 0;
+          featureStartIdx = -1;
+          continue; // Skip scanIdx++ to start scanning index 0 of the new buffer
         }
-
-        if (featureCount % 2000 === 0) {
-          console.log(`Processed ${featureCount} features...`);
-        }
-      } catch (err) {
-        // Skip parsing errors due to chunk borders
-        break;
       }
-
-      buffer = buffer.slice(nextIndex);
-      index = buffer.indexOf('{"type":"Feature"');
+      scanIdx++;
     }
   }
 
