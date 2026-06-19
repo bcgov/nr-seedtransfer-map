@@ -6,7 +6,6 @@ define([
   'esri/Map',
   'esri/views/MapView',
   'esri/layers/FeatureLayer',
-  'esri/layers/GraphicsLayer',
   'esri/widgets/DistanceMeasurement2D',
   'esri/widgets/AreaMeasurement2D',
   'esri/request',
@@ -19,7 +18,6 @@ define([
   Map,
   MapView,
   FeatureLayer,
-  GraphicsLayer,
   DistanceMeasurement2D,
   AreaMeasurement2D,
   request,
@@ -34,7 +32,6 @@ define([
   var activeWidget
   var expand, trackWidget
   var currentLayer, nonsuitLayer, mguLayer
-  var _suitRenderer, _nonSuitRenderer
   var portalUrl = 'https://www.arcgis.com'
   var template
   var uploadFormEl, uploadStatusEl
@@ -146,15 +143,7 @@ define([
   }
 
   function updateLayer(outlist) {
-    // outlist: the user's chosen suitable / non-suitable BEC variants. Either:
-    //   [suitList, nonSuitList]                       - simple format (quoted, comma-joined)
-    //   { yearLayers: [{year, suit, nonSuit}, ...] }  - year-based format (arrays)
-    //
-    // Polygons are drawn from the local BEC_Variants FlatGeobuf snapshot: we
-    // load all variant features once (cached), then build a client-side ArcGIS
-    // FeatureLayer containing only the selected variants for each display layer.
-    // Returns a promise so callers can keep the loader visible until the (large)
-    // BEC snapshot has finished loading on first use.
+    // Load BEC polygons once from local FGB, filter by selected MAP_LABELs; returns a promise.
     return loadBecFeatures().then(function (becFeatures) {
       // Color scheme for years: 2043=Yellow, 2053=Green, 2063=Blue
       const yearColors = {
@@ -276,23 +265,21 @@ define([
   // The whole file is fetched and decoded from bytes: the URL-based
   // flatgeobuf.deserialize path requires a bounding rect for HTTP range
   // queries, but here we need every feature so we can filter by MAP_LABEL.
-  function loadFgbFeatures(url) {
-    return (async function () {
-      var response = await fetch(url)
-      if (!response.ok) {
-        throw new Error('Failed to fetch ' + url + ': ' + response.status)
-      }
-      var bytes = new Uint8Array(await response.arrayBuffer())
-      var out = []
-      var iterator = flatgeobuf.deserialize(bytes)
-      for await (var feature of iterator) {
-        var rings = geomToRings(feature.geometry)
-        if (!rings) continue
-        var props = feature.properties || {}
-        out.push({ rings: rings, label: props.map_label })
-      }
-      return out
-    })()
+  async function loadFgbFeatures(url) {
+    var response = await fetch(url)
+    if (!response.ok) {
+      throw new Error('Failed to fetch ' + url + ': ' + response.status)
+    }
+    var bytes = new Uint8Array(await response.arrayBuffer())
+    var out = []
+    var iterator = flatgeobuf.deserialize(bytes)
+    for await (var feature of iterator) {
+      var rings = geomToRings(feature.geometry)
+      if (!rings) continue
+      var props = feature.properties || {}
+      out.push({ rings: rings, label: props.map_label })
+    }
+    return out
   }
 
   // Load (once) and cache all BEC variant features from the local snapshot.
