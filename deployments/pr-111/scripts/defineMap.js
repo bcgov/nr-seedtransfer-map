@@ -266,7 +266,16 @@ define([
   // flatgeobuf.deserialize path requires a bounding rect for HTTP range
   // queries, but here we need every feature so we can filter by MAP_LABEL.
   async function loadFgbFeatures(url) {
-    var response = await fetch(url)
+    const isDbPruned = document.body.getAttribute('data-database-pruned') === 'true'
+    let targetUrl = url
+    if (
+      isDbPruned &&
+      url.startsWith('Version_7_0/') &&
+      window.location.pathname.includes('/deployments/pr-')
+    ) {
+      targetUrl = '../../' + url
+    }
+    var response = await fetch(targetUrl)
     if (!response.ok) {
       throw new Error('Failed to fetch ' + url + ': ' + response.status)
     }
