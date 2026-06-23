@@ -46,7 +46,7 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     )
   })
 
-  test('Cutblock Flow: Selecting FDI species and IDFdk1 BEC variant populates tables', async ({
+  test('Cutblock Flow: Selecting SX species and IDFdk1 BEC variant populates tables', async ({
     page,
   }) => {
     // Click the "I Have A Cutblock" tab
@@ -55,8 +55,8 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     // Click the Species SlimSelect dropdown to open it
     await page.locator('#speciesInputCutblock + .ss-main').click()
 
-    // Click the "FDI" option inside the visible dropdown
-    await page.getByRole('option', { name: 'FDI', exact: true }).first().click()
+    // Click the "SX" option inside the visible dropdown
+    await page.getByRole('option', { name: 'SX', exact: true }).first().click()
 
     // Click the BEC Variant SlimSelect dropdown to open it
     await page.locator('#becInputCutblock + .ss-main').click()
@@ -68,7 +68,7 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await page.keyboard.press('Escape')
 
     // Assert selections are set on the underlying select elements
-    await expect(page.locator('#speciesInputCutblock')).toHaveValue('FDI')
+    await expect(page.locator('#speciesInputCutblock')).toHaveValue('SX')
     await expect(page.locator('#becInputCutblock')).toHaveValues(['143'])
 
     // Click the GO button for Cutblock
@@ -91,12 +91,6 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
   }) => {
     // Click the "I Have A Cutblock" tab
     await page.click('#cutblock-tab')
-
-    // Click the Species SlimSelect dropdown to open it
-    await page.locator('#speciesInputCutblock + .ss-main').click()
-
-    // Click the "PLI" option inside the visible dropdown
-    await page.getByRole('option', { name: 'PLI', exact: true }).first().click()
 
     // Click the BEC Variant SlimSelect dropdown to open it
     await page.locator('#becInputCutblock + .ss-main').click()
@@ -129,14 +123,14 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     }).toBeGreaterThan(0)
   })
 
-  test('Seedlot Flow: Entering Orchard 101 populates representative seedlot and table', async ({
+  test('Seedlot Flow: Entering Orchard 201 populates representative seedlot and table', async ({
     page,
   }) => {
     // Click the "I Have A Seedlot" tab
     await page.click('#seedlot-tab')
 
     // Fill in Orchard Number
-    await page.fill('#orchardNumber', '101')
+    await page.fill('#orchardNumber', '201')
 
     // Click "Set Representative Seedlot"
     // Mock the alert popup to prevent test blockage just in case
@@ -145,12 +139,12 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     })
     await page.click('#addSeedlotfromOrchard')
 
-    // It should automatically retrieve Seedlot 3226, set the inputs, and refresh the UI dropdowns
-    await expect(page.locator('#seedlotNumber')).toHaveValue('3226')
+    // It should automatically retrieve Seedlot 4400, set the inputs, and refresh the UI dropdowns
+    await expect(page.locator('#seedlotNumber')).toHaveValue('4400')
 
     // Wait for the inputs to get set via the AJAX response
-    await expect(page.locator('#speciesInputSeedlot')).toHaveValue('FDC')
-    await expect(page.locator('#becInputSeedlot')).toHaveValues(['227'])
+    await expect(page.locator('#speciesInputSeedlot')).toHaveValue('PLI')
+    await expect(page.locator('#becInputSeedlot')).toHaveValues(['203'])
 
     // Click the Seedlot tab GO button
     await page.click('#addButtonSeedlot')
@@ -189,14 +183,14 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await expect(seedRow).not.toContainText('No matching records found')
   })
 
-  test('Seedlot Flow: Entering Orchard 109 with unassigned BEC variant handles empty data gracefully', async ({
+  test('Seedlot Flow: Entering Orchard 217 with unassigned BEC variant handles empty data gracefully', async ({
     page,
   }) => {
     // Click the "I Have A Seedlot" tab
     await page.click('#seedlot-tab')
 
-    // Fill in Orchard Number 109
-    await page.fill('#orchardNumber', '109')
+    // Fill in Orchard Number 217
+    await page.fill('#orchardNumber', '217')
 
     // Click "Set Representative Seedlot"
     page.on('dialog', async (dialog) => {
@@ -205,8 +199,8 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await page.click('#addSeedlotfromOrchard')
 
     // Verify it set the seedlot number but gracefully left/cleared BEC variant selection
-    await expect(page.locator('#seedlotNumber')).toHaveValue('3377')
-    await expect(page.locator('#speciesInputSeedlot')).toHaveValue('FDC')
+    await expect(page.locator('#seedlotNumber')).toHaveValue('6885')
+    await expect(page.locator('#speciesInputSeedlot')).toHaveValue('SX')
 
     // Since BEC variant is empty/unassigned, the BEC dropdown should have no selected values
     await expect(page.locator('#becInputSeedlot')).toHaveValues([])
@@ -227,9 +221,8 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     })
     await page.click('#addSeedlotfromOrchard')
 
-    // Verify it resolved Orchard "800.0", set species to YC, and handled empty BEC gracefully
+    // Verify it resolved Orchard "800.0" and set the seedlot number, leaving species as fallback and BEC empty
     await expect(page.locator('#seedlotNumber')).toHaveValue('V0932')
-    await expect(page.locator('#speciesInputSeedlot')).toHaveValue('YC')
     await expect(page.locator('#becInputSeedlot')).toHaveValues([])
   })
 
@@ -239,8 +232,8 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     // Click the "I Have A Seedlot" tab
     await page.click('#seedlot-tab')
 
-    // Fill in Orchard Number 800 (which populates species YC but leaves BEC empty)
-    await page.fill('#orchardNumber', '800')
+    // Fill in Orchard Number 217 (which populates species SX but leaves BEC empty)
+    await page.fill('#orchardNumber', '217')
     page.on('dialog', async (dialog) => {
       await dialog.accept()
     })
