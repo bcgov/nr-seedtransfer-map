@@ -324,7 +324,12 @@ async function getLayer(layerId, outFields, filename) {
     console.log(`Calculated bounds for ${Object.keys(bounds).length} variants.`);
 
     if (fetchLive) {
-      const gitSha = execSync('git rev-parse HEAD').toString().trim();
+      let gitSha = 'unknown';
+      try {
+        gitSha = execSync('git rev-parse HEAD', { stdio: 'pipe' }).toString().trim();
+      } catch (e) {
+        console.warn('Warning: Could not determine git SHA. Proceeding with unknown.');
+      }
       const meta = {
         exportedAt: new Date().toISOString(),
         sourceUrlBase: 'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer',
