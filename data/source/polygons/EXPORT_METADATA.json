@@ -1,0 +1,9 @@
+{
+  "exportedAt": "2026-06-25T02:00:35.885Z",
+  "sourceUrlBase": "https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer",
+  "features": {
+    "management_units": 724,
+    "bec_variants": 15266
+  },
+  "gitSha": "bcfb315f37d5f49e1fa1cb6a9b8fd06a4beb3506"
+}
