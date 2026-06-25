@@ -136,6 +136,38 @@ npm run format
 
 ---
 
+## Polygon Data & Provenance
+
+The interactive map is driven by static FlatGeobuf (`.fgb`) files served from the
+`docs/Version_7_0/` directory, completely decoupling runtime operations from external API servers.
+
+### Archiving and Rebuilding the FGB Assets
+
+The original source data for the Biogeoclimatic Ecosystem Classification (BEC 10/11) variants and
+Management Units is provided by the Forsite ArcGIS FeatureServer. Because that server contract is
+ending, the raw GeoJSON files have been backed up.
+
+To rebuild the FlatGeobuf assets, you must first obtain the GeoJSON cache
+(`management_units.geojson` and `bec_variants.geojson`) from the team's offline storage and place
+them in the `data/source/polygons/` directory, as they are `.gitignore`d to prevent repository
+bloat. Then run:
+
+```bash
+npm run polygons:export
+```
+
+**Metadata:** The `data/source/polygons/EXPORT_METADATA.json` file records exactly when the data was
+exported from the Forsite server, the number of features retrieved, and the original endpoint URLs.
+
+If you ever need to fetch live data (while the server is still available), you can run the script
+manually with the fetch flag to generate the cache locally:
+
+```bash
+node scripts/export-layers-to-fgb.js --fetch-live
+```
+
+---
+
 ## Repository Structure
 
 ```
