@@ -33,7 +33,7 @@ jobs:
       cancel-in-progress: false
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           sparse-checkout: .github/scripts
           sparse-checkout-cone-mode: false
@@ -57,7 +57,7 @@ jobs:
       cancel-in-progress: false
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           sparse-checkout: .github/scripts
           sparse-checkout-cone-mode: false
