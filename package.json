@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "http-server docs -p 8000",
     "db:convert": "node scripts/convert-to-fgb.js",
+    "polygons:export": "node scripts/export-layers-to-fgb.js",
     "format": "prettier --write \"docs/**/*.{js,css,html}\" README.md",
     "format:check": "prettier --check \"docs/**/*.{js,css,html}\" README.md",
     "lint": "eslint docs/scripts",

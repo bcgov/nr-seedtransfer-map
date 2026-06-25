@@ -151,3 +151,7 @@ docs/Version_7_0/*.fgb
 # Forsite contract is ending, so these cannot be recompiled — see scripts/export-layers-to-fgb.js)
 !docs/Version_7_0/Management_Units.fgb
 !docs/Version_7_0/BEC_Variants.fgb
+
+# Ignore local GeoJSON polygon cache
+data/source/polygons/*.geojson
+

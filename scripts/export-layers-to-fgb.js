@@ -1,5 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
+
+const fetchLive = process.argv.includes('--fetch-live');
+const sourceDir = path.join(__dirname, '../data/source/polygons');
+const outputDir = path.join(__dirname, '../docs/Version_7_0');
 
 async function fetchAllFeatures(layerId, outFields = '*') {
   let features = [];
@@ -42,6 +47,30 @@ async function fetchAllFeatures(layerId, outFields = '*') {
   };
 }
 
+function ensureDirSync(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+async function getLayer(layerId, outFields, filename) {
+  const filePath = path.join(sourceDir, filename);
+  if (fetchLive) {
+    console.log(`Downloading Layer ${layerId} from Forsite API...`);
+    const layer = await fetchAllFeatures(layerId, outFields);
+    ensureDirSync(sourceDir);
+    fs.writeFileSync(filePath, JSON.stringify(layer, null, 2));
+    console.log(`Saved Layer ${layerId} GeoJSON to ${filePath}`);
+    return layer;
+  } else {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`GeoJSON cache missing: ${filePath}. Run with --fetch-live to download.`);
+    }
+    console.log(`Loading Layer ${layerId} from ${filePath}...`);
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  }
+}
+
 (async () => {
   try {
     // Dynamically import ES modules from flatgeobuf package
@@ -54,8 +83,6 @@ async function fetchAllFeatures(layerId, outFields = '*') {
     const { Header } = await import('flatgeobuf/lib/mjs/flat-geobuf/header.js');
     const { Column } = await import('flatgeobuf/lib/mjs/flat-geobuf/column.js');
     const { Crs } = await import('flatgeobuf/lib/mjs/flat-geobuf/crs.js');
-
-    const outputDir = path.join(__dirname, '../docs/Version_7_0');
 
     // Helper to build header
     function customBuildHeader(t, r = 0) {
@@ -255,10 +282,11 @@ async function fetchAllFeatures(layerId, outFields = '*') {
       return result;
     }
 
+    ensureDirSync(outputDir);
+
     // 1. Layer 0 (Management Units)
-    console.log('Downloading Layer 0 (Management Units)...');
-    const l0 = await fetchAllFeatures(0, '*');
-    console.log(`Layer 0 fetched: ${l0.features.length} features. Serializing to FlatGeobuf...`);
+    const l0 = await getLayer(0, '*', 'management_units.geojson');
+    console.log(`Layer 0 loaded: ${l0.features.length} features. Serializing to FlatGeobuf...`);
     const fgb0 = serializeWithIndex(l0);
     fs.writeFileSync(path.join(outputDir, 'Management_Units.fgb'), Buffer.from(fgb0));
     console.log('Layer 0 saved to Management_Units.fgb');
@@ -280,17 +308,9 @@ async function fetchAllFeatures(layerId, outFields = '*') {
       }
     }
 
-    // 2. BEC variant polygons (FeatureServer layer 5: BEC_10_Suit_v4).
-    //
-    // Layer 6 (BEC_10_NotSuit_v4) is byte-identical to layer 5 on Forsite — same
-    // 15,266 features and total area. Suitable vs non-suitable is determined at
-    // runtime by MAP_LABEL filtering, not by layer, so we export once as
-    // BEC_Variants.fgb (see defineMap.js).
-    console.log('Downloading Layer 5 (BEC variants)...');
-    const becVariants = await fetchAllFeatures(5, 'map_label');
-    console.log(
-      `Layer 5 fetched: ${becVariants.features.length} features. Processing bounds...`,
-    );
+    // 2. Layer 5 (BEC variants)
+    const becVariants = await getLayer(5, 'map_label', 'bec_variants.geojson');
+    console.log(`Layer 5 loaded: ${becVariants.features.length} features. Processing bounds...`);
     for (const f of becVariants.features) {
       addBbox(f.properties.map_label, f.geometry);
     }
@@ -302,6 +322,21 @@ async function fetchAllFeatures(layerId, outFields = '*') {
     // Save bounds
     fs.writeFileSync(path.join(outputDir, 'bec_bounds.json'), JSON.stringify(bounds, null, 2));
     console.log(`Calculated bounds for ${Object.keys(bounds).length} variants.`);
+
+    if (fetchLive) {
+      const gitSha = execSync('git rev-parse HEAD').toString().trim();
+      const meta = {
+        exportedAt: new Date().toISOString(),
+        sourceUrlBase: 'https://maps.forsite.ca/server/rest/services/Hosted/CBST_BEC10_BEC11/FeatureServer',
+        features: {
+          management_units: l0.features.length,
+          bec_variants: becVariants.features.length
+        },
+        gitSha: gitSha
+      };
+      fs.writeFileSync(path.join(sourceDir, 'EXPORT_METADATA.json'), JSON.stringify(meta, null, 2));
+      console.log('Wrote EXPORT_METADATA.json');
+    }
 
     console.log('🎉 All layers exported and serialized successfully with spatial indexes!');
   } catch (err) {
