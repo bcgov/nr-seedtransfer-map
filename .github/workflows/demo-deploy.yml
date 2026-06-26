@@ -1,0 +1,43 @@
+name: Demo Deployment
+
+on:
+  pull_request:
+    types: [labeled]
+
+concurrency:
+  group: gh-pages-state
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  deploy-demo:
+    name: Deploy Demo Redirect
+    if: github.event.label.name == 'DEMO'
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v6
+      - name: Create Demo Redirect
+        run: |
+          mkdir -p demo-redirect
+          echo '<meta http-equiv="refresh" content="0; url=../pr-${{ github.event.number }}/" />' > demo-redirect/index.html
+      - name: Deploy Demo Redirect
+        uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
+        with:
+          folder: demo-redirect
+          branch: gh-pages
+          clean: true
+          target-folder: deployments/demo
+
+      - name: Comment on PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DEMO_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/demo/"
+          gh pr comment ${{ github.event.number }} --body "🚀 **Demo Environment Deployed!**
+          
+          A stable demo redirect has been created for this PR.
+          You can view it here: $DEMO_URL"
