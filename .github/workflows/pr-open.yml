@@ -8,6 +8,7 @@ on:
       - 'tests/**'
       - 'package*.json'
       - 'playwright.config.js'
+      - '.github/workflows/**'
 
 # Workflow-level: per-PR cancellation so rapid pushes don't queue stale runs.
 # The deploy job adds its own gh-pages-state lock to serialize gh-pages mutations.
