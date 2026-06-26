@@ -25,14 +25,16 @@ jobs:
           mkdir -p demo-redirect
           cat > demo-redirect/index.html <<'EOF'
           <!doctype html>
-          <html>
+          <html style="margin: 0; padding: 0; height: 100%; overflow: hidden;">
           <head>
+            <title>Demo Environment</title>
             <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
             <meta http-equiv="Pragma" content="no-cache" />
             <meta http-equiv="Expires" content="0" />
-            <meta http-equiv="refresh" content="0; url=../pr-${{ github.event.number }}/" />
           </head>
-          <body>Redirecting...</body>
+          <body style="margin: 0; padding: 0; height: 100%; overflow: hidden;">
+            <iframe src="../pr-${{ github.event.number }}/" style="width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
+          </body>
           </html>
           EOF
       - name: Deploy Demo Redirect
