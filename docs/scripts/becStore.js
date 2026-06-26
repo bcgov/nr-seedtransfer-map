@@ -258,5 +258,7 @@
     { name: 'NPP', id: 247 },
     { name: 'PPN', id: 248 },
     { name: 'PPP', id: 249 },
+    { name: 'NNN', id: 250 },
+    { name: 'NNP', id: 251 },
   ]
 })
