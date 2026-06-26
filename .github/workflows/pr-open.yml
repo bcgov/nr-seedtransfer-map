@@ -146,3 +146,26 @@ jobs:
 
           echo "❌ Timeout reached! Preview environment is not returning HTTP 200."
           exit 1
+
+      - name: 🧪 Smoke Test DEMO URL
+        if: contains(github.event.pull_request.labels.*.name, 'DEMO')
+        run: |
+          DEMO_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/demo/"
+          echo "📡 Checking if demo is live at $DEMO_URL"
+          TIMEOUT=300
+          INTERVAL=15
+          ELAPSED=0
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$DEMO_URL" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Smoke test passed! Demo is live and returning HTTP 200."
+              exit 0
+            fi
+            echo "⏳ Status is $STATUS, retrying in ${INTERVAL}s... ($ELAPSED/$TIMEOUT)"
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          echo "❌ Timeout reached! Demo environment is not returning HTTP 200."
+          exit 1
