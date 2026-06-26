@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [labeled]
 
+concurrency:
+  group: gh-pages-state
+  cancel-in-progress: false
+
 permissions: {}
 
 jobs:
@@ -12,10 +16,6 @@ jobs:
     if: github.event.label.name == 'DEMO'
     permissions:
       contents: write
-    # Serialize gh-pages mutations across other deployments
-    concurrency:
-      group: gh-pages-state
-      cancel-in-progress: false
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
