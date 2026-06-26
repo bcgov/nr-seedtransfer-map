@@ -2,7 +2,7 @@ name: PR Deployment
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - 'docs/**'
       - 'tests/**'
@@ -109,6 +109,15 @@ jobs:
           branch: gh-pages
           clean: false # Do not delete other previews!
           target-folder: deployments/pr-${{ github.event.number }}
+
+      - name: Deploy to deployments/demo
+        if: contains(github.event.pull_request.labels.*.name, 'DEMO')
+        uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
+        with:
+          folder: docs
+          branch: gh-pages
+          clean: false # Do not delete other previews!
+          target-folder: deployments/demo
 
       - name: 🧪 Smoke Test PR Preview URL
         run: |
