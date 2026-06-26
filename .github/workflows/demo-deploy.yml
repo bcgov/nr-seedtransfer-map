@@ -16,6 +16,7 @@ jobs:
     if: github.event.label.name == 'DEMO'
     permissions:
       contents: write
+      pull-requests: write
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
@@ -30,3 +31,13 @@ jobs:
           branch: gh-pages
           clean: true
           target-folder: deployments/demo
+
+      - name: Comment on PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DEMO_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/demo/"
+          gh pr comment ${{ github.event.number }} --body "🚀 **Demo Environment Deployed!**
+          
+          A stable demo redirect has been created for this PR.
+          You can view it here: $DEMO_URL"
