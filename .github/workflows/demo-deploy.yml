@@ -2,7 +2,7 @@ name: Demo Deployment
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [labeled]
 
 concurrency:
   group: demo-deploy-${{ github.event.number }}
