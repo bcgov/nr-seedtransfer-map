@@ -110,13 +110,19 @@ jobs:
           clean: false # Do not delete other previews!
           target-folder: deployments/pr-${{ github.event.number }}
 
-      - name: Deploy to deployments/demo
+      - name: Create Demo Redirect
+        if: contains(github.event.pull_request.labels.*.name, 'DEMO')
+        run: |
+          mkdir -p demo-redirect
+          echo '<meta http-equiv="refresh" content="0; url=../pr-${{ github.event.number }}/" />' > demo-redirect/index.html
+
+      - name: Deploy Demo Redirect
         if: contains(github.event.pull_request.labels.*.name, 'DEMO')
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
         with:
-          folder: docs
+          folder: demo-redirect
           branch: gh-pages
-          clean: false # Do not delete other previews!
+          clean: true
           target-folder: deployments/demo
 
       - name: 🧪 Smoke Test PR Preview URL
