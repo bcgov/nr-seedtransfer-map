@@ -23,7 +23,7 @@ jobs:
       - name: Create Demo Redirect
         run: |
           mkdir -p demo-redirect
-          echo '<meta http-equiv="refresh" content="0; url=../pr-${{ github.event.number }}/" />' > demo-redirect/index.html
+          echo '<!DOCTYPE html><html><head><meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate" /><meta http-equiv="pragma" content="no-cache" /><meta http-equiv="expires" content="0" /><meta http-equiv="refresh" content="0; url=../pr-${{ github.event.number }}/" /></head><body>Redirecting...</body></html>' > demo-redirect/index.html
       - name: Deploy Demo Redirect
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
         with:
