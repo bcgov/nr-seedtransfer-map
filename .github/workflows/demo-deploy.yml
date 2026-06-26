@@ -4,16 +4,12 @@ on:
   pull_request:
     types: [labeled]
 
-concurrency:
-  group: demo-deploy-${{ github.event.number }}
-  cancel-in-progress: true
-
 permissions: {}
 
 jobs:
   deploy-demo:
     name: Deploy Demo Redirect
-    if: contains(github.event.pull_request.labels.*.name, 'DEMO') && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.label.name == 'DEMO'
     permissions:
       contents: write
     # Serialize gh-pages mutations across other deployments
