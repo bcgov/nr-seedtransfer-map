@@ -2,13 +2,12 @@ name: PR Deployment
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
     paths:
       - 'docs/**'
       - 'tests/**'
       - 'package*.json'
       - 'playwright.config.js'
-      - '.github/workflows/**'
 
 # Workflow-level: per-PR cancellation so rapid pushes don't queue stale runs.
 # The deploy job adds its own gh-pages-state lock to serialize gh-pages mutations.
@@ -21,7 +20,6 @@ permissions: {}
 jobs:
   validate:
     name: Lint & Unit Tests
-    if: github.event.action != 'labeled'
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
@@ -37,7 +35,6 @@ jobs:
 
   e2e:
     name: E2E Playwright Tests
-    if: github.event.action != 'labeled'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -75,11 +72,7 @@ jobs:
   deploy:
     name: Deploy PR Preview
     needs: [validate, e2e]
-    if: |
-      always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled') &&
-      github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository
     # Serialize gh-pages mutations across pr-open, pr-close, and merge workflows.
     concurrency:
       group: gh-pages-state
@@ -117,21 +110,6 @@ jobs:
           clean: false # Do not delete other previews!
           target-folder: deployments/pr-${{ github.event.number }}
 
-      - name: Create Demo Redirect
-        if: contains(github.event.pull_request.labels.*.name, 'DEMO')
-        run: |
-          mkdir -p demo-redirect
-          echo '<meta http-equiv="refresh" content="0; url=../pr-${{ github.event.number }}/" />' > demo-redirect/index.html
-
-      - name: Deploy Demo Redirect
-        if: contains(github.event.pull_request.labels.*.name, 'DEMO')
-        uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
-        with:
-          folder: demo-redirect
-          branch: gh-pages
-          clean: true
-          target-folder: deployments/demo
-
       - name: 🧪 Smoke Test PR Preview URL
         run: |
           PREVIEW_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/pr-${{ github.event.number }}/"
@@ -152,27 +130,4 @@ jobs:
           done
 
           echo "❌ Timeout reached! Preview environment is not returning HTTP 200."
-          exit 1
-
-      - name: 🧪 Smoke Test DEMO URL
-        if: contains(github.event.pull_request.labels.*.name, 'DEMO')
-        run: |
-          DEMO_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/demo/"
-          echo "📡 Checking if demo is live at $DEMO_URL"
-          TIMEOUT=300
-          INTERVAL=15
-          ELAPSED=0
-
-          while [ $ELAPSED -lt $TIMEOUT ]; do
-            STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$DEMO_URL" || true)
-            if [ "$STATUS" = "200" ]; then
-              echo "✅ Smoke test passed! Demo is live and returning HTTP 200."
-              exit 0
-            fi
-            echo "⏳ Status is $STATUS, retrying in ${INTERVAL}s... ($ELAPSED/$TIMEOUT)"
-            sleep $INTERVAL
-            ELAPSED=$((ELAPSED + INTERVAL))
-          done
-
-          echo "❌ Timeout reached! Demo environment is not returning HTTP 200."
           exit 1

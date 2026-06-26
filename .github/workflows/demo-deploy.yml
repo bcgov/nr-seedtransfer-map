@@ -1,0 +1,36 @@
+name: Demo Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+concurrency:
+  group: demo-deploy-${{ github.event.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  deploy-demo:
+    name: Deploy Demo Redirect
+    if: contains(github.event.pull_request.labels.*.name, 'DEMO') && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+    # Serialize gh-pages mutations across other deployments
+    concurrency:
+      group: gh-pages-state
+      cancel-in-progress: false
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v6
+      - name: Create Demo Redirect
+        run: |
+          mkdir -p demo-redirect
+          echo '<meta http-equiv="refresh" content="0; url=../pr-${{ github.event.number }}/" />' > demo-redirect/index.html
+      - name: Deploy Demo Redirect
+        uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
+        with:
+          folder: demo-redirect
+          branch: gh-pages
+          clean: true
+          target-folder: deployments/demo
