@@ -21,6 +21,7 @@ permissions: {}
 jobs:
   validate:
     name: Lint & Unit Tests
+    if: github.event.action != 'labeled'
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
@@ -36,6 +37,7 @@ jobs:
 
   e2e:
     name: E2E Playwright Tests
+    if: github.event.action != 'labeled'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -73,7 +75,11 @@ jobs:
   deploy:
     name: Deploy PR Preview
     needs: [validate, e2e]
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      github.event.pull_request.head.repo.full_name == github.repository
     # Serialize gh-pages mutations across pr-open, pr-close, and merge workflows.
     concurrency:
       group: gh-pages-state
