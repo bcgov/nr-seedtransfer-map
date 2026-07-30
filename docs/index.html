@@ -276,16 +276,7 @@
                       <select class="form-select" multiple id="becInputCutblock"></select>
                     </div>
 
-                    <div class="mb-3">
-                      <label for="yearInputCutblock">Climate Year: </label><br />
-                      <select class="form-select" id="yearInputCutblock" multiple>
-                        <option value="2043">2043 (Near-term)</option>
-                        <option value="2053" selected>2053 (Mid-term)</option>
-                        <option value="2063">2063 (Long-term)</option>
-                      </select>
-                    </div>
-
-                    <button id="addButtonCutblock" type="submit" class="btn btn-secondary">
+                    <button id="addButtonCutblock" type="button" class="btn btn-secondary">
                       GO
                     </button>
                     <button id="clearButtonCutblock" type="button" class="btn btn-secondary">
@@ -372,15 +363,6 @@
                     <div class="mb-3">
                       <label for="becInputSeedlot">BEC Variant: </label><br />
                       <select class="form-select" multiple id="becInputSeedlot"></select>
-                    </div>
-
-                    <div class="mb-3">
-                      <label for="yearInputSeedlot">Climate Year: </label><br />
-                      <select class="form-select" id="yearInputSeedlot" multiple>
-                        <option value="2043">2043 (Near-term)</option>
-                        <option value="2053" selected>2053 (Mid-term)</option>
-                        <option value="2063">2063 (Long-term)</option>
-                      </select>
                     </div>
                     <br />
                     <button id="addButtonSeedlot" type="button" class="btn btn-secondary">GO</button
@@ -537,24 +519,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Climate Year Legend -->
-    <div id="climate-legend" class="climate-legend" style="display: none">
-      <div class="legend-title">Climate Scenarios</div>
-      <div class="legend-item">
-        <span class="legend-color" style="background-color: #ffc800"></span>
-        <span class="legend-label">2043 (Near-term)</span>
-      </div>
-      <div class="legend-item">
-        <span class="legend-color" style="background-color: #00aa00"></span>
-        <span class="legend-label">2053 (Mid-term)</span>
-      </div>
-      <div class="legend-item">
-        <span class="legend-color" style="background-color: #0070ff"></span>
-        <span class="legend-label">2063 (Long-term)</span>
-      </div>
-    </div>
-
     <!-- Fullscreen loader spinner overlay -->
     <div
       id="loading-overlay"
