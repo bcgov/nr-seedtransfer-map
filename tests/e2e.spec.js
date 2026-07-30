@@ -1,5 +1,16 @@
 const { test, expect } = require('@playwright/test')
 
+test.describe('Maintenance Page - E2E Integration Tests', () => {
+  test('Maintenance Landing Page displays under-maintenance messaging', async ({ page }) => {
+    await page.goto('/index.html')
+    await expect(page.locator('h1')).toContainText('This tool is currently under maintenance')
+    await expect(page.locator('a[href^="mailto:"]')).toHaveAttribute(
+      'href',
+      'mailto:forests.seedtransfer@gov.bc.ca'
+    )
+  })
+})
+
 test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
   test.beforeEach(async ({ page }) => {
     // Capture browser console logs only when explicitly debugging E2E runs
@@ -8,8 +19,8 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     }
     page.on('pageerror', err => console.log(`[BROWSER ERROR] ${err.toString()}`))
 
-    // Navigate to our local server
-    await page.goto('/index.html')
+    // Navigate to our local server app page
+    await page.goto('/app.html')
     // Wait for the app title to load to ensure base page is ready
     await expect(page.locator('#titleText')).toContainText('CBST Seedlot Selection Tool')
   })
