@@ -92,6 +92,12 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     // Click the "I Have A Cutblock" tab
     await page.click('#cutblock-tab')
 
+    // Click the Species SlimSelect dropdown to open it
+    await page.locator('#speciesInputCutblock + .ss-main').click()
+
+    // Click the "PLI" option inside the visible dropdown
+    await page.getByRole('option', { name: 'PLI', exact: true }).first().click()
+
     // Click the BEC Variant SlimSelect dropdown to open it
     await page.locator('#becInputCutblock + .ss-main').click()
 
