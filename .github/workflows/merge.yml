@@ -42,7 +42,15 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Cache FlatGeobuf database
+        id: db-cache
+        uses: actions/cache@v5
+        with:
+          path: docs/Version_7_0/*.fgb
+          key: ${{ runner.os }}-fgb-${{ hashFiles('docs/Version_7_0/*.json', 'scripts/convert-to-fgb.js', 'docs/scripts/becStore.js') }}
+
       - name: Compile JSON to FlatGeobuf
+        if: steps.db-cache.outputs.cache-hit != 'true'
         run: npm run db:convert
       - name: Deploy static content to gh-pages branch
         uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4

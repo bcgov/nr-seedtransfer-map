@@ -64,7 +64,15 @@ jobs:
           else
             npx playwright install --with-deps chromium
           fi
+      - name: Cache FlatGeobuf database
+        id: db-cache
+        uses: actions/cache@v5
+        with:
+          path: docs/Version_7_0/*.fgb
+          key: ${{ runner.os }}-fgb-${{ hashFiles('docs/Version_7_0/*.json', 'scripts/convert-to-fgb.js', 'docs/scripts/becStore.js') }}
+
       - name: Compile JSON to FlatGeobuf
+        if: steps.db-cache.outputs.cache-hit != 'true'
         run: npm run db:convert
       - name: Run E2E Integration tests
         run: npm run test:e2e
