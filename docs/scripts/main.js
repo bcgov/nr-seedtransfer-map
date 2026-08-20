@@ -9,96 +9,6 @@ define([
   'scripts/speciesStore.js',
   'scripts/becStore.js',
 ], function (flatgeobuf, speciesStore, becStore) {
-  var timeSeriesYears = ['2053']
-
-  // Helper function to build year-based layer data when multiple years are selected
-  function buildYearBasedLayers(sp, bec, yearsArray, mode = 'cutblock') {
-    // mode: 'cutblock' (BECvar_site) or 'seedlot' (BECvar_seed)
-    // Returns: { yearLayers: [{year, suit, nonSuit}, ...] }
-    return new Promise((resolve, reject) => {
-      let speciesEntry = speciesStore.find((x) => x.name === sp)
-      if (!speciesEntry) {
-        reject(new Error('Unknown species: ' + sp))
-        return
-      }
-      let suit = speciesEntry.minsuit / 100
-
-      const type = mode === 'seedlot' ? 'seed' : 'site'
-      const becField = mode === 'seedlot' ? 'BECvar_seed' : 'BECvar_site'
-      const outputField = mode === 'seedlot' ? 'BECvar_site' : 'BECvar_seed'
-
-      const yearPromises = yearsArray.map((year) => {
-        let becNames
-        if (Array.isArray(bec)) {
-          becNames = bec.map((id) => becStore.find((x) => x.id == id).name)
-        } else {
-          becNames = [becStore.find((x) => x.id == bec).name]
-        }
-
-        const becPromises = becNames.map((name) => fetchMigratedHeightList(sp, [year], name, type))
-
-        return Promise.all(becPromises)
-          .then((results) => {
-            const dataForYear = results.flat()
-            return { year, data: dataForYear }
-          })
-          .catch(() => {
-            return { year, data: [] }
-          })
-      })
-
-      Promise.all(yearPromises)
-        .then((results) => {
-          const yearLayers = results.map((result) => {
-            const { year, data } = result
-            const suitList = []
-            const nonSuitList = []
-
-            if (Array.isArray(bec) && bec.length > 1) {
-              for (let i = 0; i < bec.length; i++) {
-                const becEntry = becStore.find((x) => x.id == bec[i])
-                if (becEntry) {
-                  const becName = becEntry.name
-                  data.forEach((item) => {
-                    if (item[becField] == becName && item['HTp_pred'] >= suit) {
-                      if (item['Sp_suit_site'] == 1) {
-                        suitList.push("'" + item[outputField] + "'")
-                      } else {
-                        nonSuitList.push("'" + item[outputField] + "'")
-                      }
-                    }
-                  })
-                }
-              }
-            } else {
-              const becEntry = becStore.find((x) => x.id == bec[0] || x.id == bec)
-              if (becEntry) {
-                const becName = becEntry.name
-                data.forEach((item) => {
-                  if (item[becField] == becName && item['HTp_pred'] >= suit) {
-                    if (item['Sp_suit_site'] == 1) {
-                      suitList.push("'" + item[outputField] + "'")
-                    } else {
-                      nonSuitList.push("'" + item[outputField] + "'")
-                    }
-                  }
-                })
-              }
-            }
-
-            return {
-              year: year,
-              suit: suitList,
-              nonSuit: nonSuitList,
-            }
-          })
-
-          resolve({ yearLayers })
-        })
-        .catch(reject)
-    })
-  }
-
   return {
     fillSelects: fillSelects,
     addSuitabilityLayerCutblock: addSuitabilityLayerCutblock,
@@ -107,92 +17,6 @@ define([
     populateSpeciesBEC: populateSpeciesBEC,
     getIntersection: getIntersection,
     updateData: updateData,
-    setTimeSeriesYear: setTimeSeriesYear,
-  }
-
-  function setTimeSeriesYear(years) {
-    // Accept array of years or single year
-    if (Array.isArray(years)) {
-      // Filter to only valid years for PL/SX species
-      timeSeriesYears = years.filter((y) => ['2043', '2053', '2063'].includes(String(y)))
-      // Ensure at least one year is selected
-      if (timeSeriesYears.length === 0) {
-        timeSeriesYears = ['2053']
-      }
-    } else if (years) {
-      timeSeriesYears = [String(years)]
-    } else {
-      timeSeriesYears = ['2053']
-    }
-  }
-
-  /**
-   * Fetch migrated height list files with multi-year support.
-   * Only PL and SX species have time series variants (2043, 2053, 2063).
-   * All other species use the base file (_5.json).
-   * When multiple years are selected, combines results from all years.
-   */
-  function fetchMigratedHeightList(sp, yearsArray, becName, type = 'site') {
-    // Determine the base file fallback path using capitalized species code (e.g. Fdi, Plc, Pli, Sx, Sxs)
-    const basePrefix = sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase()
-    const fallbackPath = 'Version_7_0/' + basePrefix + '_migrated_height_list_5.json'
-
-    // Determine if the species supports time series variants (2043, 2053, 2063)
-    let filePrefix = ''
-    let hasTimeSeries = false
-
-    if (sp === 'PLC' || sp === 'PLI') {
-      filePrefix = 'Pl'
-      hasTimeSeries = true
-    } else if (sp === 'SX') {
-      filePrefix = 'Sx'
-      hasTimeSeries = true
-    }
-
-    if (!hasTimeSeries) {
-      // Species without time series variants - use base file directly
-      return fetchFGB(fallbackPath, becName, type)
-    }
-
-    // For species with time series variants, fetch and combine results
-    const yearsToFetch = Array.isArray(yearsArray) ? yearsArray : [yearsArray]
-
-    if (yearsToFetch.length === 1) {
-      // Single year - use simple fetch with fallback
-      const timeSeriesPath =
-        'Version_7_0/' + filePrefix + '_migrated_height_list_' + yearsToFetch[0] + '.json'
-
-      return fetchFGB(timeSeriesPath, becName, type).catch(() => {
-        return fetchFGB(fallbackPath, becName, type)
-      })
-    }
-
-    // Multiple years - fetch all and combine
-    const fetchPromises = yearsToFetch.map((year) => {
-      const timeSeriesPath = 'Version_7_0/' + filePrefix + '_migrated_height_list_' + year + '.json'
-
-      return fetchFGB(timeSeriesPath, becName, type).catch(() => {
-        return fetchFGB(fallbackPath, becName, type)
-      })
-    })
-
-    return Promise.all(fetchPromises).then((results) => {
-      // Combine results from all years, removing duplicates based on BECvar_site
-      const combined = []
-      const seen = new Set()
-
-      results.forEach((yearData) => {
-        yearData.forEach((record) => {
-          const key = `${record.BECvar_site}|${record.BECvar_seed}`
-          if (!seen.has(key)) {
-            seen.add(key)
-            combined.push(record)
-          }
-        })
-      })
-
-      return combined
-    })
   }
 
   async function fetchFGB(url, becName, type) {
@@ -327,26 +151,6 @@ define([
         searchPlaceholder: 'Search BEC Variants...',
       },
     })
-
-    if (window.selectYearCutblock) {
-      window.selectYearCutblock.destroy()
-    }
-    window.selectYearCutblock = new SlimSelect({
-      select: '#yearInputCutblock',
-      settings: {
-        searchEnabled: false,
-      },
-    })
-
-    if (window.selectYearSeedlot) {
-      window.selectYearSeedlot.destroy()
-    }
-    window.selectYearSeedlot = new SlimSelect({
-      select: '#yearInputSeedlot',
-      settings: {
-        searchEnabled: false,
-      },
-    })
   }
 
   // create the paths and locations for the selected cutblock and species
@@ -368,6 +172,11 @@ define([
       output_non_suit = []
     var bec_name
 
+    var jsontxt =
+      'Version_7_0/' +
+      sp.charAt(0).toUpperCase() +
+      sp.slice(1).toLowerCase() +
+      '_migrated_height_list_5.json'
     var jsonseedlot =
       'Version_7_0/' + sp.charAt(0).toUpperCase() + sp.slice(1).toLowerCase() + '_Seedlots.json'
     let speciesEntry = speciesStore.find((x) => x.name === sp)
@@ -379,7 +188,7 @@ define([
     outlist_suit = []
     outlist_non_suit = []
 
-    let p1 = getSeedLot(bec, suit, 0, jsonseedlot, sp, timeSeriesYears)
+    let p1 = getSeedLot(bec, suit, 0, jsonseedlot)
 
     let p2 = new Promise((resolve, reject) => {
       let becNames = []
@@ -389,9 +198,7 @@ define([
         becNames = [becStore.find((x) => x.id == bec).name]
       }
 
-      const becPromises = becNames.map((name) =>
-        fetchMigratedHeightList(sp, timeSeriesYears, name, 'site'),
-      )
+      const becPromises = becNames.map((name) => fetchFGB(jsontxt, name, 'site'))
 
       Promise.all(becPromises)
         .then(function (resultsArray) {
@@ -495,9 +302,6 @@ define([
     })
 
     return Promise.all([p1, p2]).then((values) => {
-      if (timeSeriesYears.length > 1) {
-        return buildYearBasedLayers(sp, bec, timeSeriesYears)
-      }
       return values[1]
     })
   }
@@ -534,43 +338,22 @@ define([
     return gettingIntersection
   }
 
-  function getSeedLot(bec, spmin, min, jsonseedlot, sp, yearsArray) {
+  function getSeedLot(bec, spmin, min, jsonseedlot) {
     return new Promise((resolve, reject) => {
-      const yearsToFetch = Array.isArray(yearsArray) ? yearsArray : [yearsArray]
-      const isTimeSeriesSpecies = sp === 'PL' || sp === 'SX'
-
-      const seedlotFiles = isTimeSeriesSpecies
-        ? yearsToFetch.map(
-            (year) =>
-              'Version_7_0/' +
-              sp.charAt(0).toUpperCase() +
-              sp.slice(1).toLowerCase() +
-              '_Seedlots_' +
-              year +
-              '.json',
-          )
-        : [jsonseedlot]
-
-      let becNames
+      let becNames = []
       if (Array.isArray(bec)) {
         becNames = bec.map((id) => becStore.find((x) => x.id == id).name)
       } else {
         becNames = [becStore.find((x) => x.id == bec).name]
       }
 
-      const fetchPromises = seedlotFiles.map((file) => {
-        const becPromises = becNames.map((name) =>
-          fetchFGB(file, name).catch(() => {
-            if (file !== jsonseedlot) {
-              return fetchFGB(jsonseedlot, name)
-            }
-            throw new Error('Failed to load Seedlot database')
-          }),
-        )
-        return Promise.all(becPromises).then((results) => results.flat())
-      })
+      const becPromises = becNames.map((name) =>
+        fetchFGB(jsonseedlot, name).catch(() => {
+          throw new Error('Failed to load Seedlot database')
+        }),
+      )
 
-      Promise.all(fetchPromises)
+      Promise.all(becPromises)
         .then((resultsArray) => {
           const data = resultsArray.flat()
           let results
@@ -651,6 +434,11 @@ define([
     var outlist_suit, outlist_non_suit
     var output_suit, output_non_suit
 
+    var jsontxt =
+      'Version_7_0/' +
+      sp.charAt(0).toUpperCase() +
+      sp.slice(1).toLowerCase() +
+      '_migrated_height_list_5.json'
     let speciesEntry = speciesStore.find((x) => x.name === sp)
     if (!speciesEntry) {
       return Promise.reject(new Error('Unknown species: ' + sp))
@@ -667,7 +455,7 @@ define([
       }
       var bec_name = becEntryLot.name
 
-      fetchMigratedHeightList(sp, timeSeriesYears, bec_name, 'seed')
+      fetchFGB(jsontxt, bec_name, 'seed')
         .then(function (data) {
           var results = data.filter(function (x) {
             return x['BECvar_seed'] == bec_name && x['HTp_pred'] >= suit
@@ -702,13 +490,7 @@ define([
           }
           outlist_non_suit = outlist_non_suit.join(', ')
 
-          if (timeSeriesYears.length > 1) {
-            buildYearBasedLayers(sp, bec, timeSeriesYears, 'seedlot').then((yearLayers) => {
-              resolve(yearLayers)
-            })
-          } else {
-            resolve([outlist_suit, outlist_non_suit])
-          }
+          resolve([outlist_suit, outlist_non_suit])
         })
         .catch(function (errorThrown) {
           if (errorThrown.message === 'No results available for those parameters') {

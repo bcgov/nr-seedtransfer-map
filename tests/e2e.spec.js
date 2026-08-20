@@ -1,26 +1,15 @@
 const { test, expect } = require('@playwright/test')
 
-test.describe('Maintenance Page - E2E Integration Tests', () => {
-  test('Maintenance Landing Page displays under-maintenance messaging', async ({ page }) => {
-    await page.goto('/index.html')
-    await expect(page.locator('h1')).toContainText('This tool is currently under maintenance')
-    await expect(page.locator('a[href^="mailto:"]')).toHaveAttribute(
-      'href',
-      'mailto:forests.seedtransfer@gov.bc.ca'
-    )
-  })
-})
-
 test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
   test.beforeEach(async ({ page }) => {
     // Capture browser console logs only when explicitly debugging E2E runs
     if (process.env.DEBUG_E2E) {
-      page.on('console', msg => console.log(`[BROWSER LOG] [${msg.type()}] ${msg.text()}`))
+      page.on('console', (msg) => console.log(`[BROWSER LOG] [${msg.type()}] ${msg.text()}`))
     }
-    page.on('pageerror', err => console.log(`[BROWSER ERROR] ${err.toString()}`))
+    page.on('pageerror', (err) => console.log(`[BROWSER ERROR] ${err.toString()}`))
 
-    // Navigate to our local server app page
-    await page.goto('/app.html')
+    // Navigate to our local server
+    await page.goto('/index.html')
     // Wait for the app title to load to ensure base page is ready
     await expect(page.locator('#titleText')).toContainText('CBST Seedlot Selection Tool')
   })
@@ -34,9 +23,11 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
 
     // Click the instructions tab to ensure visibility
     await page.click('#instructions-tab')
-    const instructionItem = page.locator('#instructions ul.card-text li').filter({ hasText: 'Seedlot data refreshed' })
+    const instructionItem = page
+      .locator('#instructions ul.card-text li')
+      .filter({ hasText: 'Seedlot data refreshed' })
     await expect(instructionItem).toContainText(
-      'Seedlot data refreshed August 18th, 2025. Seedlots that have been registered on SPAR after August 18th, 2025 are not included in the tool'
+      'Seedlot data refreshed August 18th, 2025. Seedlots that have been registered on SPAR after August 18th, 2025 are not included in the tool',
     )
 
     // 2. Change the body data-seedlot-date attribute and propagate to verify dynamic updates
@@ -53,7 +44,7 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     // Assert that the text dynamically updated to the new date in all placeholders
     await expect(subtitle).toContainText('Seedlot Data Current as of December 25th, 2026')
     await expect(instructionItem).toContainText(
-      'Seedlot data refreshed December 25th, 2026. Seedlots that have been registered on SPAR after December 25th, 2026 are not included in the tool'
+      'Seedlot data refreshed December 25th, 2026. Seedlots that have been registered on SPAR after December 25th, 2026 are not included in the tool',
     )
   })
 
@@ -80,7 +71,7 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
 
     // Assert selections are set on the underlying select elements
     await expect(page.locator('#speciesInputCutblock')).toHaveValue('SX')
-    await expect(page.locator('#becInputCutblock')).toHaveValues(['143'])
+    await expect(page.locator('#becInputCutblock')).toHaveValues(['136'])
 
     // Click the GO button for Cutblock
     await page.click('#addButtonCutblock')
@@ -127,17 +118,23 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     await expect(cutblockRow).not.toContainText('No matching records found')
 
     // Verify suitable BEC polygons loaded from local FlatGeobuf (client-side source length > 0).
-    await expect.poll(async () => {
-      return await page.evaluate(() => {
-        if (!window.defineMap || typeof window.defineMap._currentLayer !== 'function') return null
-        const currentLayer = window.defineMap._currentLayer()
-        if (!currentLayer || !currentLayer.source) return null
-        return currentLayer.source.length
-      })
-    }, {
-      message: 'Expected currentLayer to be populated with suitable BEC polygons',
-      timeout: 20000,
-    }).toBeGreaterThan(0)
+    await expect
+      .poll(
+        async () => {
+          return await page.evaluate(() => {
+            if (!window.defineMap || typeof window.defineMap._currentLayer !== 'function')
+              return null
+            const currentLayer = window.defineMap._currentLayer()
+            if (!currentLayer || !currentLayer.source) return null
+            return currentLayer.source.length
+          })
+        },
+        {
+          message: 'Expected currentLayer to be populated with suitable BEC polygons',
+          timeout: 20000,
+        },
+      )
+      .toBeGreaterThan(0)
   })
 
   test('Seedlot Flow: Entering Orchard 201 populates representative seedlot and table', async ({
@@ -187,9 +184,9 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     })
     await page.click('#addSpeciesBecSeedlot')
 
-    // Verify it automatically sets Species to SX and BEC Variant to ESSFwc2 (ID: 83)
+    // Verify it automatically sets Species to SX and BEC Variant to ESSFwc2 (ID: 77)
     await expect(page.locator('#speciesInputSeedlot')).toHaveValue('SX')
-    await expect(page.locator('#becInputSeedlot')).toHaveValues(['83'])
+    await expect(page.locator('#becInputSeedlot')).toHaveValues(['77'])
 
     // Click the Seedlot tab GO button
     await page.click('#addButtonSeedlot')
@@ -280,23 +277,31 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
                     name: 'Mock Layer',
                     fields: [
                       { name: 'FID', type: 'esriFieldTypeOID', alias: 'FID' },
-                      { name: 'MAP_LABEL', type: 'esriFieldTypeString', alias: 'MAP_LABEL' }
-                    ]
+                      { name: 'MAP_LABEL', type: 'esriFieldTypeString', alias: 'MAP_LABEL' },
+                    ],
                   },
                   featureSet: {
                     features: [
                       {
                         geometry: {
-                          rings: [[[-125.0, 54.0], [-126.0, 54.0], [-126.0, 55.0], [-125.0, 55.0], [-125.0, 54.0]]]
+                          rings: [
+                            [
+                              [-125.0, 54.0],
+                              [-126.0, 54.0],
+                              [-126.0, 55.0],
+                              [-125.0, 55.0],
+                              [-125.0, 54.0],
+                            ],
+                          ],
                         },
-                        attributes: { FID: 1, MAP_LABEL: 'SBSdw3' }
-                      }
-                    ]
-                  }
-                }
-              ]
-            }
-          })
+                        attributes: { FID: 1, MAP_LABEL: 'SBSdw3' },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          }),
         })
       })
     })
@@ -333,8 +338,8 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
           status: 500,
           contentType: 'application/json',
           body: JSON.stringify({
-            message: 'Invalid shapefile format or empty zip.'
-          })
+            message: 'Invalid shapefile format or empty zip.',
+          }),
         })
       })
 
@@ -350,4 +355,3 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     })
   })
 })
-
