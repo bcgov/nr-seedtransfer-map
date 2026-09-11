@@ -254,5 +254,11 @@
     { name: 'PPdh2', id: 243 },
     { name: 'PPxh3', id: 244 },
     { name: 'SBSwk3a', id: 245 },
+    { name: 'NPN', id: 246 },
+    { name: 'NPP', id: 247 },
+    { name: 'PPN', id: 248 },
+    { name: 'PPP', id: 249 },
+    { name: 'NNN', id: 250 },
+    { name: 'NNP', id: 251 },
   ]
 })

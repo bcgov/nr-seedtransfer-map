@@ -155,3 +155,5 @@ docs/Version_7_0/*.fgb
 # Ignore local GeoJSON polygon cache
 data/source/polygons/*.geojson
 
+# Ignore large BEC 13 GeoJSON source file
+BEC13_v2_FeaturesToJSON.json
