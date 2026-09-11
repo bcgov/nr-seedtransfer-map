@@ -48,6 +48,65 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     )
   })
 
+  test('TSA/TFL toggle: hidden state persists after suitability layer refresh', async ({ page }) => {
+    await expect
+      .poll(
+        async () => {
+          return await page.evaluate(() => {
+            if (!window.defineMap || typeof window.defineMap._mguLayer !== 'function') return null
+            const mguLayer = window.defineMap._mguLayer()
+            if (!mguLayer || !mguLayer.source) return null
+            return mguLayer.source.length
+          })
+        },
+        {
+          message: 'Expected TSA/TFL layer to load from local FlatGeobuf',
+          timeout: 30000,
+        },
+      )
+      .toBeGreaterThan(0)
+
+    await page.click('#tsaTflToggle')
+    await expect(page.locator('#tsaTflToggle')).not.toHaveClass(/active/)
+    await expect
+      .poll(async () => page.evaluate(() => window.defineMap._mguLayer().visible))
+      .toBe(false)
+
+    await page.evaluate(async () => {
+      window.defineMap.clearLyrs()
+      await window.defineMap.updateLayer(["''", "''"])
+    })
+
+    await expect
+      .poll(async () => page.evaluate(() => window.defineMap._mguLayer().visible))
+      .toBe(false)
+  })
+
+  test('TSA/TFL toggle: opening Basemaps does not clear layer visibility state', async ({ page }) => {
+    await expect
+      .poll(
+        async () => {
+          return await page.evaluate(() => {
+            if (!window.defineMap || typeof window.defineMap._mguLayer !== 'function') return null
+            const mguLayer = window.defineMap._mguLayer()
+            if (!mguLayer || !mguLayer.source) return null
+            return mguLayer.source.length
+          })
+        },
+        {
+          message: 'Expected TSA/TFL layer to load from local FlatGeobuf',
+          timeout: 30000,
+        },
+      )
+      .toBeGreaterThan(0)
+
+    await page.click('#basemapButton')
+    await expect(page.locator('#tsaTflToggle')).toHaveClass(/active/)
+    await expect
+      .poll(async () => page.evaluate(() => window.defineMap._mguLayer().visible))
+      .toBe(true)
+  })
+
   test('Cutblock Flow: Selecting SX species and IDFdk1 BEC variant populates tables', async ({
     page,
   }) => {
