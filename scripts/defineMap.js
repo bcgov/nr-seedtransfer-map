@@ -145,69 +145,26 @@ define([
   function updateLayer(outlist) {
     // Load BEC polygons once from local FGB, filter by selected MAP_LABELs; returns a promise.
     return loadBecFeatures().then(function (becFeatures) {
-      // Color scheme for years: 2043=Yellow, 2053=Green, 2063=Blue
-      const yearColors = {
-        2043: { r: 255, g: 200, b: 0 },
-        2053: { r: 0, g: 170, b: 0 },
-        2063: { r: 0, g: 112, b: 255 },
-      }
+      const suitSet = parseLabelSet(Array.isArray(outlist) ? outlist[0] : '')
+      const nonSuitSet = parseLabelSet(Array.isArray(outlist) ? outlist[1] : '')
 
-      const isYearBased =
-        outlist && typeof outlist === 'object' && !Array.isArray(outlist) && outlist.yearLayers
+      nonsuitLayer = buildPolygonLayer(becFeatures, nonSuitSet, {
+        fill: [NONSUIT_COLOR.r, NONSUIT_COLOR.g, NONSUIT_COLOR.b],
+        outline: NONSUIT_COLOR.outline,
+        outlineWidth: 1,
+        opacity: 0.5,
+        title: 'CBST Species May Not Be Suitable',
+      })
+      map.add(nonsuitLayer)
 
-      if (isYearBased && Array.isArray(outlist.yearLayers) && outlist.yearLayers.length > 0) {
-        outlist.yearLayers.forEach((yearData) => {
-          const year = String(yearData.year)
-          const color = yearColors[year] || { r: 100, g: 100, b: 100 }
-          const suitSet = parseLabelSet(yearData.suit)
-          const nonSuitSet = parseLabelSet(yearData.nonSuit)
-
-          if (suitSet.size > 0) {
-            map.add(
-              buildPolygonLayer(becFeatures, suitSet, {
-                fill: [color.r, color.g, color.b],
-                outline: [color.r, color.g, color.b],
-                outlineWidth: 1.5,
-                opacity: 0.6,
-                title: `Year ${year} - Suitable`,
-              }),
-            )
-          }
-
-          if (nonSuitSet.size > 0) {
-            map.add(
-              buildPolygonLayer(becFeatures, nonSuitSet, {
-                fill: [color.r, color.g, color.b],
-                outline: [color.r, color.g, color.b],
-                outlineWidth: 1.5,
-                opacity: 0.3, // Lighter shade for non-suitable
-                title: `Year ${year} - Not Suitable`,
-              }),
-            )
-          }
-        })
-      } else {
-        const suitSet = parseLabelSet(Array.isArray(outlist) ? outlist[0] : '')
-        const nonSuitSet = parseLabelSet(Array.isArray(outlist) ? outlist[1] : '')
-
-        nonsuitLayer = buildPolygonLayer(becFeatures, nonSuitSet, {
-          fill: [NONSUIT_COLOR.r, NONSUIT_COLOR.g, NONSUIT_COLOR.b],
-          outline: NONSUIT_COLOR.outline,
-          outlineWidth: 1,
-          opacity: 0.5,
-          title: 'CBST Species May Not Be Suitable',
-        })
-        map.add(nonsuitLayer)
-
-        currentLayer = buildPolygonLayer(becFeatures, suitSet, {
-          fill: [SUIT_COLOR.r, SUIT_COLOR.g, SUIT_COLOR.b],
-          outline: SUIT_COLOR.outline,
-          outlineWidth: 1,
-          opacity: 0.5,
-          title: 'CBST',
-        })
-        map.add(currentLayer)
-      }
+      currentLayer = buildPolygonLayer(becFeatures, suitSet, {
+        fill: [SUIT_COLOR.r, SUIT_COLOR.g, SUIT_COLOR.b],
+        outline: SUIT_COLOR.outline,
+        outlineWidth: 1,
+        opacity: 0.5,
+        title: 'CBST',
+      })
+      map.add(currentLayer)
 
       // Keep the Management Units outline on top, if it has finished loading.
       if (mguLayer) {
