@@ -100,7 +100,7 @@ jobs:
           else
             echo "⚡ Database is unchanged. Pruning for speed."
             rm -rf docs/Version_7_0
-            sed -i 's/<body/<body data-database-pruned="true"/' docs/index.html docs/app.html 2>/dev/null || sed -i 's/<body/<body data-database-pruned="true"/' docs/index.html
+            sed -i 's/<body/<body data-database-pruned="true"/' docs/index.html
           fi
       - name: Deploy to deployments/pr-${{ github.event.number }}
         uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
