@@ -19,7 +19,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: bcgov/actions/pr-validate@v0.6.0
+      - uses: bcgov/actions/pr-validate@ac9d89eede94f5f58d3446784c94cff634d98eac # v0.6.0
         with:
           add_markdown: |
             - [Map Preview](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/pr-${{ github.event.number }}/)
