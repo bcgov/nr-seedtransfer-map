@@ -14,9 +14,12 @@ jobs:
   validate:
     name: Validate PR
     if: (! github.event.pull_request.draft)
+    runs-on: ubuntu-24.04
     permissions:
+      contents: read
       pull-requests: write
-    uses: bcgov/quickstart-openshift-helpers/.github/workflows/.pr-validate.yml@a11ad3d1b9288fb40757c4314a62eb86ff227931 # v1.2.1
-    with:
-      markdown_links: |
-        - [Map Preview](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/pr-${{ github.event.number }}/)
+    steps:
+      - uses: bcgov/actions/pr-validate@v0.6.0
+        with:
+          add_markdown: |
+            - [Map Preview](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/deployments/pr-${{ github.event.number }}/)
