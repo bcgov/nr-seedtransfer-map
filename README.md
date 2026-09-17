@@ -120,8 +120,10 @@ Actions (`.github/workflows/pr-open.yml`):
    and both validation and E2E testing jobs complete successfully. PRs without deployable changes
    skip E2E and deployment to conserve runner minutes while reporting checks as skipped to satisfy
    branch rules.
+4. **Consolidated Merge Gate (`results` job):** Runs on `always()` across all upstream jobs,
+   verifying that all executed jobs succeeded and none failed or were cancelled (`PR Results`).
 
-### 4. Auto-Formatting Code
+### Auto-Formatting Code
 
 Automatically format all HTML, CSS, JS source files, and this `README.md` using our standardized
 Prettier configuration:

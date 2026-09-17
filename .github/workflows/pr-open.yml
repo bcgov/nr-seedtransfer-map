@@ -143,3 +143,28 @@ jobs:
 
           echo "❌ Timeout reached! Preview environment is not returning HTTP 200."
           exit 1
+
+  # ==========================================================================
+  # Required merge gate for this workflow.
+  # If you add a new job to this workflow, add its ID to the 'needs' array.
+  # ==========================================================================
+  results:
+    name: PR Results
+    needs: [validate, e2e, deploy]
+    if: always()
+    runs-on: ubuntu-slim
+    timeout-minutes: 1
+    steps:
+      - name: Log Job Results Context
+        run: |
+          echo "=== Upstream Job Statuses ==="
+          echo '${{ toJson(needs) }}'
+
+      - name: Evaluate Overall Status
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "❌ Critical Check Failure: At least one required job has failed or was cancelled."
+          exit 1
+
+      - name: Success Message
+        run: echo "✅ All critical checks passed or were intentionally skipped!"
