@@ -32,6 +32,7 @@ define([
   var activeWidget
   var expand, trackWidget
   var currentLayer, nonsuitLayer, mguLayer
+  var mguLayerVisible = true
   var portalUrl = 'https://www.arcgis.com'
   var template
   var uploadFormEl, uploadStatusEl
@@ -72,6 +73,9 @@ define([
     _nonsuitLayer: function () {
       return nonsuitLayer
     },
+    _mguLayer: function () {
+      return mguLayer
+    },
   }
 
   /*
@@ -105,6 +109,7 @@ define([
     addExpand()
     addTracking()
     zoomToLocation()
+    addTsaTflToggle()
 
     // When the view UI is loaded, add the buttons
     view.when(function () {
@@ -132,9 +137,10 @@ define([
           outline: [0, 0, 0],
           outlineWidth: 1,
           opacity: 1,
-          title: 'Management Unit',
+          title: 'TSA/TFL',
           popup: false,
         })
+        mguLayer.visible = mguLayerVisible
         map.add(mguLayer)
       })
       .catch(function (error) {
@@ -477,6 +483,24 @@ define([
     if (uploadStatusEl) {
       uploadStatusEl.innerHTML = ''
     }
+  }
+
+  function syncMguToggleUi(toggle) {
+    toggle.classList.toggle('active', mguLayerVisible)
+    toggle.setAttribute('aria-pressed', mguLayerVisible ? 'true' : 'false')
+  }
+
+  function addTsaTflToggle() {
+    var toggle = document.getElementById('tsaTflToggle')
+    if (!toggle) return
+    syncMguToggleUi(toggle)
+    toggle.addEventListener('click', function () {
+      mguLayerVisible = !mguLayerVisible
+      syncMguToggleUi(toggle)
+      if (mguLayer) {
+        mguLayer.visible = mguLayerVisible
+      }
+    })
   }
 
   // Add the basemap gallery
