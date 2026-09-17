@@ -108,15 +108,18 @@ npm run test
 
 ## Automated CI/CD Workflows
 
-Every Pull Request automatically triggers a parallel validation and integration testing pipeline in
-GitHub Actions (`.github/workflows/pr-open.yml`):
+Every Pull Request automatically triggers a validation and integration testing pipeline in GitHub
+Actions (`.github/workflows/pr-open.yml`):
 
-1. **Lint & Unit Tests (`validate` job):** Runs linting, formatting, and unit tests. Takes <15
-   seconds.
-2. **E2E Integration (`e2e` job):** Boots up the local server inside the runner and executes
-   Playwright tests. Takes ~20 seconds.
-3. **Deploy Preview Sandbox (`deploy` job):** Runs sequentially _only_ after both validation and E2E
-   testing jobs complete successfully, ensuring no regressions enter staging environments.
+1. **Lint & Unit Tests (`validate` job):** Runs linting, formatting, and unit tests, and evaluates
+   deployable changes using `bcgov/actions/diff-triggers`. Takes <15 seconds.
+2. **E2E Integration (`e2e` job):** When deployable changes exist (`docs/`, `tests/`, `scripts/`,
+   `package*.json`, `playwright.config.js`), boots up the local server inside the runner and
+   executes Playwright tests.
+3. **Deploy Preview Sandbox (`deploy` job):** Runs sequentially _only_ when deployable changes exist
+   and both validation and E2E testing jobs complete successfully. PRs without deployable changes
+   skip E2E and deployment to conserve runner minutes while reporting checks as skipped to satisfy
+   branch rules.
 
 ### 4. Auto-Formatting Code
 
