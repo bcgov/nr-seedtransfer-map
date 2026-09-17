@@ -80,9 +80,7 @@ jobs:
   deploy:
     name: Deploy PR Preview
     needs: [validate, e2e]
-    if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      needs.validate.outputs.deploy == 'true'
+    if: needs.validate.outputs.deploy == 'true'
     # Serialize gh-pages mutations across pr-open, pr-close, and merge workflows.
     concurrency:
       group: gh-pages-state
