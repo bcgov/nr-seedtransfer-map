@@ -3,11 +3,6 @@ name: PR Deployment
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - 'docs/**'
-      - 'tests/**'
-      - 'package*.json'
-      - 'playwright.config.js'
 
 # Workflow-level: per-PR cancellation so rapid pushes don't queue stale runs.
 # The deploy job adds its own gh-pages-state lock to serialize gh-pages mutations.
@@ -21,8 +16,23 @@ jobs:
   validate:
     name: Lint & Unit Tests
     runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      deploy: ${{ steps.diff.outputs.triggered }}
     steps:
       - uses: actions/checkout@v7
+      - name: Check for deployable changes
+        uses: bcgov/actions/diff-triggers@ac9d89eede94f5f58d3446784c94cff634d98eac # v0.6.0
+        id: diff
+        with:
+          triggers: |
+            docs/
+            tests/
+            scripts/
+            package.json
+            package-lock.json
+            playwright.config.js
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
@@ -35,6 +45,8 @@ jobs:
 
   e2e:
     name: E2E Playwright Tests
+    needs: [validate]
+    if: needs.validate.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -48,7 +60,7 @@ jobs:
       - name: Get Playwright version
         id: playwright-version
         run: |
-          echo "version=$(node -e 'console.log(require("@playwright/test/package.json").version)')" >> $GITHUB_OUTPUT
+          echo "version=$(node -e 'console.log(require("@playwright/test/package.json").version)')" >> "$GITHUB_OUTPUT"
       - name: Cache Playwright browsers
         uses: actions/cache@v6
         id: playwright-cache
@@ -72,7 +84,7 @@ jobs:
   deploy:
     name: Deploy PR Preview
     needs: [validate, e2e]
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: needs.validate.outputs.deploy == 'true'
     # Serialize gh-pages mutations across pr-open, pr-close, and merge workflows.
     concurrency:
       group: gh-pages-state
@@ -131,3 +143,28 @@ jobs:
 
           echo "❌ Timeout reached! Preview environment is not returning HTTP 200."
           exit 1
+
+  # ==========================================================================
+  # Required merge gate for this workflow.
+  # If you add a new job to this workflow, add its ID to the 'needs' array.
+  # ==========================================================================
+  results:
+    name: PR Results
+    needs: [validate, e2e, deploy]
+    if: always()
+    runs-on: ubuntu-slim
+    timeout-minutes: 1
+    steps:
+      - name: Log Job Results Context
+        run: |
+          echo "=== Upstream Job Statuses ==="
+          echo '${{ toJson(needs) }}'
+
+      - name: Evaluate Overall Status
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "❌ Critical Check Failure: At least one required job has failed or was cancelled."
+          exit 1
+
+      - name: Success Message
+        run: echo "✅ All critical checks passed or were intentionally skipped!"
