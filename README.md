@@ -104,6 +104,13 @@ Run both unit and E2E tests in a single command:
 npm run test
 ```
 
+### 7. Vendored libraries
+
+`docs/lib/` is copied in by hand. This repo does not ship `*.map` files. After copying a JS or CSS
+file into `docs/lib/`, delete its `sourceMappingURL` comment (`//# sourceMappingURL=...` or
+`/*# sourceMappingURL=... */`). `npm run test:unit` fails if that comment is still present, so a
+browser does not request a missing map during local development.
+
 ---
 
 ## Automated CI/CD Workflows
