@@ -29,5 +29,5 @@ We strictly follow a structured Git workflow to keep our history clean and revie
      git checkout main && git pull
      git switch -c feat/my-awesome-improvement
      ````
-2. **External contributors (forks):** Fork the repository, clone your fork locally, create your branch from an up-to-date `main`, push the branch to your fork, and open a pull request from your fork's branch to this repository's `main`.
+2. **External contributors (forks):** Fork the repository, clone your fork, and add this repository as `upstream`. Create your branch from the base selected in step 1 (`main`, or the `headRefName` of the single open pull request labeled `DEMO`). Push the branch to your fork and open the pull request against that same base.
 3. **Commit changes using Conventional Commits:** Ensure your commit messages match the Conventional Commit format (e.g., `feat(ui): add loading spinner` or `chore(hygiene): establish templates`).
