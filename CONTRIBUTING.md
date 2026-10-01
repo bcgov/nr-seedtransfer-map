@@ -19,15 +19,15 @@ To make local development and quality control as seamless as possible, we levera
 
 We strictly follow a structured Git workflow to keep our history clean and reviewable:
 
-1. **Always branch off a fresh main:**
-   ````bash
-   git checkout main && git pull
-   ````
-2. **Create a descriptive branch:** Use a branch type prefix (e.g., `feat/` or `chore/`):
-   ````bash
-   git switch -c feat/my-awesome-improvement
-   ````
-3. **Submit a Pull Request:**
-   - **Internal Contributors (Push Access):** Push your branch directly to this repository and open a Pull Request pointing back to `main`.
-   - **External Contributors (Forks):** Fork the repository, clone your fork locally, create your branch from an up-to-date `main`, push the branch to your fork, and open a Pull Request from your fork's branch to this repository's `main`.
-4. **Commit changes using Conventional Commits:** Ensure your commit messages match the Conventional Commit format (e.g., `feat(ui): add loading spinner` or `chore(hygiene): establish templates`).
+1. **Branch off the right base.**
+   - An issue labeled `EXPERIMENTAL BRANCH ONLY` targets the single open pull request labeled `DEMO`. Stop unless this returns exactly one pull request. Branch from its `headRefName` and open the pull request against that branch:
+     ````bash
+     gh pr list --repo bcgov/nr-seedtransfer-map --state open --label DEMO --json number,headRefName
+     ````
+   - Any other issue branches off a fresh `main`, and the pull request targets `main`:
+     ````bash
+     git checkout main && git pull
+     git switch -c feat/my-awesome-improvement
+     ````
+2. **External contributors (forks):** Fork the repository, clone your fork locally, create your branch from an up-to-date `main`, push the branch to your fork, and open a pull request from your fork's branch to this repository's `main`.
+3. **Commit changes using Conventional Commits:** Ensure your commit messages match the Conventional Commit format (e.g., `feat(ui): add loading spinner` or `chore(hygiene): establish templates`).
