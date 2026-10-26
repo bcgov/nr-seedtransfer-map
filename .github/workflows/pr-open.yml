@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Check for deployable changes
-        uses: bcgov/actions/diff-triggers@122a9b1c6c082b1b1f18c300020fbdc417b6b0b2 # v0.10.0
+        uses: bcgov/actions/diff-triggers@8843560d44aa717798dacb6831bf87161d0658ca # v0.11.0
         id: diff
         with:
           triggers: |
@@ -156,7 +156,7 @@ jobs:
     timeout-minutes: 1
     steps:
       - name: PR Results
-        uses: bcgov/actions/workflow-results@122a9b1c6c082b1b1f18c300020fbdc417b6b0b2 # v0.10.0
+        uses: bcgov/actions/workflow-results@8843560d44aa717798dacb6831bf87161d0658ca # v0.11.0
         with:
           needs: ${{ toJson(needs) }}
           title: 'PR Results'
