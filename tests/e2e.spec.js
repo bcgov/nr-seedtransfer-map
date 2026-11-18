@@ -414,3 +414,100 @@ test.describe('CBST Seedlot Selection Tool - E2E Integration Tests', () => {
     })
   })
 })
+
+test.describe('CSP: wasm-unsafe-eval is sufficient for the ArcGIS map', () => {
+  test('map loads and works with no CSP violations in the console', async ({ page }) => {
+    const cspConsole = []
+    const pageErrors = []
+
+    await page.addInitScript(() => {
+      window.__cspViolations = []
+      document.addEventListener('securitypolicyviolation', (event) => {
+        window.__cspViolations.push({
+          effectiveDirective: event.effectiveDirective,
+          violatedDirective: event.violatedDirective,
+          blockedURI: event.blockedURI,
+          sourceFile: event.sourceFile,
+          lineNumber: event.lineNumber,
+          sample: event.sample,
+          disposition: event.disposition,
+        })
+      })
+    })
+
+    page.on('console', (msg) => {
+      const text = msg.text()
+      if (
+        /content security policy|unsafe-eval|refused to evaluate|refused to execute|refused to create/i.test(
+          text,
+        )
+      ) {
+        cspConsole.push({ type: msg.type(), text })
+      }
+    })
+
+    page.on('pageerror', (err) => {
+      pageErrors.push(String(err))
+    })
+
+    await page.goto('/index.html')
+    await expect(page.locator('#titleText')).toContainText('CBST Seedlot Selection Tool')
+
+    const scriptSrc = await page.evaluate(() => {
+      const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]')
+      const content = meta ? meta.getAttribute('content') || '' : ''
+      const match = content.match(/script-src[^;]*/)
+      return match ? match[0] : ''
+    })
+    expect(scriptSrc).toContain("'wasm-unsafe-eval'")
+    expect(scriptSrc.replaceAll("'wasm-unsafe-eval'", '')).not.toContain("'unsafe-eval'")
+
+    await expect
+      .poll(
+        async () => {
+          return await page.evaluate(() => {
+            if (!window.defineMap || typeof window.defineMap._view !== 'function') return null
+            const view = window.defineMap._view()
+            return !!(view && view.ready)
+          })
+        },
+        {
+          message: 'Expected ArcGIS MapView to become ready',
+          timeout: 30000,
+        },
+      )
+      .toBe(true)
+
+    await expect
+      .poll(
+        async () => {
+          return await page.evaluate(() => {
+            if (!window.defineMap || typeof window.defineMap._mguLayer !== 'function') return null
+            const mguLayer = window.defineMap._mguLayer()
+            if (!mguLayer || !mguLayer.source) return null
+            return mguLayer.source.length
+          })
+        },
+        {
+          message: 'Expected TSA/TFL layer to load from local FlatGeobuf',
+          timeout: 30000,
+        },
+      )
+      .toBeGreaterThan(0)
+
+    await page.click('#tsaTflToggle')
+    await expect(page.locator('#tsaTflToggle')).not.toHaveClass(/active/)
+    await expect
+      .poll(async () => page.evaluate(() => window.defineMap._mguLayer().visible))
+      .toBe(false)
+
+    const cspViolations = await page.evaluate(() => window.__cspViolations || [])
+    expect(cspViolations, `CSP securitypolicyviolation events: ${JSON.stringify(cspViolations, null, 2)}`).toEqual(
+      [],
+    )
+    expect(cspConsole, `CSP-related console messages: ${JSON.stringify(cspConsole, null, 2)}`).toEqual(
+      [],
+    )
+    expect(pageErrors, `Uncaught page errors: ${JSON.stringify(pageErrors, null, 2)}`).toEqual([])
+  })
+})
