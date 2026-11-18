@@ -60,6 +60,11 @@ if (typeof HTMLElement.prototype.reposition !== 'function') {
   window.dojoConfig = {
     async: true,
     cacheBust: 'v=7.0.8',
+    has: {
+      // Use the SDK's CSP-safe paths instead of probing with `new Function`,
+      // which logs a script-src 'unsafe-eval' violation even when the map works.
+      'esri-csp-restrictions': true,
+    },
     packages: [
       {
         name: 'scripts',
